@@ -804,16 +804,18 @@ async function deliverCreds(orderEntries){
 
 async function sendBotMessage(chatId,creds,total){
   if(!chatId)return;
-  const defaultMsg=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\nBonjour {prenom} 👋\n\nVoici tes accès :\n\n{acces}\n💳 <b>Total payé :</b> {total}\n\nMerci pour ta confiance ! 🙏\nPour toute question, réponds à ce message.`;
+  const defaultMsg=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\nBonjour <b>{prenom}</b> ({handle})\n\n<pre>{acces}</pre>\nTotal : <b>{total}</b>\n\nPour toute question, réponds à ce message.`;
   let template=defaultMsg;
   try{
     const snap=await db.ref("settings/botMessage").once("value");
     if(snap.val())template=snap.val();
   }catch(e){}
   let acces="";
-  creds.forEach(c=>{acces+=`📧 <b>@${c.domain}</b>\n<code>${c.email}${c.pass?":"+c.pass:""}</code>\n\n`;});
+  creds.forEach(c=>{acces+=`${c.email}${c.pass?":"+c.pass:""}\n`;});
+  acces=acces.trim();
   const msg=template
     .replace(/\{prenom\}/g,me.name.split(" ")[0])
+    .replace(/\{handle\}/g,me.handle||"")
     .replace(/\{acces\}/g,acces)
     .replace(/\{total\}/g,fmt(total));
   try{await fetch(VERCEL_API+"/api/send-message",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chatId,text:msg})});}catch(e){console.error(e);}
@@ -1060,10 +1062,14 @@ function renderAdmin(){
           <p class="a-title">Aperçu du message</p>
           <div id="msgPreview" style="font-size:12px;color:var(--muted);line-height:1.8;white-space:pre-wrap;font-family:'IBM Plex Mono',monospace;background:var(--bg2);padding:12px;border-radius:10px"></div>
         </div>`;
-      const defaultMsg=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\nBonjour {prenom} 👋\n\nVoici tes accès :\n\n{acces}\n💳 <b>Total payé :</b> {total}\n\nMerci pour ta confiance ! 🙏\nPour toute question, réponds à ce message.`;
+      const defaultMsg=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\nBonjour <b>{prenom}</b> ({handle})\n\n<pre>{acces}</pre>\nTotal : <b>{total}</b>\n\nPour toute question, réponds à ce message.`;
       const field=$("botMsgField"),preview=$("msgPreview");
       function updatePreview(){
-        preview.textContent=field.value.replace("{prenom}","John").replace("{acces}","📧 @hotmail.com\nuser@hotmail.com:pass123\n\n").replace("{total}","4,00€");
+        preview.textContent=field.value
+          .replace("{prenom}","John")
+          .replace("{handle}","@johndosql")
+          .replace("{acces}","user1@hotmail.com:pass123\nuser2@hotmail.com:pass456")
+          .replace("{total}","8,00€");
       }
       db.ref("settings/botMessage").once("value",s=>{
         field.value=s.val()||defaultMsg;updatePreview();
