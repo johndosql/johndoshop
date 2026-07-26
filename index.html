@@ -168,11 +168,11 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
 .cb-r{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;}
 
 /* PAGE HEADER */
-.page-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;animation:slideUp .4s cubic-bezier(.22,1,.36,1);}
+.page-header{display:flex;align-items:center;gap:12px;margin-bottom:18px;animation:slideUp .35s cubic-bezier(.22,1,.36,1);}
 .back-btn{background:var(--sf);border:1.5px solid var(--line);width:40px;height:40px;border-radius:12px;
   font-size:17px;cursor:pointer;color:var(--ink);flex:0 0 auto;
-  transition:transform .2s cubic-bezier(.34,1.56,.64,1);}
-.back-btn:active{transform:scale(.87);}
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .2s;}
+.back-btn:active{transform:scale(.82);background:var(--soft);}
 .page-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.55rem;letter-spacing:-.01em;}
 
 /* CART */
@@ -718,6 +718,9 @@ function renderCartPage(){
     <div class="pay-panel" id="pCrypto">
       <div class="pay-card">
         <p style="font-size:13px;color:var(--muted);margin-bottom:11px;line-height:1.6">Paiement via <b>NOWPayments</b>. Accès livrés automatiquement après confirmation blockchain.</p>
+        <div style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:10px;padding:9px 12px;margin-bottom:11px;font-size:12px;color:var(--ok)">
+          💡 Pour les petits montants (&lt;10€), utilise <b>USDT TRC20</b> ou <b>USDT ETH</b> — pas de minimum.
+        </div>
         <p class="sec-lbl" style="margin-top:0">Choisir la crypto</p>
         <div class="crypto-grid" id="cryptoGrid"></div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac);background:var(--soft);padding:8px 12px;border-radius:9px;margin-bottom:12px">Total : <b>${fmt(tot)}</b></div>
@@ -1018,8 +1021,10 @@ function renderAdmin(){
     }
     else if(t==="users"){
       pane.innerHTML='<div id="aUsers"></div>';
-      const au=$("aUsers"),ua=Object.entries(users);
-      if(!ua.length)au.innerHTML='<p style="text-align:center;color:var(--muted);padding:24px 0">Aucun client.</p>';
+      const au=$("aUsers");
+      // Filtre uniquement les vrais utilisateurs Telegram (pas les sessions demo)
+      const ua=Object.entries(users).filter(([uid,u])=>uid.startsWith("u")&&u.tgId&&u.name&&u.name!=="Invité");
+      if(!ua.length){au.innerHTML='<p style="text-align:center;color:var(--muted);padding:24px 0">Aucun client Telegram enregistré.<br><span style="font-size:11px">Les clients apparaissent après leur première ouverture du bot.</span></p>';}
       else ua.forEach(([uid,u])=>{
         const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
         const row=document.createElement("div");row.className="u-row";
@@ -1072,8 +1077,8 @@ function renderAdmin(){
         });
       };
 
-      // BROADCAST
-      const tgIds=Object.values(users).map(u=>u.tgId).filter(Boolean);
+      // BROADCAST - uniquement les vrais utilisateurs Telegram
+      const tgIds=Object.entries(users).filter(([uid,u])=>uid.startsWith("u")&&u.tgId&&u.name!=="Invité").map(([,u])=>u.tgId);
       const broadcastSection=document.createElement("div");
       broadcastSection.className="a-card";
       broadcastSection.style.marginTop="0";
