@@ -155,6 +155,26 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
 .empty{text-align:center;color:var(--muted);font-size:14px;padding:50px 0;grid-column:1/-1;}
 .trust{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:24px;grid-column:1/-1;}
 
+.wts-card{position:relative;border-radius:var(--r);margin-bottom:14px;overflow:hidden;border:1.5px solid rgba(91,127,255,.2);}
+.wts-bg{position:absolute;inset:0;background:linear-gradient(120deg,rgba(91,127,255,.08),rgba(168,85,247,.08),rgba(91,127,255,.08));background-size:200% 100%;animation:wtsGlow 4s ease-in-out infinite;}
+@keyframes wtsGlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.wts-inner{position:relative;z-index:1;display:flex;align-items:center;gap:10px;padding:10px 14px;overflow:hidden;}
+.wts-pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:0 0 auto;position:relative;}
+.wts-pulse::after{content:'';position:absolute;inset:-4px;border-radius:50%;background:var(--ok);opacity:.3;animation:pulseRing 2s ease-out infinite;}
+.wts-ticker-wrap{flex:1;overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,black 10%,black 90%,transparent);}
+.wts-ticker{display:flex;gap:0;white-space:nowrap;animation:ticker 4s linear infinite;will-change:transform;}
+.wts-ticker:hover{animation-play-state:paused;}
+.wts-item{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap;padding:0 4px;}
+.wts-item .hi{color:var(--ok);font-weight:600;}
+.wts-item .lo{color:var(--err);}
+.wts-sep{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);padding:0 14px;flex:0 0 auto;}
+.wts-ticker:hover{animation-play-state:paused;}
+.wts-item{font-family:'IBM Plex Mono',monospace;font-size:12px;display:flex;align-items:center;gap:8px;color:var(--muted);}
+.wts-item .dot{width:4px;height:4px;border-radius:50%;background:var(--line);}
+.wts-item .hi{color:var(--ok);font-weight:600;}
+.wts-sep{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);padding:0 16px;flex:0 0 auto;}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
 /* CART BAR */
 .cart-bar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;
   padding:10px 14px calc(10px + env(safe-area-inset-bottom));
@@ -307,9 +327,27 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
     <p class="price-hint">4€ / accès &nbsp;·&nbsp; <span class="promo">3€ dès 10 accès</span></p>
   </header>
   <div id="shopBanner" class="a3"></div>
+  <div class="wts-card a3">
+    <div class="wts-bg"></div>
+    <div class="wts-inner">
+      <div class="wts-pulse"></div>
+      <div class="wts-ticker-wrap">
+        <div class="wts-ticker" style="animation-duration:4s">
+          <span class="wts-item">Stock mis à jour quotidiennement</span>
+          <span class="wts-sep">·</span>
+          <span class="wts-item"><span class="lo">Non disponibles : GMX · Yahoo · Gmail · iCloud</span></span>
+          <span class="wts-sep">·</span>
+          <span class="wts-item">Stock mis à jour quotidiennement</span>
+          <span class="wts-sep">·</span>
+          <span class="wts-item"><span class="lo">Non disponibles : GMX · Yahoo · Gmail · iCloud</span></span>
+          <span class="wts-sep">·</span>
+        </div>
+      </div>
+    </div>
+  </div>
   <div class="search-wrap a4">
     <span class="search-ico">⌕</span>
-    <input class="search-in" id="searchIn" type="text" placeholder="Rechercher (ex: hotmail, gmail…)">
+    <input class="search-in" id="searchIn" type="text" placeholder="Rechercher (ex: hotmail, orange, outlook…)">
   </div>
   <div class="a4">
     <p class="sec-lbl">Pays</p>
