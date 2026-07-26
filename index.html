@@ -550,6 +550,19 @@ function initMe(){
     if(me.tgId)db.ref("users/"+me.id+"/tgId").set(me.tgId);
     db.ref("users/"+me.id+"/balance").on("value",s=>{myBal=parseFloat(s.val()||0);$("pBal").textContent=fmt(myBal);});
     db.ref("users").on("value",s=>{users=s.val()||{};});
+    // Message de bienvenue au premier lancement
+    if(me.tgId){
+      db.ref("users/"+me.id+"/welcomed").once("value",snap=>{
+        if(!snap.val()){
+          db.ref("users/"+me.id+"/welcomed").set(true);
+          const welcome=`Bienvenue sur ACCESMAIL — votre Mini App by @johndosql 👋\n\nIci tu peux acheter des accès email,\nlivrés instantanément après paiement.\n\n• Paiement en crypto\n• Livraison automatique dans ce bot\n• Stock mis à jour en temps réel\n\n👇 Ouvre la boutique ci-dessous`;
+          fetch(VERCEL_API+"/api/send-message",{
+            method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({chatId:me.tgId,text:welcome})
+          }).catch(e=>console.error(e));
+        }
+      });
+    }
   }
 }
 
