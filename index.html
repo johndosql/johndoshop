@@ -922,7 +922,7 @@ function renderAdmin(){
     <button class="btn" id="addBtn" style="width:100%">Ajouter</button>
   </div>
 
-  ${prods.length===0?'<button class="btn btn-flat" id="impDemo" style="width:100%;margin-bottom:16px">Importer le catalogue de démo</button>':""}
+  ${prods.length===0?"":`<button class="btn btn-danger" id="clearBtn" style="width:100%;margin-bottom:16px">🗑 Vider tout le catalogue</button>`}
 
   <p class="sl-lbl">📦 Catalogue (${prods.length})</p>
   <div id="aProd"></div>
@@ -953,6 +953,16 @@ function renderAdmin(){
       if(audioEl){audioEl.pause();musicPlaying=false;}
       $("musicBar").classList.remove("show");
       $("curMusic").textContent="";toast("Musique supprimée.");
+    });
+  };
+
+  // Vider catalogue
+  const clearBtn=$("clearBtn");
+  if(clearBtn)clearBtn.onclick=()=>{
+    if(!confirm("⚠️ Supprimer TOUS les produits du catalogue ? Cette action est irréversible."))return;
+    db.ref("products").remove().then(()=>{
+      db.ref("credentials").remove();
+      toast("✅ Catalogue vidé. Importe ton vrai fichier maintenant.");
     });
   };
 
