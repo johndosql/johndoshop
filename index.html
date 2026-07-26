@@ -7,6 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -361,10 +362,10 @@ const FB={
   projectId:"johndoshop",storageBucket:"johndoshop.firebasestorage.app",
   messagingSenderId:"457831162431",appId:"1:457831162431:web:89177714cad61411710e8a"
 };
-const ADMIN_PWD="Jd$7xK#2mP9@nQ4v";
 const VERCEL_API="https://johndoshop.vercel.app";
 const PRICE_BASE=4,PRICE_PRO=3,PRICE_THRESHOLD=10;
 const GRID_LIMIT=8;
+let auth=null;
 
 const LOGO="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/";
 const CRYPTOS=[
@@ -463,7 +464,7 @@ let cart={},query="",activeC="all",adminOk=false,showAll=false;
 let me={id:null,tgId:null,name:"Invité",handle:"",photo:null},myBal=0;
 let pollInterval=null;
 
-try{firebase.initializeApp(FB);db=firebase.database();fbOk=true;}catch(e){console.error(e);}
+try{firebase.initializeApp(FB);db=firebase.database();auth=firebase.auth();fbOk=true;}catch(e){console.error(e);}
 
 /* UTILS */
 const $=id=>document.getElementById(id);
@@ -936,9 +937,26 @@ function renderAdmin(){
   if(!adminOk){
     el.innerHTML=`<div class="lock-box"><div class="lock-ico">🔐</div>
       <p>Accès réservé à l'administrateur</p>
-      <input class="field" id="pwF" type="password" placeholder="Mot de passe">
-      <button class="btn" id="pwBtn" style="width:100%">Déverrouiller</button></div>`;
-    $("pwBtn").onclick=()=>{if($("pwF").value===ADMIN_PWD){adminOk=true;renderAdmin();}else toast("Mot de passe incorrect.");};return;
+      <input class="field" id="adminEmail" type="email" placeholder="Email admin">
+      <input class="field" id="adminPass" type="password" placeholder="Mot de passe">
+      <button class="btn" id="pwBtn" style="width:100%">Déverrouiller</button>
+      <div id="loginErr" style="font-size:12px;color:var(--err);text-align:center;margin-top:8px;display:none"></div>
+    </div>`;
+    $("pwBtn").onclick=async()=>{
+      const email=$("adminEmail").value.trim();
+      const pass=$("adminPass").value;
+      const errEl=$("loginErr");
+      if(!email||!pass){toast("Remplis les deux champs.");return;}
+      $("pwBtn").disabled=true;$("pwBtn").textContent="Connexion…";
+      try{
+        await auth.signInWithEmailAndPassword(email,pass);
+        adminOk=true;renderAdmin();
+      }catch(e){
+        errEl.textContent="Email ou mot de passe incorrect.";
+        errEl.style.display="block";
+        $("pwBtn").disabled=false;$("pwBtn").textContent="Déverrouiller";
+      }
+    };return;
   }
   if(!fbOk){el.innerHTML='<div class="banner">Firebase non connecté.</div>';return;}
   el.innerHTML=`
@@ -948,7 +966,11 @@ function renderAdmin(){
       <button class="atab" data-t="users">👥 Clients</button>
       <button class="atab" data-t="bot">📱 Bot</button>
     </div>
+    <button class="btn btn-flat" id="logoutBtn" style="width:100%;margin-bottom:14px;font-size:12px;padding:8px">Se déconnecter</button>
     <div id="adminPane"></div>`;
+  $("logoutBtn").onclick=()=>{
+    auth.signOut().then(()=>{adminOk=false;goTo("shop");});
+  };
   function showTab(t){
     el.querySelectorAll(".atab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
     const pane=$("adminPane");
