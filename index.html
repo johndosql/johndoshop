@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JohndoShop</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#F5F6F8;
+    --surface:#FFFFFF;
+    --ink:#10131F;
+    --muted:#5B6072;
+    --accent:#2952E3;
+    --accent-soft:#EDF0FE;
+    --line:#E3E5EA;
+    --radius:14px;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  .screen{
+    max-width:460px;
+    margin:0 auto;
+    min-height:100vh;
+    padding:28px 20px 110px;
+  }
+
+  #shopScreen.hide, #cartScreen.hide{
+    display:none;
+  }
+
+  .hero{ margin-bottom:22px; }
+
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+
+  .wordmark{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(2.1rem, 8vw, 2.5rem);
+    letter-spacing:-0.01em;
+    line-height:1.05;
+    margin-bottom:10px;
+  }
+
+  .tagline{
+    font-size:15px;
+    line-height:1.5;
+    color:var(--muted);
+    max-width:36ch;
+  }
+
+  .search-wrap{
+    position:relative;
+    margin-bottom:14px;
+  }
+  .search-input{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:13px 16px 13px 42px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .search-input:focus{ border-color:var(--accent); }
+  .search-icon{
+    position:absolute;
+    left:15px; top:50%;
+    transform:translateY(-50%);
+    color:var(--muted);
+    font-size:15px;
+    pointer-events:none;
+  }
+  .search-count{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-bottom:16px;
+  }
+
+  .filter-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+
+  .chip-strip{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:4px;
+    margin-bottom:18px;
+    scrollbar-width:none;
+  }
+  .chip-strip::-webkit-scrollbar{ display:none; }
+
+  .chip{
+    flex:0 0 auto;
+    font-family:'Inter', sans-serif;
+    font-weight:500;
+    font-size:13px;
+    color:var(--ink);
+    background:var(--surface);
+    border:1px solid var(--line);
+    padding:8px 16px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:transform .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .chip:active{ transform:scale(0.96); }
+  .chip.active{
+    background:var(--ink);
+    border-color:var(--ink);
+    color:#fff;
+  }
+
+  .catalog{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 18px;
+  }
+
+  .card-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    margin-bottom:6px;
+  }
+
+  .card-title{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:16px;
+  }
+
+  .card-meta{
+    font-size:13px;
+    color:var(--muted);
+    margin-bottom:14px;
+  }
+
+  .card-bottom{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+
+  .card-price{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:17px;
+  }
+
+  .btn{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    color:#fff;
+    background:var(--accent);
+    border:none;
+    padding:10px 18px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:transform .15s ease, opacity .15s ease;
+  }
+  .btn:active{ transform:scale(0.96); opacity:.9; }
+
+  .empty{
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    padding:40px 0;
+  }
+
+  .trust{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    color:var(--muted);
+    font-size:12px;
+    margin-top:26px;
+  }
+
+  .cart-bar{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    display:flex;
+    justify-content:center;
+    padding:14px 20px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, var(--bg) 60%, transparent);
+    transform:translateY(120%);
+    transition:transform .25s ease;
+    z-index:20;
+  }
+  .cart-bar.show{ transform:translateY(0); }
+
+  .cart-bar-inner{
+    width:100%;
+    max-width:420px;
+    background:var(--ink);
+    color:#fff;
+    border-radius:12px;
+    padding:14px 18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+    box-shadow:0 12px 28px rgba(16,19,31,.22);
+  }
+  .cart-bar-left{ font-size:13px; color:#C7CAD6; }
+  .cart-bar-right{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:15px; }
+
+  .cart-header{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-bottom:24px;
+  }
+  .back-btn{
+    background:var(--surface);
+    border:1px solid var(--line);
+    width:36px; height:36px;
+    border-radius:10px;
+    font-size:16px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .cart-header .wordmark{
+    font-size:1.6rem;
+    margin-bottom:0;
+  }
+
+  .section-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:24px 0 10px;
+  }
+
+  .cart-list{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .cart-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 16px;
+  }
+  .cart-item-name{
+    font-weight:500;
+    font-size:14px;
+    margin-bottom:2px;
+  }
+  .cart-item-unit{
+    font-size:12px;
+    color:var(--muted);
+  }
+  .stepper{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:4px 10px;
+  }
+  .stepper button{
+    background:none; border:none;
+    font-size:16px;
+    width:20px; height:20px;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .stepper span{ font-family:'IBM Plex Mono', monospace; font-size:13px; min-width:14px; text-align:center; }
+
+  .cart-empty{
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    padding:50px 0;
+  }
+
+  .summary-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    color:var(--muted);
+    padding:6px 0;
+  }
+  .summary-row.total{
+    color:var(--ink);
+    font-weight:600;
+    font-size:17px;
+    font-family:'Space Grotesk', sans-serif;
+    border-top:1px solid var(--line);
+    margin-top:8px;
+    padding-top:14px;
+  }
+
+  .pay-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+  }
+  .pay-network{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--accent);
+    background:var(--accent-soft);
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:999px;
+    margin-bottom:12px;
+  }
+  .pay-address{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:12px;
+  }
+  .pay-address span{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    word-break:break-all;
+    flex:1;
+  }
+  .copy-btn{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:12px;
+    cursor:pointer;
+    color:var(--ink);
+    flex:0 0 auto;
+  }
+  .pay-note{
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.5;
+    margin-bottom:16px;
+  }
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:100px;
+    transform:translate(-50%, 20px);
+    background:var(--ink);
+    color:#fff;
+    font-size:13px;
+    font-weight:500;
+    padding:12px 20px;
+    border-radius:10px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    max-width:80%;
+    text-align:center;
+    z-index:40;
+  }
+  .toast.show{
+    opacity:1;
+    transform:translate(-50%, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="screen" id="shopScreen">
+    <header class="hero">
+      <p class="eyebrow">JohndoShop — Domaines e-mail</p>
+      <h1 class="wordmark">JohndoShop</h1>
+      <p class="tagline">Domaines e-mail disponibles dans plusieurs pays. Recherche le fournisseur qu'il te faut.</p>
+    </header>
+
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" id="searchInput" type="text" placeholder="Rechercher un domaine (ex: hotmail, freenet...)">
+    </div>
+    <p class="search-count" id="searchCount"></p>
+
+    <p class="filter-label">Pays</p>
+    <nav class="chip-strip" id="countryStrip"></nav>
+
+    <main class="catalog" id="catalog"></main>
+
+    <footer class="trust">
+      <span>Paiement en crypto</span><span>·</span>
+      <span>Livraison instantanée</span><span>·</span>
+      <span>Support disponible</span>
+    </footer>
+  </div>
+
+  <div class="screen hide" id="cartScreen">
+    <div class="cart-header">
+      <button class="back-btn" id="backBtn">←</button>
+      <h1 class="wordmark">Panier</h1>
+    </div>
+
+    <div class="cart-list" id="cartList"></div>
+    <div id="summaryBlock"></div>
+    <div id="payBlock"></div>
+  </div>
+
+  <div class="cart-bar" id="cartBar">
+    <div class="cart-bar-inner" id="cartBarInner">
+      <span class="cart-bar-left" id="cartBarCount">0 article</span>
+      <span class="cart-bar-right" id="cartBarTotal">0,00 €</span>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ======================================================
+   ZONE À MODIFIER : domaines disponibles, pays associés,
+   prix, et infos de paiement crypto.
+   ====================================================== */
+
+const CURRENCY = "€";
+
+const DOMAINS = [
+  { domain: "hotmail.com",    countries: ["FR","US","UK","DE","ES","CA"], price: 3.99 },
+  { domain: "gmail.com",      countries: ["FR","US","UK","DE","ES","CA"], price: 4.49 },
+  { domain: "outlook.com",    countries: ["FR","US","UK","DE"],          price: 3.99 },
+  { domain: "yahoo.com",      countries: ["US","UK","FR"],               price: 3.49 },
+  { domain: "freenet.de",     countries: ["DE"],                         price: 5.99 },
+  { domain: "gmx.de",         countries: ["DE","AT"],                    price: 4.99 },
+  { domain: "web.de",         countries: ["DE"],                         price: 4.99 },
+  { domain: "t-online.de",    countries: ["DE"],                         price: 6.49 },
+  { domain: "orange.fr",      countries: ["FR"],                         price: 5.49 },
+  { domain: "laposte.net",    countries: ["FR"],                         price: 5.49 },
+  { domain: "sfr.fr",         countries: ["FR"],                         price: 5.49 },
+  { domain: "icloud.com",     countries: ["US","FR","UK","DE"],          price: 6.99 },
+  { domain: "aol.com",        countries: ["US"],                         price: 3.99 },
+  { domain: "protonmail.com", countries: ["US","FR","DE","CH"],          price: 7.99 },
+  { domain: "mail.ru",        countries: ["RU"],                         price: 4.99 },
+  { domain: "yandex.ru",      countries: ["RU"],                         price: 4.99 },
+  { domain: "libero.it",      countries: ["IT"],                         price: 4.49 },
+  { domain: "seznam.cz",      countries: ["CZ"],                         price: 4.49 },
+];
+
+const FLAGS = {
+  FR:"🇫🇷 FR", US:"🇺🇸 US", UK:"🇬🇧 UK", DE:"🇩🇪 DE", ES:"🇪🇸 ES", CA:"🇨🇦 CA",
+  AT:"🇦🇹 AT", CH:"🇨🇭 CH", RU:"🇷🇺 RU", IT:"🇮🇹 IT", CZ:"🇨🇿 CZ"
+};
+
+const CRYPTO_CONFIG = {
+  network: "USDT (réseau TRC20)",
+  address: "TA_VRAIE_ADRESSE_CRYPTO_ICI"
+};
+
+/* ======================================================
+   À partir d'ici : logique d'affichage, pas besoin d'y toucher
+   ====================================================== */
+
+const searchInput = document.getElementById("searchInput");
+const searchCount = document.getElementById("searchCount");
+const countryStripEl = document.getElementById("countryStrip");
+const catalogEl = document.getElementById("catalog");
+const toastEl = document.getElementById("toast");
+
+const shopScreen = document.getElementById("shopScreen");
+const cartScreen = document.getElementById("cartScreen");
+const backBtn = document.getElementById("backBtn");
+const cartBar = document.getElementById("cartBar");
+const cartBarCount = document.getElementById("cartBarCount");
+const cartBarTotal = document.getElementById("cartBarTotal");
+const cartList = document.getElementById("cartList");
+const summaryBlock = document.getElementById("summaryBlock");
+const payBlock = document.getElementById("payBlock");
+
+let query = "";
+let activeCountry = "all";
+let cart = {};
+
+function fmt(n){
+  return n.toFixed(2).replace(".", ",") + " " + CURRENCY;
+}
+
+function allCountries(){
+  const set = new Set();
+  DOMAINS.forEach(d => d.countries.forEach(c => set.add(c)));
+  return Array.from(set).sort();
+}
+
+function renderCountryStrip(){
+  const countries = ["all", ...allCountries()];
+  countryStripEl.innerHTML = "";
+  countries.forEach(code => {
+    const btn = document.createElement("button");
+    btn.className = "chip" + (code === activeCountry ? " active" : "");
+    btn.textContent = code === "all" ? "Tous" : (FLAGS[code] || code);
+    btn.onclick = () => {
+      activeCountry = code;
+      renderCountryStrip();
+      renderCatalog();
+    };
+    countryStripEl.appendChild(btn);
+  });
+}
+
+function filteredDomains(){
+  const q = query.trim().toLowerCase();
+  return DOMAINS.filter(d =>
+    (q === "" || d.domain.toLowerCase().includes(q)) &&
+    (activeCountry === "all" || d.countries.includes(activeCountry))
+  );
+}
+
+function renderCatalog(){
+  const items = filteredDomains();
+  searchCount.textContent = items.length + (items.length > 1 ? " domaines trouvés" : " domaine trouvé");
+  catalogEl.innerHTML = "";
+
+  if(items.length === 0){
+    catalogEl.innerHTML = '<p class="empty">Aucun domaine ne correspond à ta recherche.</p>';
+    return;
+  }
+
+  items.forEach(d => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-title">@${d.domain}</div>
+      </div>
+      <div class="card-meta">Disponible : ${d.countries.map(c => FLAGS[c] || c).join(" · ")}</div>
+      <div class="card-bottom">
+        <div class="card-price">${fmt(d.price)}</div>
+        <button class="btn">Ajouter au panier</button>
+      </div>
+    `;
+    card.querySelector(".btn").onclick = () => addToCart(d);
+    catalogEl.appendChild(card);
+  });
+}
+
+function addToCart(item){
+  cart[item.domain] = (cart[item.domain] || 0) + 1;
+  try{
+    if(window.Telegram && window.Telegram.WebApp){
+      window.Telegram.WebApp.HapticFeedback.impactOccurred("light");
+    }
+  }catch(e){}
+  showToast(`"@${item.domain}" ajouté au panier.`);
+  renderCartBar();
+}
+
+function changeQty(domain, delta){
+  cart[domain] = (cart[domain] || 0) + delta;
+  if(cart[domain] <= 0) delete cart[domain];
+  renderCartBar();
+  renderCartPage();
+}
+
+function cartEntries(){
+  return Object.entries(cart).map(([domain, qty]) => {
+    const item = DOMAINS.find(d => d.domain === domain);
+    return { item, qty };
+  }).filter(e => e.item);
+}
+
+function cartTotal(){
+  return cartEntries().reduce((sum, e) => sum + e.item.price * e.qty, 0);
+}
+
+function cartCount(){
+  return cartEntries().reduce((sum, e) => sum + e.qty, 0);
+}
+
+function renderCartBar(){
+  const count = cartCount();
+  if(count === 0){
+    cartBar.classList.remove("show");
+    return;
+  }
+  cartBar.classList.add("show");
+  cartBarCount.textContent = count + (count > 1 ? " articles" : " article");
+  cartBarTotal.textContent = fmt(cartTotal());
+}
+
+function renderCartPage(){
+  const entries = cartEntries();
+  cartList.innerHTML = "";
+
+  if(entries.length === 0){
+    cartList.innerHTML = '<p class="cart-empty">Ton panier est vide.</p>';
+    summaryBlock.innerHTML = "";
+    payBlock.innerHTML = "";
+    return;
+  }
+
+  entries.forEach(({ item, qty }) => {
+    const row = document.createElement("div");
+    row.className = "cart-item";
+    row.innerHTML = `
+      <div>
+        <div class="cart-item-name">@${item.domain}</div>
+        <div class="cart-item-unit">${fmt(item.price)} / unité</div>
+      </div>
+      <div class="stepper">
+        <button data-delta="-1">−</button>
+        <span>${qty}</span>
+        <button data-delta="1">+</button>
+      </div>
+    `;
+    row.querySelectorAll("button").forEach(btn => {
+      btn.onclick = () => changeQty(item.domain, parseInt(btn.dataset.delta));
+    });
+    cartList.appendChild(row);
+  });
+
+  const total = cartTotal();
+  summaryBlock.innerHTML = `
+    <p class="section-title">Résumé</p>
+    <div class="summary-row"><span>Articles</span><span>${cartCount()}</span></div>
+    <div class="summary-row total"><span>Total</span><span>${fmt(total)}</span></div>
+  `;
+
+  payBlock.innerHTML = `
+    <p class="section-title">Paiement</p>
+    <div class="pay-card">
+      <span class="pay-network">${CRYPTO_CONFIG.network}</span>
+      <div class="pay-address">
+        <span id="cryptoAddress">${CRYPTO_CONFIG.address}</span>
+        <button class="copy-btn" id="copyBtn">Copier</button>
+      </div>
+      <p class="pay-note">Envoie le montant exact à cette adresse, puis confirme ci-dessous. La commande est traitée après confirmation de la transaction.</p>
+      <button class="btn" id="confirmPayBtn" style="width:100%; padding:14px;">J'ai envoyé le paiement</button>
+    </div>
+  `;
+
+  document.getElementById("copyBtn").onclick = () => {
+    navigator.clipboard.writeText(CRYPTO_CONFIG.address).then(() => showToast("Adresse copiée."));
+  };
+  document.getElementById("confirmPayBtn").onclick = () => {
+    try{
+      if(window.Telegram && window.Telegram.WebApp){
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred("success");
+      }
+    }catch(e){}
+    showToast("Confirmation envoyée — l'assistant va vérifier le paiement.");
+    cart = {};
+    renderCartBar();
+    goToShop();
+  };
+}
+
+function goToCart(){
+  renderCartPage();
+  shopScreen.classList.add("hide");
+  cartScreen.classList.remove("hide");
+  window.scrollTo(0,0);
+}
+function goToShop(){
+  cartScreen.classList.add("hide");
+  shopScreen.classList.remove("hide");
+  window.scrollTo(0,0);
+}
+
+document.getElementById("cartBarInner").onclick = goToCart;
+backBtn.onclick = goToShop;
+
+searchInput.addEventListener("input", () => {
+  query = searchInput.value;
+  renderCatalog();
+});
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toastEl.classList.remove("show"), 3200);
+}
+
+renderCountryStrip();
+renderCatalog();
+renderCartBar();
+
+try{
+  if(window.Telegram && window.Telegram.WebApp){
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+    tg.setHeaderColor("#F5F6F8");
+    tg.setBackgroundColor("#F5F6F8");
+  }
+}catch(e){}
+</script>
+
+</body>
+</html>
