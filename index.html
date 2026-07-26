@@ -134,12 +134,14 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
 .promo{color:var(--ok);font-weight:600;background:rgba(52,211,153,.1);padding:2px 9px;border-radius:999px;font-size:11px;}
 
 /* SEARCH */
-.search-wrap{position:relative;margin-bottom:10px;}
-.search-in{width:100%;background:var(--sf);border:1.5px solid var(--line);border-radius:13px;
-  padding:12px 14px 12px 42px;font-size:15px;outline:none;color:var(--ink);
-  transition:border-color .2s,box-shadow .2s;}
-.search-in:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(91,127,255,.1);}
-.search-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+.search-wrap{position:relative;margin-bottom:10px;background:var(--sf);border:1.5px solid var(--line);border-radius:13px;padding:0 14px;height:48px;display:flex;align-items:center;gap:8px;transition:border-color .2s,box-shadow .2s;}
+.search-wrap.active{border-color:var(--ac);box-shadow:0 0 0 3px rgba(107,143,255,.12);}
+.search-fake{display:none;}
+.search-in{flex:1;background:transparent;border:none;outline:none;font-size:15px;color:var(--ink);min-width:0;}
+.search-in::placeholder{color:var(--muted);}
+.search-ico{color:var(--muted);font-size:15px;flex:0 0 auto;pointer-events:none;}
+.search-close{background:var(--bg2);border:1px solid var(--line);border-radius:8px;width:28px;height:28px;font-size:13px;cursor:pointer;color:var(--muted);flex:0 0 auto;display:flex;align-items:center;justify-content:center;transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.search-close:active{transform:scale(.85);}
 
 /* CAROUSEL */
 .sec-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
@@ -417,7 +419,8 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
   </div>
   <div class="search-wrap a4">
     <span class="search-ico">⌕</span>
-    <input class="search-in" id="searchIn" type="text" placeholder="Domaine ou pays (ex: hotmail, France, DE…)" readonly onfocus="this.removeAttribute('readonly')" inputmode="search">
+    <input class="search-in" id="searchIn" type="text" placeholder="Domaine ou pays (ex: hotmail, France, DE…)" inputmode="search">
+    <button class="search-close" id="searchClose" style="display:none">✕</button>
   </div>
   <div class="a4">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
@@ -1185,7 +1188,14 @@ $("cartBarInner").onclick=()=>goTo("cart");
 $("btnBack").onclick=()=>goTo("shop");
 $("btnAdminBack").onclick=()=>goTo("shop");
 $("btnAdmin").onclick=()=>goTo("admin");
-$("searchIn").addEventListener("input",e=>{query=e.target.value;showAll=!!e.target.value;renderCatalog();});
+// Search
+const searchWrap=document.querySelector(".search-wrap");
+const searchIn=$("searchIn");
+const searchClose=$("searchClose");
+searchIn.addEventListener("focus",()=>{searchWrap.classList.add("active");searchClose.style.display="flex";});
+searchIn.addEventListener("blur",()=>{if(!searchIn.value){searchWrap.classList.remove("active");searchClose.style.display="none";}});
+searchIn.addEventListener("input",e=>{query=e.target.value;showAll=!!e.target.value;renderCatalog();});
+searchClose.onclick=()=>{searchIn.value="";query="";showAll=false;renderCatalog();searchIn.blur();searchWrap.classList.remove("active");searchClose.style.display="none";};
 const sab=$("seeAllBtn");
 if(sab)sab.onclick=()=>{showAll=true;renderCatalog();};
 
