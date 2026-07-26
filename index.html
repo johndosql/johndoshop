@@ -1114,7 +1114,9 @@ function renderAdmin(){
       $("pwBtn").disabled=true;$("pwBtn").textContent="Connexion…";
       try{
         await auth.signInWithEmailAndPassword(email,pass);
-        adminOk=true;renderAdmin();
+        adminOk=true;
+        // Re-charger tous les users maintenant qu'on est authentifié
+        db.ref("users").once("value",s=>{users=s.val()||{};renderAdmin();});
       }catch(e){
         errEl.textContent="Email ou mot de passe incorrect.";
         errEl.style.display="block";
