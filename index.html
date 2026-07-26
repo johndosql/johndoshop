@@ -514,9 +514,9 @@ function initMe(){
     const tg=window.Telegram&&window.Telegram.WebApp;
     const u=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
     if(u&&u.id){
-      me={id:"u"+u.id,name:[u.first_name,u.last_name].filter(Boolean).join(" ")||"Utilisateur",handle:u.username?"@"+u.username:"",photo:u.photo_url||null};
+      me={id:"u"+u.id,tgId:u.id,name:[u.first_name,u.last_name].filter(Boolean).join(" ")||"Utilisateur",handle:u.username?"@"+u.username:"",photo:u.photo_url||null};
     } else {
-      me={id:"demo_"+Date.now(),name:"Invité",handle:"@accesmail",photo:null};
+      me={id:"demo_"+Date.now(),tgId:null,name:"Invité",handle:"@accesmail",photo:null};
     }
   }catch(e){me={id:"demo_1",name:"Invité",handle:"@accesmail",photo:null};}
   renderProfile();
@@ -620,12 +620,33 @@ async function deliverCreds(orderEntries){
     const cr=snap.val()||{};
     const keys=Object.keys(cr).slice(0,qty);
     for(const k of keys){
-      await db.ref("credentials/"+item.id+"/"+k+"/sold").set(true);
-      out.push({domain:item.domain,...cr[k]});
+      // Suppression définitive de Firebase après livraison
+      await db.ref("credentials/"+item.id+"/"+k).remove();
+      out.push({domain:item.domain,email:cr[k].email,pass:cr[k].pass});
     }
     await db.ref("products/"+item.id+"/stock").set(Math.max(0,Number(item.stock||0)-keys.length));
   }
   return out;
+}
+
+async function sendBotMessage(chatId,creds,total){
+  if(!chatId)return;
+  let msg=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\n`;
+  msg+=`Bonjour ${me.name.split(" ")[0]} 👋\n\n`;
+  msg+=`Voici tes accès :\n\n`;
+  creds.forEach(c=>{
+    msg+=`📧 <b>@${c.domain}</b>\n`;
+    msg+=`<code>${c.email}${c.pass?":"+c.pass:""}</code>\n\n`;
+  });
+  msg+=`💳 <b>Total payé :</b> ${fmt(total)}\n\n`;
+  msg+=`Merci pour ta confiance ! 🙏\nPour toute question, réponds à ce message.`;
+  try{
+    await fetch(VERCEL_API+"/api/send-message",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({chatId,text:msg})
+    });
+  }catch(e){console.error("Bot msg error:",e);}
 }
 function stopPoll(){if(pollInterval){clearInterval(pollInterval);pollInterval=null;}}
 function startPoll(pid,orderEntries){
@@ -648,7 +669,10 @@ function startPoll(pid,orderEntries){
       if(bar)bar.style.width=st.p+"%";
       if(d.payment_status==="confirmed"||d.payment_status==="finished"){
         stopPoll();haptic("medium");
-        const creds=await deliverCreds(orderEntries);
+        const savedEntries=[...orderEntries];
+        const savedTotal=savedEntries.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
+        const creds=await deliverCreds(savedEntries);
+        if(me.tgId)sendBotMessage(me.tgId,creds,savedTotal);
         cart={};renderCartBar();
         const ae=document.getElementById("npActive"),se=document.getElementById("npSuccess");
         if(ae)ae.style.display="none";
@@ -801,14 +825,20 @@ function swTab(t){
   ["pSolde","pCrypto"].forEach(id=>$(id).classList.toggle("on",id==="p"+t.charAt(0).toUpperCase()+t.slice(1)));
 }
 function doOrder(method){
+  const tot=cartTotal();
+  const savedEntries=entries();
   if(method==="balance"){
-    if(myBal<cartTotal()){toast("Solde insuffisant.");return;}
+    if(myBal<tot){toast("Solde insuffisant.");return;}
     if(fbOk&&me.id){
-      db.ref("users/"+me.id+"/balance").set(parseFloat((myBal-cartTotal()).toFixed(2)));
-      entries().forEach(({item,qty})=>db.ref("products/"+item.id+"/stock").set(Math.max(0,Number(item.stock||0)-qty)));
+      db.ref("users/"+me.id+"/balance").set(parseFloat((myBal-tot).toFixed(2)));
     }
-    toast("Paiement depuis ton solde — merci !");
-  } else { toast("Confirmation envoyée — paiement en vérification."); }
+    deliverCreds(savedEntries).then(creds=>{
+      if(me.tgId)sendBotMessage(me.tgId,creds,tot);
+    });
+    toast("Paiement effectué — tes accès arrivent dans le bot ! 🎉");
+  } else {
+    toast("Confirmation envoyée — paiement en vérification.");
+  }
   haptic("medium");cart={};renderCartBar();goTo("shop");
 }
 
@@ -880,7 +910,6 @@ function renderAdmin(){
       <button class="atab on" data-t="stock">📦 Stock</button>
       <button class="atab" data-t="catalogue">🗂 Catalogue</button>
       <button class="atab" data-t="users">👥 Clients</button>
-      <button class="atab" data-t="music">🎵 Musique</button>
     </div>
     <div id="adminPane"></div>
   `;
