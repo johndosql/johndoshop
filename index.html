@@ -807,7 +807,11 @@ function renderCartPage(){
     const desc=entries().map(e=>e.qty+"x @"+e.item.domain).join(", ");
     try{
       const payment=await createPayment(tot,orderId,desc);
-      if(payment.error||!payment.pay_address){toast("Erreur NOWPayments. Vérifie la config Vercel.");npBtn.disabled=false;npBtn.textContent="₿ Générer le paiement";return;}
+      if(payment.error||!payment.pay_address){
+        const errMsg=payment.error||payment.message||JSON.stringify(payment);
+        toast("NP: "+errMsg);
+        npBtn.disabled=false;npBtn.textContent="₿ Générer le paiement";return;
+      }
       $("npStart").style.display="none";$("npActive").style.display="block";
       $("npAddr").textContent=payment.pay_address;
       $("npAmt").textContent=payment.pay_amount+" USDT";
