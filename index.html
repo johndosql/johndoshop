@@ -434,7 +434,7 @@ const FIREBASE_CONFIG = {
   messagingSenderId:"457831162431",
   appId:"1:457831162431:web:89177714cad61411710e8a"
 };
-const ADMIN_PASSWORD = "changeMoi123";
+const ADMIN_PASSWORD = "Jd$7xK#2mP9@nQ4v";
 const CRYPTO_CONFIG = { network:"USDT (réseau TRC20)", address:"TA_VRAIE_ADRESSE_CRYPTO_ICI" };
 
 /* ============ PAYS DU MONDE (tous) ============ */
@@ -879,7 +879,22 @@ function renderAdmin(){
   if(!fbReady){el.innerHTML='<div class="banner">Firebase non connecté.</div>';return;}
   el.innerHTML=`
     <div style="margin-bottom:20px">
-      <p class="section-lbl">Ajouter un acces</p>
+      <p class="section-lbl">📂 Importer un catalogue TXT</p>
+      <div class="admin-card">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">
+          Colle ta liste de domaines ci-dessous. Un par ligne.<br>
+          <b>Format :</b> <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">domaine PAYS PRIX STOCK</code><br>
+          • Les extensions nationales (.fr .de .be .gr…) sont détectées <b>automatiquement</b><br>
+          • Pour .com .net .org : précise le pays (ex: <code style="background:var(--bg2);padding:2px 5px;border-radius:4px">hotmail.com FR 3.99 20</code>)<br>
+          • Sans pays pour un .com → ligne ignorée
+        </p>
+        <textarea class="field" id="txtImport" rows="8" placeholder="hotmail.com FR 3.99 25&#10;gmail.com US 4.49 30&#10;orange.fr 5.49 15&#10;web.de 4.99 10&#10;laposte.net FR 5.49 8" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px"></textarea>
+        <button class="btn" id="parseTxtBtn" style="width:100%;margin-top:4px">Analyser le catalogue</button>
+        <div id="parsePreview" style="margin-top:12px"></div>
+      </div>
+    </div>
+    <div style="margin-bottom:20px">
+      <p class="section-lbl">➕ Ajouter un acces manuellement</p>
       <div class="admin-card">
         <input class="field" id="nD" placeholder="Domaine (ex: hotmail.com)">
         <input class="field" id="nC" placeholder="Codes pays séparés par virgules (ex: FR,US,DE)">
@@ -887,12 +902,50 @@ function renderAdmin(){
         <button class="btn" id="addBtn" style="width:100%">Ajouter</button>
       </div>
     </div>
-    ${products.length===0?'<button class="btn" id="importBtn" style="width:100%;margin-bottom:16px">Importer le catalogue de départ</button>':""}
-    <p class="section-lbl">Catalogue (${products.length})</p>
+    ${products.length===0?'<button class="btn btn-flat" id="importBtn" style="width:100%;margin-bottom:16px">Importer le catalogue de démo</button>':""}
+    <p class="section-lbl">📦 Catalogue (${products.length})</p>
     <div id="aProd"></div>
-    <p class="section-lbl" style="margin-top:20px">Utilisateurs & Soldes</p>
+    <p class="section-lbl" style="margin-top:20px">👥 Utilisateurs & Soldes</p>
     <div id="aUsers"></div>
   `;
+  // Bouton analyse TXT
+  document.getElementById("parseTxtBtn").onclick = () => {
+    const txt = document.getElementById("txtImport").value.trim();
+    if(!txt){ showToast("Colle d'abord ton catalogue."); return; }
+    const {products: parsed, skipped} = parseTxt(txt);
+    const prev = document.getElementById("parsePreview");
+    if(!parsed.length){
+      prev.innerHTML = `<div class="banner" style="color:var(--danger);border-color:var(--danger);background:var(--danger-soft)">Aucun acces valide détecté. Vérifie le format.</div>`;
+      return;
+    }
+    let html = `<div class="banner">✅ ${parsed.length} acces détectés${skipped.length ? ` · ⚠️ ${skipped.length} ignorés` : ''}</div>`;
+    if(skipped.length){
+      html += `<div style="font-size:11px;color:var(--danger);margin-bottom:10px;line-height:1.7">Ignorés (pays manquant) :<br>${skipped.map(s=>'• '+s).join('<br>')}</div>`;
+    }
+    html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.8">`;
+    parsed.forEach(p => {
+      html += `• @${p.domain} — ${p.countries.join(', ')} — ${fmt(p.price)} — stock: ${p.stock}<br>`;
+    });
+    html += `</div>`;
+    html += `<button class="btn" id="confirmImportBtn" style="width:100%">✅ Confirmer l'import (${parsed.length} acces)</button>`;
+    prev.innerHTML = html;
+
+    document.getElementById("confirmImportBtn").onclick = () => {
+      if(!fbReady){ showToast("Firebase non connecté."); return; }
+      const updates = {};
+      parsed.forEach(p => {
+        const r = db.ref("products").push();
+        updates[r.key] = p;
+      });
+      db.ref("products").update(updates).then(() => {
+        showToast(`${parsed.length} acces importés avec succès !`);
+        document.getElementById("parsePreview").innerHTML = "";
+        document.getElementById("txtImport").value = "";
+      });
+    };
+  };
+
+  // Bouton démo
   const ib=document.getElementById("importBtn");
   if(ib)ib.onclick=()=>{
     const u={};
@@ -950,7 +1003,93 @@ function renderAdmin(){
   });
 }
 
-/* ============ INIT ============ */
+/* ============ IMPORT TXT ============ */
+const TLD_MAP = {
+  'fr':'FR','de':'DE','be':'BE','es':'ES','it':'IT','nl':'NL','pt':'PT',
+  'uk':'UK','gb':'UK','ru':'RU','cn':'CN','jp':'JP','br':'BR','au':'AU',
+  'ch':'CH','at':'AT','pl':'PL','cz':'CZ','sk':'SK','ro':'RO','gr':'GR',
+  'tr':'TR','se':'SE','no':'NO','dk':'DK','fi':'FI','hu':'HU','bg':'BG',
+  'hr':'HR','ua':'UA','in':'IN','mx':'MX','ar':'AR','cl':'CL','co':'CO',
+  'za':'ZA','ng':'NG','eg':'EG','ma':'MA','dz':'DZ','tn':'TN','sn':'SN',
+  'ci':'CI','cm':'CM','re':'RE','gp':'GP','mq':'MQ','id':'ID','sg':'SG',
+  'my':'MY','th':'TH','vn':'VN','ph':'PH','pk':'PK','bd':'BD','kr':'KR',
+  'tw':'TW','hk':'HK','nz':'NZ','me':'ME','rs':'RS','si':'SI','lt':'LT',
+  'lv':'LV','ee':'EE','mk':'MK','ba':'BA','al':'AL','ge':'GE','am':'AM',
+  'az':'AZ','kz':'KZ','uz':'UZ','by':'BY','md':'MD','ie':'IE','is':'IS',
+  'lu':'LU','li':'LI','mt':'MT','cy':'CY','il':'IL','sa':'SA','ae':'AE',
+  'qa':'QA','kw':'KW','bh':'BH','om':'OM','jo':'JO','lb':'LB','iq':'IQ',
+  'ir':'IR','ly':'LY','sd':'SD','ke':'KE','gh':'GH','tz':'TZ','ug':'UG',
+  'rw':'RW','et':'ET','ao':'AO','mz':'MZ','zm':'ZM','zw':'ZW','cd':'CD',
+  'pe':'PE','co':'CO','ve':'VE','ec':'EC','bo':'BO','py':'PY','uy':'UY',
+  'gt':'GT','cr':'CR','pa':'PA','do':'DO','cu':'CU','hn':'HN','ni':'NI',
+  'sv':'SV','lk':'LK','np':'NP','kh':'KH','mm':'MM','la':'LA','mn':'MN',
+  'af':'AF','iq':'IQ','sy':'SY','ye':'YE','ly':'LY','so':'SO','ml':'ML',
+  'bf':'BF','ne':'NE','td':'TD','mr':'MR','gn':'GN','sl':'SL','lr':'LR',
+  'gw':'GW','bj':'BJ','tg':'TG','ga':'GA','cg':'CG','bi':'BI','mw':'MW',
+  'ls':'LS','sz':'SZ','na':'NA','bw':'BW','mg':'MG','mu':'MU','sc':'SC',
+  'cv':'CV','km':'KM','st':'ST','gq':'GQ','dj':'DJ','er':'ER','so':'SO',
+  'yt':'YT','nc':'NC','pf':'PF','fj':'FJ','pg':'PG','vu':'VU','ws':'WS',
+  'to':'TO','ki':'KI','nr':'NR','tv':'TV','pw':'PW','fm':'FM','mh':'MH',
+  'nf':'AU','gu':'US','vi':'US','pr':'US','as':'US','mp':'US',
+  'gf':'FR','pm':'FR','tf':'FR','wf':'FR','bl':'FR','mf':'FR',
+  'ax':'FI','fo':'DK','gl':'DK','sj':'NO',
+  'gi':'UK','je':'UK','gg':'UK','im':'UK',
+  'ad':'AD','sm':'SM','va':'VA','mc':'MC',
+  'xk':'XK'
+};
+const GENERIC_TLDS = new Set(['com','net','org','info','biz','app','io','co','us','tv','me','pro','shop','store','online','site','web','mail']);
+
+function parseTxt(txt){
+  const grouped = {};
+  const skipped = [];
+  const lines = txt.split('\n');
+
+  lines.forEach(raw => {
+    const line = raw.trim();
+    if(!line || line.startsWith('#') || line.startsWith('//')) return;
+
+    // Nettoie si c'est une adresse email complète (on ne garde que le domaine)
+    const domainRaw = line.includes('@') ? line.split('@')[1].split(/[\s,|;]+/)[0] : line.split(/[\s,|;]+/)[0];
+    const domain = domainRaw.toLowerCase().trim();
+    if(!domain || !domain.includes('.')) return;
+
+    const parts = line.replace(domainRaw,'').trim().split(/[\s,|;]+/).filter(Boolean);
+    const tld = domain.split('.').pop();
+
+    // Détection auto du pays via TLD
+    let country = TLD_MAP[tld] || null;
+
+    // Cherche un code pays explicite dans les autres tokens (ex: FR, US...)
+    let price = null, stock = null;
+    parts.forEach(p => {
+      const up = p.toUpperCase();
+      if(/^[A-Z]{2,3}$/.test(up) && !country && isNaN(p)) country = up;
+      else if(!isNaN(parseFloat(p)) && parseFloat(p) < 200 && p.includes('.')) price = parseFloat(p);
+      else if(!isNaN(parseInt(p)) && !p.includes('.') && parseInt(p) > 0) stock = parseInt(p);
+    });
+
+    // Si TLD générique et pas de pays → on ignore
+    if(!country && GENERIC_TLDS.has(tld)){
+      skipped.push(domain + ' (pays non détecté, à préciser)');
+      return;
+    }
+    if(!country){ country = tld.toUpperCase(); }
+
+    const key = domain;
+    if(!grouped[key]){
+      grouped[key] = { domain, countries:[], price: price||3.99, stock: 0 };
+    }
+    if(!grouped[key].countries.includes(country)){
+      grouped[key].countries.push(country);
+    }
+    grouped[key].stock += stock||10;
+    if(price) grouped[key].price = price;
+  });
+
+  return { products: Object.values(grouped), skipped };
+}
+
+
 initMe();
 loadProducts();
 renderCartBar();
