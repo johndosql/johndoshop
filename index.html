@@ -1123,8 +1123,8 @@ function renderAdmin(){
     else if(t==="users"){
       pane.innerHTML='<div id="aUsers"></div>';
       const au=$("aUsers");
-      // Filtre uniquement les vrais utilisateurs Telegram (pas les sessions demo)
-      const ua=Object.entries(users).filter(([uid,u])=>uid.startsWith("u")&&u.tgId&&u.name&&u.name!=="Invité");
+      // Affiche tous les utilisateurs avec une clé Telegram valide (u + chiffres)
+      const ua=Object.entries(users).filter(([uid,u])=>/^u\d+$/.test(uid)&&u.name);
       if(!ua.length){au.innerHTML='<p style="text-align:center;color:var(--muted);padding:24px 0">Aucun client Telegram enregistré.<br><span style="font-size:11px">Les clients apparaissent après leur première ouverture du bot.</span></p>';}
       else ua.forEach(([uid,u])=>{
         const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
@@ -1182,8 +1182,8 @@ function renderAdmin(){
         });
       };
 
-      // BROADCAST - uniquement les vrais utilisateurs Telegram
-      const tgIds=Object.entries(users).filter(([uid,u])=>uid.startsWith("u")&&u.tgId&&u.name!=="Invité").map(([,u])=>u.tgId);
+      // BROADCAST - tous les vrais utilisateurs Telegram avec un tgId
+      const tgIds=Object.entries(users).filter(([uid,u])=>/^u\d+$/.test(uid)&&u.tgId).map(([,u])=>u.tgId);
       const broadcastSection=document.createElement("div");
       broadcastSection.className="a-card";
       broadcastSection.style.marginTop="0";
