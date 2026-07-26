@@ -874,202 +874,190 @@ function renderAdmin(){
   }
   if(!fbOk){el.innerHTML='<div class="banner">Firebase non connecté.</div>';return;}
 
+  let activeTab="stock";
   el.innerHTML=`
-  <!-- MUSIC -->
-  <p class="sl-lbl">🎵 Musique d'ambiance</p>
-  <div class="a-card">
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">
-      Entre l'URL d'un fichier MP3 ou d'un flux audio (radio, SoundCloud direct…).<br>
-      Elle sera jouée en fond pour tous les visiteurs de la boutique.
-    </p>
-    <input class="field" id="musicUrlIn" placeholder="https://... (url mp3 ou stream)">
-    <input class="field" id="musicTitleIn" placeholder="Nom affiché (ex: Lofi Chill)">
-    <div style="display:flex;gap:8px">
-      <button class="btn" id="saveMusicBtn" style="flex:1">Définir</button>
-      <button class="btn btn-danger" id="delMusicBtn" style="flex:0 0 auto;padding:10px 14px">✕</button>
+    <div style="display:flex;gap:6px;margin-bottom:16px" id="adminTabs">
+      <button class="atab on" data-t="stock">📦 Stock</button>
+      <button class="atab" data-t="catalogue">🗂 Catalogue</button>
+      <button class="atab" data-t="users">👥 Clients</button>
+      <button class="atab" data-t="music">🎵 Musique</button>
     </div>
-    <div id="curMusic" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
-  </div>
-
-  <!-- IMPORT -->
-  <p class="sl-lbl">📂 Importer mail:pass</p>
-  <div class="a-card">
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.7">
-      Colle ton fichier brut. Un compte par ligne.<br>
-      <b>Format :</b> <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:motdepasse</code><br>
-      • Extension nationale (.fr .de .be .gr…) → pays auto-détecté<br>
-      • .com / .net / .org → regroupés en <b>🌍 MIX</b><br>
-      • Doublons supprimés automatiquement · Prix fixé à ${PRICE_BASE}€
-    </p>
-    <input type="file" accept=".txt" id="fileImp" style="display:none">
-    <button class="btn btn-flat" id="fileBtn" style="width:100%;margin-bottom:8px">📁 Choisir un fichier .txt</button>
-    <textarea class="field" id="txtImp" rows="7"
-      placeholder="user1@hotmail.com:pass1&#10;user2@orange.fr:pass2&#10;user3@web.de:pass3"
-      style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea>
-    <button class="btn" id="parseBtn" style="width:100%;margin-top:6px">🔍 Analyser</button>
-    <div id="parsePrev" style="margin-top:10px"></div>
-  </div>
-
-  <!-- ADD MANUAL -->
-  <p class="sl-lbl">➕ Ajouter manuellement</p>
-  <div class="a-card">
-    <input class="field" id="nD" placeholder="Domaine (ex: hotmail.com)">
-    <input class="field" id="nC" placeholder="Pays séparés par virgules (ex: FR,US)">
-    <div style="display:flex;gap:8px">
-      <input class="field" id="nP" type="number" step="0.01" value="4" placeholder="Prix">
-      <input class="field" id="nS" type="number" placeholder="Stock">
-    </div>
-    <button class="btn" id="addBtn" style="width:100%">Ajouter</button>
-  </div>
-
-  ${prods.length===0?"":`<button class="btn btn-danger" id="clearBtn" style="width:100%;margin-bottom:16px">🗑 Vider tout le catalogue</button>`}
-
-  <p class="sl-lbl">📦 Catalogue (${prods.length})</p>
-  <div id="aProd"></div>
-
-  <p class="sl-lbl" style="margin-top:20px">👥 Utilisateurs (${Object.keys(users).length})</p>
-  <div id="aUsers"></div>
+    <div id="adminPane"></div>
   `;
 
-  // Music
-  db.ref("settings/music").once("value",s=>{
-    const m=s.val();
-    if(m&&m.url){
-      $("curMusic").textContent="Actuelle : "+(m.title||m.url);
-      $("musicUrlIn").value=m.url;
-      $("musicTitleIn").value=m.title||"";
+  const style=document.createElement("style");
+  style.textContent=`.atab{flex:1;padding:9px 4px;font-size:12px;font-weight:600;border-radius:10px;background:var(--surface);border:1px solid var(--line);color:var(--muted);cursor:pointer;transition:all .15s}.atab.on{background:var(--soft);border-color:var(--accent);color:var(--accent)}`;
+  el.appendChild(style);
+
+  function showTab(t){
+    activeTab=t;
+    el.querySelectorAll(".atab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+    const pane=$("adminPane");
+
+    if(t==="stock"){
+      pane.innerHTML=`
+        <div class="a-card">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.7">
+            Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>
+            Extensions nationales détectées auto · .com/.net → 🌍 MIX · Doublons supprimés · Prix 4€
+          </p>
+          <input type="file" accept=".txt" id="fileImp" style="display:none">
+          <button class="btn btn-flat" id="fileBtn" style="width:100%;margin-bottom:8px">📁 Choisir un fichier .txt</button>
+          <textarea class="field" id="txtImp" rows="6" placeholder="user@hotmail.com:pass1&#10;user@orange.fr:pass2" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn" id="parseBtn" style="flex:1">🔍 Analyser</button>
+            <button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer tout</button>
+          </div>
+          <div id="parsePrev" style="margin-top:10px"></div>
+        </div>
+      `;
+      const fileBtn=$("fileBtn"),fileImp=$("fileImp");
+      fileBtn.onclick=()=>fileImp.click();
+      fileImp.onchange=e=>{
+        const file=e.target.files[0];if(!file)return;
+        fileBtn.textContent="⏳ Lecture…";
+        const reader=new FileReader();
+        reader.onload=ev=>{$("txtImp").value=ev.target.result;fileBtn.textContent="✅ "+file.name;$("parseBtn").click();};
+        reader.onerror=()=>{toast("Erreur de lecture.");fileBtn.textContent="📁 Choisir un fichier .txt";};
+        reader.readAsText(file,"UTF-8");fileImp.value="";
+      };
+      function doAnalyse(replaceMode){
+        const txt=$("txtImp").value.trim();
+        if(!txt){toast("Choisis un fichier d'abord.");return;}
+        const{groups,dupes,invalid,total:tot}=parseMailPass(txt);
+        const prev=$("parsePrev");
+        if(!groups.length){prev.innerHTML='<div class="banner warn">Aucun compte valide.</div>';return;}
+        let h=`<div class="banner">✅ <b>${tot}</b> comptes`;
+        if(dupes)h+=` · ⚠ <b>${dupes}</b> doublons`;
+        if(invalid)h+=` · ❌ <b>${invalid}</b> invalides`;
+        h+='</div>';
+        h+='<div style="font-size:12px;color:var(--muted);background:var(--bg2);padding:10px 12px;border-radius:10px;margin-bottom:10px;line-height:1.9">';
+        groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});
+        h+='</div>';
+        const label=replaceMode?`🔄 Vider + importer ${tot} comptes`:`✅ Importer ${tot} comptes`;
+        h+=`<button class="btn" id="confirmImp" style="width:100%">${label}</button>`;
+        prev.innerHTML=h;
+        $("confirmImp").onclick=()=>{
+          $("confirmImp").disabled=true;$("confirmImp").textContent="Import en cours…";
+          const doImport=()=>importMailPass(groups).then(()=>{
+            toast("✅ "+tot+" comptes importés !");
+            $("parsePrev").innerHTML="";$("txtImp").value="";
+            fileBtn.textContent="📁 Choisir un fichier .txt";
+          }).catch(e=>toast("Erreur : "+e.message));
+          if(replaceMode){
+            db.ref("products").remove().then(()=>db.ref("credentials").remove()).then(doImport);
+          } else { doImport(); }
+        };
+      }
+      $("parseBtn").onclick=()=>doAnalyse(false);
+      $("replaceBtn").onclick=()=>{
+        if(confirm("⚠️ Vider tout le catalogue actuel et le remplacer par ce fichier ?"))doAnalyse(true);
+      };
     }
-  });
-  $("saveMusicBtn").onclick=()=>{
-    const url=$("musicUrlIn").value.trim(),title=$("musicTitleIn").value.trim();
-    if(!url){toast("Entre une URL.");return;}
-    db.ref("settings/music").set({url,title}).then(()=>{
-      toast("Musique définie !");initMusic(url,title);
-      $("curMusic").textContent="Actuelle : "+(title||url);
-    });
-  };
-  $("delMusicBtn").onclick=()=>{
-    db.ref("settings/music").remove().then(()=>{
-      if(audioEl){audioEl.pause();musicPlaying=false;}
-      $("musicBar").classList.remove("show");
-      $("curMusic").textContent="";toast("Musique supprimée.");
-    });
-  };
 
-  // Vider catalogue
-  const clearBtn=$("clearBtn");
-  if(clearBtn)clearBtn.onclick=()=>{
-    if(!confirm("⚠️ Supprimer TOUS les produits du catalogue ? Cette action est irréversible."))return;
-    db.ref("products").remove().then(()=>{
-      db.ref("credentials").remove();
-      toast("✅ Catalogue vidé. Importe ton vrai fichier maintenant.");
-    });
-  };
+    else if(t==="catalogue"){
+      pane.innerHTML=`
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button class="btn btn-danger" id="clearBtn" style="flex:1">🗑 Tout supprimer</button>
+        </div>
+        <div class="a-card" style="margin-bottom:14px">
+          <p class="a-title">➕ Ajouter manuellement</p>
+          <input class="field" id="nD" placeholder="Domaine (ex: hotmail.com)">
+          <input class="field" id="nC" placeholder="Pays (ex: FR,US,DE)">
+          <div style="display:flex;gap:8px"><input class="field" id="nP" type="number" step="0.01" value="4" placeholder="Prix"><input class="field" id="nS" type="number" placeholder="Stock"></div>
+          <button class="btn" id="addBtn" style="width:100%">Ajouter</button>
+        </div>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Produits (${prods.length})</p>
+        <div id="aProd"></div>
+      `;
+      $("clearBtn").onclick=()=>{
+        if(!confirm("⚠️ Supprimer TOUS les produits ?"))return;
+        db.ref("products").remove().then(()=>{db.ref("credentials").remove();toast("Catalogue vidé.");});
+      };
+      $("addBtn").onclick=()=>{
+        const dom=$("nD").value.trim(),ctry=$("nC").value.split(",").map(c=>c.trim().toUpperCase()).filter(Boolean);
+        const price=parseFloat($("nP").value)||PRICE_BASE,stock=parseInt($("nS").value);
+        if(!dom||!ctry.length||isNaN(stock)){toast("Remplis tous les champs.");return;}
+        db.ref("products").push({domain:dom,countries:ctry,price,stock}).then(()=>{
+          toast("Ajouté !");["nD","nC","nS"].forEach(id=>$(id).value="");$("nP").value="4";
+        });
+      };
+      const ap=$("aProd");
+      if(!prods.length){ap.innerHTML='<p style="text-align:center;color:var(--muted);padding:20px 0">Catalogue vide.</p>';}
+      prods.forEach(p=>{
+        const row=document.createElement("div");row.className="a-card";
+        row.innerHTML=`<div class="a-title">@${p.domain} <span style="font-size:11px;color:var(--muted)">${(p.countries||[]).join(",")} · stock: ${p.stock}</span></div>
+          <div class="a-row"><label>Pays</label><input class="field" value="${(p.countries||[]).join(",")}" data-f="c"></div>
+          <div class="a-row"><label>Prix</label><input class="field" type="number" step="0.01" value="${p.price}" data-f="p"></div>
+          <div class="a-row"><label>Stock</label><input class="field" type="number" value="${p.stock}" data-f="s"></div>
+          <div class="a-acts">
+            <button class="btn" data-a="save">Sauvegarder</button>
+            <button class="btn btn-danger" data-a="del">Supprimer</button>
+          </div>`;
+        row.querySelector('[data-a="save"]').onclick=()=>{
+          const c=row.querySelector('[data-f="c"]').value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);
+          const pr=parseFloat(row.querySelector('[data-f="p"]').value),st=parseInt(row.querySelector('[data-f="s"]').value);
+          db.ref("products/"+p.id).update({countries:c,price:pr,stock:st}).then(()=>toast("Mis à jour."));
+        };
+        row.querySelector('[data-a="del"]').onclick=()=>{
+          if(confirm("Supprimer @"+p.domain+" ?"))db.ref("products/"+p.id).remove().then(()=>toast("Supprimé."));
+        };
+        ap.appendChild(row);
+      });
+    }
 
-  // Parse mail:pass
-  const fileBtn=$("fileBtn"),fileImp=$("fileImp");
-  fileBtn.onclick=()=>fileImp.click();
-  fileImp.onchange=e=>{
-    const file=e.target.files[0];
-    if(!file)return;
-    fileBtn.textContent="⏳ Lecture…";
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      $("txtImp").value=ev.target.result;
-      fileBtn.textContent="✅ "+file.name;
-      $("parseBtn").click();
-    };
-    reader.onerror=()=>{toast("Erreur de lecture.");fileBtn.textContent="📁 Choisir un fichier .txt";};
-    reader.readAsText(file,"UTF-8");
-    fileImp.value="";
-  };
+    else if(t==="users"){
+      pane.innerHTML='<div id="aUsers"></div>';
+      const au=$("aUsers"),ua=Object.entries(users);
+      if(!ua.length){au.innerHTML='<p style="text-align:center;color:var(--muted);padding:24px 0">Aucun client.</p>';}
+      else ua.forEach(([uid,u])=>{
+        const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
+        const row=document.createElement("div");row.className="u-row";
+        row.innerHTML=`<div class="u-av">${ini}</div>
+          <div><div class="u-name">${u.name||"Inconnu"}</div><div class="u-bal">${fmt(u.balance||0)}</div></div>
+          <div class="u-act"><button class="sm-btn" data-uid="${uid}">+ Solde</button></div>`;
+        row.querySelector(".sm-btn").onclick=()=>{
+          const amt=parseFloat(prompt("Montant à créditer :"));
+          if(isNaN(amt)||amt<=0){toast("Montant invalide.");return;}
+          db.ref("users/"+uid+"/balance").set(parseFloat(((u.balance||0)+amt).toFixed(2))).then(()=>toast(fmt(amt)+" crédités à "+u.name+"."));
+        };
+        au.appendChild(row);
+      });
+    }
 
-  $("parseBtn").onclick=()=>{
-    const txt=$("txtImp").value.trim();
-    if(!txt){toast("Colle ton fichier d'abord.");return;}
-    const{groups,dupes,invalid,total:tot}=parseMailPass(txt);
-    const prev=$("parsePrev");
-    if(!groups.length){prev.innerHTML='<div class="banner warn">Aucun compte valide.</div>';return;}
-    let h=`<div class="banner">✅ <b>${tot}</b> comptes valides`;
-    if(dupes)h+=` · ⚠ <b>${dupes}</b> doublons supprimés`;
-    if(invalid)h+=` · ❌ <b>${invalid}</b> lignes invalides`;
-    h+='</div>';
-    h+='<div style="font-size:12px;color:var(--muted);background:var(--bg2);padding:10px 12px;border-radius:10px;margin-bottom:10px;line-height:1.9">';
-    groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});
-    h+='</div>';
-    h+=`<button class="btn" id="confirmImp" style="width:100%">✅ Importer ${tot} comptes</button>`;
-    prev.innerHTML=h;
-    $("confirmImp").onclick=()=>{
-      $("confirmImp").disabled=true;$("confirmImp").textContent="Import en cours…";
-      importMailPass(groups).then(()=>{
-        toast("✅ "+tot+" comptes importés !");
-        $("parsePrev").innerHTML="";$("txtImp").value="";
-      }).catch(e=>toast("Erreur : "+e.message));
-    };
-  };
+    else if(t==="music"){
+      pane.innerHTML=`
+        <div class="a-card">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">URL d'un fichier MP3 ou flux audio. Jouée en fond pour tous les visiteurs.</p>
+          <input class="field" id="musicUrlIn" placeholder="https://... (url mp3 ou stream)">
+          <input class="field" id="musicTitleIn" placeholder="Nom affiché (ex: Lofi Chill)">
+          <div style="display:flex;gap:8px">
+            <button class="btn" id="saveMusicBtn" style="flex:1">Définir</button>
+            <button class="btn btn-danger" id="delMusicBtn" style="flex:0 0 auto;padding:10px 14px">✕ Supprimer</button>
+          </div>
+          <div id="curMusic" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+        </div>
+      `;
+      db.ref("settings/music").once("value",s=>{
+        const m=s.val();
+        if(m&&m.url){$("curMusic").textContent="Actuelle : "+(m.title||m.url);$("musicUrlIn").value=m.url;$("musicTitleIn").value=m.title||"";}
+      });
+      $("saveMusicBtn").onclick=()=>{
+        const url=$("musicUrlIn").value.trim(),title=$("musicTitleIn").value.trim();
+        if(!url){toast("Entre une URL.");return;}
+        db.ref("settings/music").set({url,title}).then(()=>{toast("Musique définie !");initMusic(url,title);$("curMusic").textContent="Actuelle : "+(title||url);});
+      };
+      $("delMusicBtn").onclick=()=>{
+        db.ref("settings/music").remove().then(()=>{
+          if(audioEl){audioEl.pause();musicPlaying=false;}$("musicBar").classList.remove("show");
+          $("curMusic").textContent="";toast("Musique supprimée.");
+        });
+      };
+    }
+  }
 
-  // Add manual
-  $("addBtn").onclick=()=>{
-    const dom=$("nD").value.trim();
-    const ctry=$("nC").value.split(",").map(c=>c.trim().toUpperCase()).filter(Boolean);
-    const price=parseFloat($("nP").value)||PRICE_BASE;
-    const stock=parseInt($("nS").value);
-    if(!dom||!ctry.length||isNaN(stock)){toast("Remplis tous les champs.");return;}
-    db.ref("products").push({domain:dom,countries:ctry,price,stock}).then(()=>{
-      toast("Acces ajouté !");
-      ["nD","nC","nS"].forEach(id=>$(id).value="");$("nP").value="4";
-    });
-  };
-
-  // Demo import
-  const id=$("impDemo");
-  if(id)id.onclick=()=>{
-    const u={};SEED.forEach(p=>{const r=db.ref("products").push();u[r.key]=p;});
-    db.ref("products").update(u).then(()=>toast("Démo importée."));
-  };
-
-  // Products list
-  const ap=$("aProd");
-  prods.forEach(p=>{
-    const row=document.createElement("div");row.className="a-card";
-    row.innerHTML=`<div class="a-title">@${p.domain}</div>
-      <div class="a-row"><label>Pays</label><input class="field" value="${(p.countries||[]).join(",")}" data-f="c"></div>
-      <div class="a-row"><label>Prix</label><input class="field" type="number" step="0.01" value="${p.price}" data-f="p"></div>
-      <div class="a-row"><label>Stock</label><input class="field" type="number" value="${p.stock}" data-f="s"></div>
-      <div class="a-acts">
-        <button class="btn" data-a="save">Enregistrer</button>
-        <button class="btn btn-danger" data-a="del">Supprimer</button>
-      </div>`;
-    row.querySelector('[data-a="save"]').onclick=()=>{
-      const c=row.querySelector('[data-f="c"]').value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);
-      const pr=parseFloat(row.querySelector('[data-f="p"]').value);
-      const st=parseInt(row.querySelector('[data-f="s"]').value);
-      db.ref("products/"+p.id).update({countries:c,price:pr,stock:st}).then(()=>toast("Mis à jour."));
-    };
-    row.querySelector('[data-a="del"]').onclick=()=>{
-      if(confirm("Supprimer @"+p.domain+" ?"))db.ref("products/"+p.id).remove().then(()=>toast("Supprimé."));
-    };
-    ap.appendChild(row);
-  });
-
-  // Users
-  const au=$("aUsers");
-  const ua=Object.entries(users);
-  if(!ua.length){au.innerHTML='<p style="text-align:center;color:var(--muted);padding:16px 0">Aucun utilisateur.</p>';}
-  else ua.forEach(([uid,u])=>{
-    const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);
-    const row=document.createElement("div");row.className="u-row";
-    row.innerHTML=`<div class="u-av">${ini}</div>
-      <div><div class="u-name">${u.name||"Inconnu"}</div><div class="u-bal">${fmt(u.balance||0)}</div></div>
-      <div class="u-act"><button class="sm-btn" data-uid="${uid}">+ Solde</button></div>`;
-    row.querySelector(".sm-btn").onclick=()=>{
-      const amt=parseFloat(prompt("Montant à créditer :"));
-      if(isNaN(amt)||amt<=0){toast("Montant invalide.");return;}
-      db.ref("users/"+uid+"/balance").set(parseFloat(((u.balance||0)+amt).toFixed(2)))
-        .then(()=>toast(fmt(amt)+" crédités à "+u.name+"."));
-    };
-    au.appendChild(row);
-  });
+  el.querySelectorAll(".atab").forEach(b=>b.onclick=()=>showTab(b.dataset.t));
+  showTab("stock");
 }
 
 /* ============ INIT ============ */
