@@ -635,6 +635,10 @@ function initMe(){
   av.innerHTML=me.photo?`<img src="${me.photo}" alt=""><div class="av-ring"></div>`:`<div class="av-ring"></div>${ini}`;
   $("pName").textContent=me.name;$("pHandle").textContent=me.handle||"ACCESMAIL";
   if(fbOk&&me.id){
+    // Connexion anonyme Firebase pour autoriser la lecture des credentials
+    if(auth&&!auth.currentUser){
+      auth.signInAnonymously().catch(e=>console.error("Anon auth:",e));
+    }
     db.ref("users/"+me.id+"/name").set(me.name);
     db.ref("users/"+me.id+"/handle").set(me.handle);
     if(me.tgId)db.ref("users/"+me.id+"/tgId").set(me.tgId);
