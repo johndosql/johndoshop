@@ -903,20 +903,46 @@ if(sab)sab.onclick=()=>{showAll=true;renderCatalog();};
 function parseMailPass(txt){
   const lines=txt.split("\n").map(l=>l.trim()).filter(l=>l&&l.includes("@"));
   const seen=new Set();const grouped={};let dupes=0,invalid=0;
+
   lines.forEach(line=>{
-    const sep=line.indexOf(":");
-    const email=(sep>-1?line.slice(0,sep):line).trim().toLowerCase();
-    const pass=sep>-1?line.slice(sep+1).trim():"";
-    if(!email.includes("@")||!email.includes(".")){invalid++;return;}
+    let email="",pass="",country=null;
+
+    // Format pipe: Data = email:pass | Country = XX | ...
+    if(line.includes("Data =")&&line.includes("|")){
+      const dataMatch=line.match(/Data\s*=\s*([^\s|]+)/);
+      const countryMatch=line.match(/Country\s*=\s*([A-Z]{2})/);
+      if(dataMatch){
+        const raw=dataMatch[1].trim();
+        const sep=raw.indexOf(":");
+        email=sep>-1?raw.slice(0,sep).toLowerCase():raw.toLowerCase();
+        pass=sep>-1?raw.slice(sep+1):"";
+      }
+      if(countryMatch)country=countryMatch[1].toUpperCase();
+    } else {
+      // Format simple: email:pass
+      const sep=line.indexOf(":");
+      email=(sep>-1?line.slice(0,sep):line).trim().toLowerCase();
+      pass=sep>-1?line.slice(sep+1).trim():"";
+    }
+
+    if(!email||!email.includes("@")||!email.includes(".")){invalid++;return;}
     if(seen.has(email)){dupes++;return;}
     seen.add(email);
-    const domain=email.split("@")[1],tld=domain.split(".").pop().toLowerCase();
-    let country=TMAP[tld]||null;
-    if(!country)country=GENERIC.has(tld)?"MIX":tld.toUpperCase();
+
+    // Si pas de Country dans le pipe, détecter via TLD
+    if(!country){
+      const domain=email.split("@")[1];
+      const tld=domain.split(".").pop().toLowerCase();
+      country=TMAP[tld]||null;
+      if(!country)country=GENERIC.has(tld)?"MIX":tld.toUpperCase();
+    }
+
+    const domain=email.split("@")[1];
     const key=domain+"||"+country;
     if(!grouped[key])grouped[key]={domain,country,accounts:[]};
     grouped[key].accounts.push({email,pass});
   });
+
   return{groups:Object.values(grouped),dupes,invalid,total:seen.size};
 }
 function importMailPass(groups){
