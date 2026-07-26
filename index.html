@@ -37,6 +37,19 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
 #cv{position:fixed;inset:0;z-index:0;pointer-events:none;}
 
 .screen{position:relative;z-index:1;max-width:460px;margin:0 auto;min-height:100vh;padding:14px 14px 120px;}
+@media(max-width:360px){
+  .screen{padding:10px 10px 110px;}
+  .wordmark{font-size:1.8rem;}
+  .catalog{grid-template-columns:1fr 1fr;gap:7px;}
+  .card{padding:11px 10px;}
+  .c-price{font-size:15px;}
+  .btn-add{width:32px;height:32px;}
+  .ci{min-width:60px;max-width:60px;padding:8px 6px;}
+  .ci-flag{font-size:22px;}
+}
+@media(min-width:420px){
+  .catalog{gap:11px;}
+}
 .screen.off{display:none!important;}
 
 /* ANIMATIONS */
@@ -175,7 +188,27 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
 .wts-sep{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);padding:0 16px;flex:0 0 auto;}
 @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-/* CART BAR */
+.open-picker-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);background:none;border:none;cursor:pointer;padding:0;}
+
+/* COUNTRY PICKER */
+.cp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:30;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(4px);}
+.cp-overlay.show{opacity:1;pointer-events:auto;}
+.cp-sheet{position:fixed;left:0;right:0;bottom:0;max-height:82vh;background:var(--sf);border-radius:22px 22px 0 0;z-index:31;transform:translateY(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;padding:0 14px calc(20px + env(safe-area-inset-bottom));}
+.cp-sheet.show{transform:translateY(0);}
+.cp-handle{width:38px;height:4px;background:var(--line);border-radius:2px;margin:12px auto 14px;flex:0 0 auto;}
+.cp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex:0 0 auto;}
+.cp-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;}
+.cp-close{background:var(--bg2);border:1px solid var(--line);width:32px;height:32px;border-radius:9px;cursor:pointer;color:var(--muted);font-size:15px;transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.cp-close:active{transform:scale(.85);}
+.cp-search-wrap{position:relative;margin-bottom:12px;flex:0 0 auto;}
+.cp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:10px;}
+.cp-item{display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--bg2);border:1.5px solid var(--line);border-radius:13px;padding:13px 6px;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);text-align:center;animation:pop .25s cubic-bezier(.34,1.56,.64,1) both;}
+.cp-item:active{transform:scale(.88);}
+.cp-item.on{background:var(--soft);border-color:var(--ac);}
+.cp-flag{font-size:28px;line-height:1;}
+.cp-name{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:90%;font-weight:500;}
+.cp-item.on .cp-name{color:var(--ac);font-weight:700;}
+.cp-empty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:13px;padding:30px 0;}
 .cart-bar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;
   padding:10px 14px calc(10px + env(safe-area-inset-bottom));
   background:linear-gradient(to top,var(--bg) 55%,transparent);
@@ -347,11 +380,29 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
   </div>
   <div class="search-wrap a4">
     <span class="search-ico">⌕</span>
-    <input class="search-in" id="searchIn" type="text" placeholder="Rechercher (ex: hotmail, orange, outlook…)">
+    <input class="search-in" id="searchIn" type="text" placeholder="Domaine ou pays (ex: hotmail, France, DE…)">
   </div>
   <div class="a4">
-    <p class="sec-lbl">Pays</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+      <p class="sec-lbl" style="margin-bottom:0">Pays</p>
+      <button class="open-picker-btn" id="openPicker">Voir tous les pays →</button>
+    </div>
     <div class="cw"><div class="carousel" id="carousel"></div></div>
+  </div>
+
+  <!-- COUNTRY PICKER SHEET -->
+  <div class="cp-overlay" id="cpOverlay"></div>
+  <div class="cp-sheet" id="cpSheet">
+    <div class="cp-handle"></div>
+    <div class="cp-header">
+      <span class="cp-title">Choisir un pays</span>
+      <button class="cp-close" id="cpClose">✕</button>
+    </div>
+    <div class="cp-search-wrap">
+      <span class="search-ico">⌕</span>
+      <input class="search-in" id="cpSearch" type="text" placeholder="Rechercher un pays…" style="padding-left:42px">
+    </div>
+    <div class="cp-grid" id="cpGrid"></div>
   </div>
   <div class="a5">
     <div class="catalog-header">
@@ -643,10 +694,18 @@ function renderCarousel(){
 
 function filtered(){
   const q=query.trim().toLowerCase();
-  return prods.filter(p=>
-    (q===""||p.domain.toLowerCase().includes(q))&&
-    (activeC==="all"||(p.countries||[]).includes(activeC))
-  );
+  return prods.filter(p=>{
+    // Filtre carousel pays
+    if(activeC!=="all"&&!(p.countries||[]).includes(activeC))return false;
+    if(!q)return true;
+    // Cherche par domaine
+    if(p.domain.toLowerCase().includes(q))return true;
+    // Cherche par nom de pays ou code pays
+    return(p.countries||[]).some(c=>{
+      const name=cName(c).toLowerCase();
+      return c.toLowerCase().includes(q)||name.includes(q);
+    });
+  });
 }
 
 function renderCatalog(){
@@ -929,6 +988,44 @@ function goTo(page){
   if(page==="cart")renderCartPage();
   if(page==="admin")renderAdmin();
 }
+
+/* COUNTRY PICKER */
+function openPicker(){
+  renderPickerGrid("");
+  $("cpOverlay").classList.add("show");
+  $("cpSheet").classList.add("show");
+  $("cpSearch").value="";
+  setTimeout(()=>$("cpSearch").focus(),300);
+}
+function closePicker(){
+  $("cpOverlay").classList.remove("show");
+  $("cpSheet").classList.remove("show");
+}
+function renderPickerGrid(q){
+  const codes=activeCodes();
+  const all=[{c:"all",n:"Tous les pays"},...ALL_C.filter(x=>codes.has(x.c))];
+  const filtered=q?all.filter(c=>c.n.toLowerCase().includes(q.toLowerCase())||c.c.toLowerCase().includes(q.toLowerCase())):all;
+  const grid=$("cpGrid");
+  grid.innerHTML="";
+  if(!filtered.length){grid.innerHTML='<p class="cp-empty">Aucun pays trouvé</p>';return;}
+  filtered.forEach((cty,i)=>{
+    const item=document.createElement("div");
+    item.className="cp-item"+(activeC===cty.c?" on":"");
+    item.style.animationDelay=(i*.02)+"s";
+    item.innerHTML=`<div class="cp-flag">${cty.c==="all"?"🌍":flag(cty.c)}</div><div class="cp-name">${cty.n}</div>`;
+    item.onclick=()=>{
+      activeC=cty.c;
+      closePicker();
+      renderCarousel();
+      renderCatalog();
+    };
+    grid.appendChild(item);
+  });
+}
+$("openPicker").onclick=openPicker;
+$("cpClose").onclick=closePicker;
+$("cpOverlay").onclick=closePicker;
+$("cpSearch").addEventListener("input",e=>renderPickerGrid(e.target.value));
 $("cartBarInner").onclick=()=>goTo("cart");
 $("btnBack").onclick=()=>goTo("shop");
 $("btnAdminBack").onclick=()=>goTo("shop");
