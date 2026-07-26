@@ -553,7 +553,7 @@ function loadProds(){
 }
 
 /* ============ CAROUSEL ============ */
-function activeCodes(){const s=new Set();prods.forEach(p=>(p.countries||[]).forEach(c=>s.add(c)));return s;}
+function activeCodes(){const s=new Set();prods.filter(p=>Number(p.stock||0)>0).forEach(p=>(p.countries||[]).forEach(c=>s.add(c)));return s;}
 function renderCarousel(){
   const el=$("carousel"),codes=activeCodes();
   el.innerHTML="";
