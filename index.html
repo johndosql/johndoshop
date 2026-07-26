@@ -211,7 +211,15 @@ input:-webkit-autofill{
 .btn-flat{background:var(--surface2);color:var(--ink);border:1px solid var(--line);}
 .btn-danger{background:var(--danger) !important;}
 
-.empty{text-align:center;color:var(--muted);font-size:14px;padding:50px 0;}
+.pricing-hint{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:10px;font-size:13px;color:var(--muted);
+}
+.pricing-hint .promo{
+  color:var(--success);font-weight:600;
+  background:rgba(52,211,153,0.1);padding:2px 8px;border-radius:999px;
+  font-size:12px;
+}
 .trust{
   display:flex;justify-content:center;gap:8px;flex-wrap:wrap;
   color:var(--muted);font-size:11px;margin-top:28px;
@@ -377,6 +385,7 @@ input:-webkit-autofill{
     <p class="eyebrow">Boutique digitale</p>
     <h1 class="wordmark">ACCESMAIL</h1>
     <p class="tagline">AccesMail premium disponibles dans plusieurs pays, stock mis à jour en temps réel.</p>
+    <p class="pricing-hint">4€ / accès &nbsp;·&nbsp; <span class="promo">3€ dès 10 accès</span></p>
   </header>
   <div id="shopBanner"></div>
   <div class="search-wrap">
@@ -768,7 +777,8 @@ function chQty(id,d){
   renderCartBar(); renderCartPage();
 }
 function entries(){ return Object.entries(cart).map(([id,qty])=>({item:products.find(p=>p.id===id),qty})).filter(e=>e.item); }
-function total(){ return entries().reduce((s,e)=>s+Number(e.item.price)*e.qty,0); }
+function itemPrice(item,qty){ return qty>=10 ? 3.00 : Number(item.price||4); }
+function total(){ return entries().reduce((s,e)=>s+itemPrice(e.item,e.qty)*e.qty,0); }
 function count(){ return entries().reduce((s,e)=>s+e.qty,0); }
 function renderCartBar(){
   const n=count();
@@ -788,7 +798,12 @@ function renderCartPage(){
   es.forEach(({item,qty})=>{
     const row=document.createElement("div");
     row.className="cart-item";
-    row.innerHTML=`<div><div class="ci-name">@${item.domain}</div><div class="ci-unit">${fmt(item.price)} / unité</div></div>
+    const unitP=itemPrice(item,qty);
+    const isDiscount=qty>=10;
+    row.innerHTML=`<div>
+      <div class="ci-name">@${item.domain}</div>
+      <div class="ci-unit">${fmt(unitP)} / unité${isDiscount?' <span style="color:var(--success);font-size:10px">✓ prix pro</span>':''}</div>
+    </div>
       <div class="stepper"><button data-d="-1">−</button><span>${qty}</span><button data-d="1">+</button></div>`;
     row.querySelectorAll("button").forEach(b=>b.onclick=()=>chQty(item.id,parseInt(b.dataset.d)));
     document.getElementById("cartList").appendChild(row);
@@ -879,17 +894,21 @@ function renderAdmin(){
   if(!fbReady){el.innerHTML='<div class="banner">Firebase non connecté.</div>';return;}
   el.innerHTML=`
     <div style="margin-bottom:20px">
-      <p class="section-lbl">📂 Importer un catalogue TXT</p>
+      <p class="section-lbl">📂 Importer un fichier mail:pass</p>
       <div class="admin-card">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">
-          Colle ta liste de domaines ci-dessous. Un par ligne.<br>
-          <b>Format :</b> <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">domaine PAYS PRIX STOCK</code><br>
-          • Les extensions nationales (.fr .de .be .gr…) sont détectées <b>automatiquement</b><br>
-          • Pour .com .net .org : précise le pays (ex: <code style="background:var(--bg2);padding:2px 5px;border-radius:4px">hotmail.com FR 3.99 20</code>)<br>
-          • Sans pays pour un .com → ligne ignorée
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.7">
+          Colle ton fichier directement. Un compte par ligne.<br>
+          <b>Format accepté :</b><br>
+          <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">email@domaine.com:motdepasse</code><br>
+          • Pays détecté auto via l'extension (.fr → FR, .de → DE, .be → BE…)<br>
+          • <b>.com / .net / .org</b> sans pays → regroupés en <b>🌍 MIX</b><br>
+          • Les doublons sont automatiquement supprimés<br>
+          • Stock = nombre de lignes valides · Prix fixé à <b>4€</b>
         </p>
-        <textarea class="field" id="txtImport" rows="8" placeholder="hotmail.com FR 3.99 25&#10;gmail.com US 4.49 30&#10;orange.fr 5.49 15&#10;web.de 4.99 10&#10;laposte.net FR 5.49 8" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px"></textarea>
-        <button class="btn" id="parseTxtBtn" style="width:100%;margin-top:4px">Analyser le catalogue</button>
+        <textarea class="field" id="txtImport" rows="8"
+          placeholder="user1@hotmail.com:pass123&#10;user2@orange.fr:pass456&#10;user3@gmail.com:pass789&#10;user4@web.de:pass000"
+          style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea>
+        <button class="btn" id="parseTxtBtn" style="width:100%;margin-top:6px">🔍 Analyser</button>
         <div id="parsePreview" style="margin-top:12px"></div>
       </div>
     </div>
@@ -908,40 +927,39 @@ function renderAdmin(){
     <p class="section-lbl" style="margin-top:20px">👥 Utilisateurs & Soldes</p>
     <div id="aUsers"></div>
   `;
-  // Bouton analyse TXT
+  // Bouton analyse mail:pass
   document.getElementById("parseTxtBtn").onclick = () => {
     const txt = document.getElementById("txtImport").value.trim();
-    if(!txt){ showToast("Colle d'abord ton catalogue."); return; }
-    const {products: parsed, skipped} = parseTxt(txt);
+    if(!txt){ showToast("Colle d'abord ton fichier."); return; }
+    const {groups, dupes, invalid, total: tot} = parseMailPass(txt);
     const prev = document.getElementById("parsePreview");
-    if(!parsed.length){
-      prev.innerHTML = `<div class="banner" style="color:var(--danger);border-color:var(--danger);background:var(--danger-soft)">Aucun acces valide détecté. Vérifie le format.</div>`;
+    if(!groups.length){
+      prev.innerHTML=`<div class="banner" style="color:var(--danger);border-color:var(--danger);background:var(--danger-soft)">Aucun compte valide détecté. Vérifie le format.</div>`;
       return;
     }
-    let html = `<div class="banner">✅ ${parsed.length} acces détectés${skipped.length ? ` · ⚠️ ${skipped.length} ignorés` : ''}</div>`;
-    if(skipped.length){
-      html += `<div style="font-size:11px;color:var(--danger);margin-bottom:10px;line-height:1.7">Ignorés (pays manquant) :<br>${skipped.map(s=>'• '+s).join('<br>')}</div>`;
-    }
-    html += `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.8">`;
-    parsed.forEach(p => {
-      html += `• @${p.domain} — ${p.countries.join(', ')} — ${fmt(p.price)} — stock: ${p.stock}<br>`;
+    let html=`<div class="banner">
+      ✅ <b>${tot}</b> comptes valides
+      ${dupes>0?`· ⚠️ <b>${dupes}</b> doublons supprimés`:''}
+      ${invalid>0?`· ❌ <b>${invalid}</b> lignes invalides`:''}
+    </div>`;
+    html+=`<div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.9;background:var(--bg2);padding:10px 12px;border-radius:10px">`;
+    groups.forEach(g=>{
+      const cty=g.country==='MIX'?'🌍 MIX':g.country;
+      html+=`• @${g.domain} — ${cty} — <b>${g.accounts.length} comptes</b> — 4€<br>`;
     });
-    html += `</div>`;
-    html += `<button class="btn" id="confirmImportBtn" style="width:100%">✅ Confirmer l'import (${parsed.length} acces)</button>`;
-    prev.innerHTML = html;
+    html+=`</div>`;
+    html+=`<button class="btn" id="confirmImportBtn" style="width:100%">✅ Importer ${tot} comptes</button>`;
+    prev.innerHTML=html;
 
-    document.getElementById("confirmImportBtn").onclick = () => {
-      if(!fbReady){ showToast("Firebase non connecté."); return; }
-      const updates = {};
-      parsed.forEach(p => {
-        const r = db.ref("products").push();
-        updates[r.key] = p;
-      });
-      db.ref("products").update(updates).then(() => {
-        showToast(`${parsed.length} acces importés avec succès !`);
-        document.getElementById("parsePreview").innerHTML = "";
-        document.getElementById("txtImport").value = "";
-      });
+    document.getElementById("confirmImportBtn").onclick=()=>{
+      if(!fbReady){showToast("Firebase non connecté.");return;}
+      document.getElementById("confirmImportBtn").disabled=true;
+      document.getElementById("confirmImportBtn").textContent="Import en cours…";
+      importMailPass(groups, db).then(()=>{
+        showToast(`✅ ${tot} comptes importés !`);
+        document.getElementById("parsePreview").innerHTML="";
+        document.getElementById("txtImport").value="";
+      }).catch(e=>{ showToast("Erreur : "+e.message); });
     };
   };
 
@@ -1003,8 +1021,94 @@ function renderAdmin(){
   });
 }
 
-/* ============ IMPORT TXT ============ */
+/* ============ IMPORT MAIL:PASS ============ */
 const TLD_MAP = {
+  'fr':'FR','de':'DE','be':'BE','es':'ES','it':'IT','nl':'NL','pt':'PT',
+  'uk':'UK','gb':'UK','ru':'RU','cn':'CN','jp':'JP','br':'BR','au':'AU',
+  'ch':'CH','at':'AT','pl':'PL','cz':'CZ','sk':'SK','ro':'RO','gr':'GR',
+  'tr':'TR','se':'SE','no':'NO','dk':'DK','fi':'FI','hu':'HU','bg':'BG',
+  'hr':'HR','ua':'UA','in':'IN','mx':'MX','ar':'AR','cl':'CL','co':'CO',
+  'za':'ZA','ng':'NG','eg':'EG','ma':'MA','dz':'DZ','tn':'TN','sn':'SN',
+  'ci':'CI','cm':'CM','re':'RE','gp':'GP','mq':'MQ','id':'ID','sg':'SG',
+  'my':'MY','th':'TH','vn':'VN','ph':'PH','pk':'PK','bd':'BD','kr':'KR',
+  'tw':'TW','hk':'HK','nz':'NZ','me':'ME','rs':'RS','si':'SI','lt':'LT',
+  'lv':'LV','ee':'EE','ge':'GE','am':'AM','az':'AZ','kz':'KZ','uz':'UZ',
+  'by':'BY','md':'MD','ie':'IE','is':'IS','lu':'LU','li':'LI','mt':'MT',
+  'cy':'CY','il':'IL','sa':'SA','ae':'AE','qa':'QA','kw':'KW','bh':'BH',
+  'om':'OM','jo':'JO','lb':'LB','ir':'IR','ke':'KE','gh':'GH','tz':'TZ',
+  'ug':'UG','rw':'RW','et':'ET','ao':'AO','mz':'MZ','zm':'ZM','zw':'ZW',
+  'pe':'PE','ve':'VE','ec':'EC','bo':'BO','py':'PY','uy':'UY','gt':'GT',
+  'cr':'CR','pa':'PA','do':'DO','cu':'CU','hn':'HN','ni':'NI','sv':'SV',
+  'lk':'LK','np':'NP','kh':'KH','mm':'MM','la':'LA','mn':'MN','af':'AF',
+  'sy':'SY','ye':'YE','so':'SO','ml':'ML','bf':'BF','ne':'NE','td':'TD',
+  'mr':'MR','gn':'GN','sl':'SL','lr':'LR','bj':'BJ','tg':'TG','ga':'GA',
+  'cg':'CG','bi':'BI','mw':'MW','ls':'LS','sz':'SZ','na':'NA','bw':'BW',
+  'mg':'MG','mu':'MU','sc':'SC','cv':'CV','km':'KM','dj':'DJ','er':'ER',
+  'nc':'NC','pf':'PF','fj':'FJ','pg':'PG','vu':'VU','ws':'WS','to':'TO',
+  'ad':'AD','sm':'SM','va':'VA','mc':'MC','xk':'XK','mk':'MK','ba':'BA',
+  'al':'AL','fo':'DK','gl':'GL','gi':'UK','je':'UK','gg':'UK','im':'UK',
+  'ax':'FI','yt':'YT','gf':'FR','pm':'FR','wf':'FR','re':'RE'
+};
+const GENERIC_TLDS = new Set(['com','net','org','info','biz','app','io','pro','shop','store','online','site','mail','email','us']);
+
+function parseMailPass(txt){
+  const lines = txt.split('\n').map(l=>l.trim()).filter(l=>l && l.includes('@'));
+  const seen = new Set();
+  const grouped = {};
+  let dupes = 0, invalid = 0;
+
+  lines.forEach(line => {
+    // Accepte mail:pass ou mail (sans pass)
+    const sep = line.indexOf(':');
+    const email = (sep > -1 ? line.slice(0,sep) : line).trim().toLowerCase();
+    const pass  = sep > -1 ? line.slice(sep+1).trim() : '';
+
+    if(!email.includes('@') || !email.includes('.')) { invalid++; return; }
+    if(seen.has(email)) { dupes++; return; }
+    seen.add(email);
+
+    const domain = email.split('@')[1];
+    const tld = domain.split('.').pop().toLowerCase();
+    let country = TLD_MAP[tld] || null;
+    if(!country) country = GENERIC_TLDS.has(tld) ? 'MIX' : tld.toUpperCase();
+
+    const key = domain + '||' + country;
+    if(!grouped[key]) grouped[key] = { domain, country, accounts:[] };
+    grouped[key].accounts.push({ email, pass });
+  });
+
+  return { groups: Object.values(grouped), dupes, invalid, total: seen.size };
+}
+
+function importMailPass(groups, db){
+  const updates = {};
+  groups.forEach(g => {
+    // Cherche un produit existant pour ce domaine + pays
+    const existing = products.find(p => p.domain===g.domain && (p.countries||[]).includes(g.country));
+    const prodRef = existing ? null : db.ref('products').push();
+    const prodKey = existing ? existing.id : prodRef.key;
+    const oldStock = existing ? Number(existing.stock||0) : 0;
+
+    updates['products/'+prodKey] = {
+      domain: g.domain,
+      countries: [g.country],
+      price: 4,
+      stock: oldStock + g.accounts.length
+    };
+
+    g.accounts.forEach(acc => {
+      const credRef = db.ref('credentials/'+prodKey).push();
+      updates['credentials/'+prodKey+'/'+credRef.key] = {
+        email: acc.email,
+        pass: acc.pass,
+        sold: false
+      };
+    });
+  });
+  return db.ref('/').update(updates);
+}
+
+
   'fr':'FR','de':'DE','be':'BE','es':'ES','it':'IT','nl':'NL','pt':'PT',
   'uk':'UK','gb':'UK','ru':'RU','cn':'CN','jp':'JP','br':'BR','au':'AU',
   'ch':'CH','at':'AT','pl':'PL','cz':'CZ','sk':'SK','ro':'RO','gr':'GR',
