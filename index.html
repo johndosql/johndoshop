@@ -316,6 +316,7 @@ const FB={
 const ADMIN_PWD="Jd$7xK#2mP9@nQ4v";
 const CRYPTO={network:"USDT (TRC20)",address:"TA_VRAIE_ADRESSE_CRYPTO_ICI"};
 const PRICE_BASE=4, PRICE_PRO=3, PRICE_THRESHOLD=10;
+const VERCEL_API="https://johndoshop.vercel.app"; // Vercel backend NOWPayments
 
 /* ============ TLD MAP ============ */
 const TMAP={
@@ -593,6 +594,93 @@ function renderCatalog(){
   });
 }
 
+/* ============ NOWPAYMENTS ============ */
+let pollInterval=null;
+
+async function createPayment(amount,orderId,description){
+  const res=await fetch(VERCEL_API+"/api/create-payment",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({amount,orderId,description})
+  });
+  return res.json();
+}
+async function checkPayment(pid){
+  const res=await fetch(VERCEL_API+"/api/check-payment?id="+pid);
+  return res.json();
+}
+async function deliverCreds(orderEntries){
+  if(!fbOk)return[];
+  const out=[];
+  for(const{item,qty}of orderEntries){
+    const snap=await db.ref("credentials/"+item.id).orderByChild("sold").equalTo(false).limitToFirst(qty).once("value");
+    const cr=snap.val()||{};
+    const keys=Object.keys(cr).slice(0,qty);
+    for(const k of keys){
+      await db.ref("credentials/"+item.id+"/"+k+"/sold").set(true);
+      out.push({domain:item.domain,...cr[k]});
+    }
+    await db.ref("products/"+item.id+"/stock").set(Math.max(0,Number(item.stock||0)-keys.length));
+  }
+  return out;
+}
+function stopPoll(){if(pollInterval){clearInterval(pollInterval);pollInterval=null;}}
+function startPoll(pid,orderEntries){
+  stopPoll();
+  const ST={
+    waiting:{l:"⏳ En attente de paiement…",p:10},
+    confirming:{l:"🔄 Transaction détectée…",p:55},
+    confirmed:{l:"✅ Confirmé !",p:100},
+    finished:{l:"✅ Finalisé !",p:100},
+    failed:{l:"❌ Échoué.",p:0},
+    expired:{l:"⌛ Expiré.",p:0}
+  };
+  pollInterval=setInterval(async()=>{
+    try{
+      const d=await checkPayment(pid);
+      const st=ST[d.payment_status]||{l:d.payment_status,p:20};
+      const sel=document.getElementById("npStatus");
+      const bar=document.getElementById("npBar");
+      if(sel)sel.textContent=st.l;
+      if(bar)bar.style.width=st.p+"%";
+      if(d.payment_status==="confirmed"||d.payment_status==="finished"){
+        stopPoll();haptic("medium");
+        const creds=await deliverCreds(orderEntries);
+        cart={};renderCartBar();
+        const ae=document.getElementById("npActive"),se=document.getElementById("npSuccess");
+        if(ae)ae.style.display="none";
+        if(se){
+          let h=`<div class="pay-card"><div style="text-align:center;margin-bottom:16px">
+            <div style="font-size:40px">✅</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;margin-top:8px">Paiement confirmé</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px">Tes accès sont livrés</div>
+          </div>`;
+          if(creds.length){
+            let all="";
+            h+=`<div style="display:flex;flex-direction:column;gap:8px">`;
+            creds.forEach(c=>{
+              const line=c.email+(c.pass?":"+c.pass:"");
+              all+=line+"\n";
+              h+=`<div style="background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);margin-bottom:4px">@${c.domain}</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;word-break:break-all">${c.email}</div>
+                ${c.pass?`<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);word-break:break-all">${c.pass}</div>`:""}
+              </div>`;
+            });
+            const enc=encodeURIComponent(all.trim());
+            h+=`</div><button class="btn" style="width:100%;margin-top:14px;padding:12px"
+              onclick="navigator.clipboard.writeText(decodeURIComponent('${enc}')).then(()=>toast('Accès copiés !'))">
+              📋 Copier tous les accès</button>`;
+          } else {
+            h+=`<p style="text-align:center;font-size:13px;color:var(--muted)">Tes accès seront envoyés par le support.</p>`;
+          }
+          h+=`</div>`;se.innerHTML=h;se.style.display="block";
+        }
+      }
+      if(d.payment_status==="failed"||d.payment_status==="expired"){stopPoll();toast("Paiement "+d.payment_status+". Réessaie.");}
+    }catch(e){console.error(e);}
+  },10000);
+}
+
 /* ============ CART ============ */
 function uPrice(item,qty){return qty>=PRICE_THRESHOLD?PRICE_PRO:PRICE_BASE;}
 function addCart(p){
@@ -656,15 +744,53 @@ function renderCartPage(){
       </div>
     </div>
     <div class="pay-panel" id="pCrypto">
-      <div class="pay-card">
-        <span class="pay-net">${CRYPTO.network}</span>
-        <div class="pay-addr"><span>${addr}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${addr}').then(()=>toast('Adresse copiée.'))">Copier</button></div>
-        <p class="pay-note">Envoie <b>${fmt(tot)}</b> puis confirme ci-dessous.</p>
-        <button class="btn" id="payCryptoBtn" style="width:100%;padding:14px">J'ai payé</button>
+      <div id="npStart">
+        <div class="pay-card">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:6px;line-height:1.6">Paiement automatique via <b>NOWPayments</b>.<br>Tes accès sont livrés automatiquement après confirmation blockchain.</p>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);background:var(--soft);padding:8px 12px;border-radius:8px;margin-bottom:14px">Total : <b>${fmt(tot)}</b></div>
+          <button class="btn" id="npBtn" style="width:100%;padding:14px">₿ Générer le paiement</button>
+        </div>
       </div>
+      <div id="npActive" style="display:none">
+        <div class="pay-card">
+          <span class="pay-net">USDT TRC20 · NOWPayments</span>
+          <div style="text-align:center;margin:12px 0">
+            <img id="npQR" style="border-radius:12px;width:148px;height:148px;border:4px solid var(--surface2)" src="" alt="QR">
+          </div>
+          <div class="pay-addr"><span id="npAddr" style="font-size:11px"></span><button class="copy-btn" id="npCopy">Copier</button></div>
+          <div style="text-align:center;margin:12px 0">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700" id="npAmt"></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Montant exact à envoyer</div>
+          </div>
+          <div id="npStatus" style="text-align:center;font-size:13px;color:var(--muted);padding:8px 0">⏳ En attente de paiement…</div>
+          <div style="height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:4px">
+            <div id="npBar" style="height:100%;width:10%;background:linear-gradient(90deg,var(--accent),var(--a2));transition:width 2s ease;border-radius:2px"></div>
+          </div>
+          <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">Vérification automatique toutes les 10 secondes</p>
+        </div>
+      </div>
+      <div id="npSuccess" style="display:none"></div>
     </div>`;
   const pb=$("payBalBtn");if(pb)pb.onclick=()=>doOrder("balance");
-  $("payCryptoBtn").onclick=()=>doOrder("crypto");
+  const npBtn=$("npBtn");
+  if(npBtn)npBtn.onclick=async()=>{
+    npBtn.disabled=true;npBtn.textContent="Génération…";
+    const orderId="acm_"+Date.now();
+    const desc=entries().map(e=>e.qty+"x @"+e.item.domain).join(", ");
+    try{
+      const payment=await createPayment(tot,orderId,desc);
+      if(payment.error||!payment.pay_address){toast("Erreur NOWPayments. Vérifie la config Vercel.");npBtn.disabled=false;npBtn.textContent="₿ Générer le paiement";return;}
+      $("npStart").style.display="none";$("npActive").style.display="block";
+      $("npAddr").textContent=payment.pay_address;
+      $("npAmt").textContent=payment.pay_amount+" USDT";
+      $("npQR").src="https://api.qrserver.com/v1/create-qr-code/?size=148x148&data="+encodeURIComponent(payment.pay_address);
+      $("npCopy").onclick=()=>navigator.clipboard.writeText(payment.pay_address).then(()=>toast("Adresse copiée !"));
+      if(fbOk&&me.id){
+        db.ref("orders/"+orderId).set({userId:me.id,userName:me.name,items:desc,total:tot,paymentId:payment.payment_id,status:"waiting",date:Date.now()});
+      }
+      startPoll(payment.payment_id,entries());
+    }catch(e){toast("Erreur réseau : "+e.message);npBtn.disabled=false;npBtn.textContent="₿ Générer le paiement";}
+  };
 }
 function swTab(t){
   ["tSolde","tCrypto"].forEach(id=>$( id).classList.toggle("on",id==="t"+t.charAt(0).toUpperCase()+t.slice(1)));
