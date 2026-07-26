@@ -11,10 +11,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#000;--bg2:#08080E;--sf:#0D0F1C;--sf2:#131524;
-  --ink:#E4E6F2;--muted:#4A4E68;--ac:#5B7FFF;--a2:#A855F7;
-  --soft:rgba(91,127,255,.12);--line:rgba(255,255,255,.07);
-  --ok:#34D399;--err:#FF5D52;--errs:rgba(255,93,82,.12);
+  --bg:#000;--bg2:#0A0A15;--sf:#101225;--sf2:#181B2E;
+  --ink:#F0F2FF;--muted:#7880A8;--ac:#6B8FFF;--a2:#C084FC;
+  --soft:rgba(107,143,255,.18);--line:rgba(255,255,255,.11);
+  --ok:#2ECC71;--err:#FF6B5E;--errs:rgba(255,107,94,.15);
   --r:14px;--p-op:1;color-scheme:dark;
 }
 [data-light]{
@@ -188,7 +188,12 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
 .wts-sep{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);padding:0 16px;flex:0 0 auto;}
 @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-.open-picker-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);background:none;border:none;cursor:pointer;padding:0;}
+.deposit-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--ok);background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);border-radius:999px;padding:3px 10px;cursor:pointer;margin-top:4px;transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.deposit-btn:active{transform:scale(.88);}
+.amount-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.amt-btn{padding:12px 6px;background:var(--bg2);border:1.5px solid var(--line);border-radius:12px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:var(--muted);cursor:pointer;text-align:center;transition:all .2s cubic-bezier(.34,1.56,.64,1);}
+.amt-btn:active{transform:scale(.88);}
+.amt-btn.on{background:var(--soft);border-color:var(--ac);color:var(--ac);}font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);background:none;border:none;cursor:pointer;padding:0;}
 
 /* COUNTRY PICKER */
 .cp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;opacity:0;pointer-events:none;transition:opacity .3s ease;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
@@ -343,7 +348,7 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
     <div class="tb-space"></div>
     <button class="ib" id="btnAdmin">⚙</button>
   </div>
-  <div class="profile a2">
+  <div class="profile a2" id="profileCard" style="cursor:pointer">
     <div class="av" id="avEl"><div class="av-ring"></div>?</div>
     <div style="flex:1;min-width:0">
       <div class="pname" id="pName">Chargement…</div>
@@ -352,6 +357,7 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
     <div style="text-align:right">
       <div class="pbal-lbl">Solde</div>
       <div class="pbal-val" id="pBal">0,00 €</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--ac);margin-top:3px">Appuyer pour recharger →</div>
     </div>
   </div>
   <header class="hero a3">
@@ -390,7 +396,26 @@ input:-webkit-autofill{-webkit-box-shadow:0 0 0 100px var(--bg2) inset;-webkit-t
     <div class="cw"><div class="carousel" id="carousel"></div></div>
   </div>
 
-  <!-- COUNTRY PICKER SHEET -->
+  <!-- PROFILE SHEET -->
+  <div class="cp-overlay" id="depOverlay"></div>
+  <div class="cp-sheet" id="depSheet" style="max-height:92vh">
+    <div class="cp-handle"></div>
+    <div class="cp-header">
+      <span class="cp-title">Mon profil</span>
+      <button class="cp-close" id="depClose">✕</button>
+    </div>
+    <!-- Carte profil dans le sheet -->
+    <div style="background:var(--bg2);border:1.5px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px;text-align:center">
+      <div id="sheetAv" style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,var(--ac),var(--a2));display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;color:#fff;margin:0 auto 10px;overflow:hidden"></div>
+      <div id="sheetName" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px"></div>
+      <div id="sheetHandle" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin-top:2px"></div>
+      <div style="margin-top:14px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Solde disponible</div>
+        <div id="sheetBal" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:2.4rem;color:var(--ok);margin-top:4px">0,00 €</div>
+      </div>
+    </div>
+    <div id="depContent"></div>
+  </div>
   <div class="cp-overlay" id="cpOverlay"></div>
   <div class="cp-sheet" id="cpSheet">
     <div class="cp-handle"></div>
@@ -991,6 +1016,98 @@ function goTo(page){
   window.scrollTo(0,0);
   if(page==="cart")renderCartPage();
   if(page==="admin")renderAdmin();
+}
+
+/* DEPOSIT */
+let depPollInterval=null;
+function openDeposit(){
+  // Remplir les infos profil dans le sheet
+  const ini=me.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)||"?";
+  const av=$("sheetAv");
+  av.innerHTML=me.photo?`<img src="${me.photo}" style="width:100%;height:100%;object-fit:cover">`:`${ini}`;
+  $("sheetName").textContent=me.name;
+  $("sheetHandle").textContent=me.handle||"ACCESMAIL";
+  $("sheetBal").textContent=fmt(myBal);
+  renderDepositStart();
+  $("depOverlay").classList.add("show");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$("depSheet").classList.add("show")));
+}
+function closeDeposit(){
+  $("depSheet").classList.remove("show");
+  setTimeout(()=>$("depOverlay").classList.remove("show"),300);
+  if(depPollInterval){clearInterval(depPollInterval);depPollInterval=null;}
+}
+$("profileCard").onclick=openDeposit;
+$("depClose").onclick=closeDeposit;
+$("depOverlay").onclick=closeDeposit;
+
+function renderDepositStart(){
+  const presets=[5,10,20,50];
+  let selAmt=10,selCur="usdttrc20";
+  const dc=$("depContent");
+  dc.innerHTML=`
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">Choisis un montant et génère une adresse. Ton solde est crédité automatiquement après confirmation blockchain.</p>
+    <p class="sec-lbl" style="margin-top:0">Montant</p>
+    <div class="amount-grid" id="amtGrid"></div>
+    <input class="field" id="customAmt" type="number" placeholder="Autre montant (€)" style="margin-bottom:14px">
+    <p class="sec-lbl" style="margin-top:0">Crypto</p>
+    <div class="crypto-grid" id="depCryptoGrid" style="margin-bottom:14px"></div>
+    <button class="btn" id="depGenBtn" style="width:100%;padding:13px;font-size:14px">💳 Générer l'adresse de dépôt</button>
+    <div id="depPayArea" style="margin-top:12px"></div>`;
+  const amtGrid=$("amtGrid");
+  presets.forEach(a=>{
+    const btn=document.createElement("button");btn.className="amt-btn"+(a===selAmt?" on":"");btn.textContent=a+"€";
+    btn.onclick=()=>{selAmt=a;$("customAmt").value="";amtGrid.querySelectorAll(".amt-btn").forEach(b=>b.classList.remove("on"));btn.classList.add("on");haptic("light");};
+    amtGrid.appendChild(btn);
+  });
+  $("customAmt").oninput=e=>{const v=parseFloat(e.target.value);if(v>0){selAmt=v;amtGrid.querySelectorAll(".amt-btn").forEach(b=>b.classList.remove("on"));}};
+  const depCG=$("depCryptoGrid");
+  CRYPTOS.slice(0,6).forEach(cr=>{
+    const btn=document.createElement("button");btn.className="csel"+(cr.cur==="usdttrc20"?" on":"");btn.dataset.cur=cr.cur;
+    btn.innerHTML=`<img class="csel-logo" src="${cr.logo}" alt="${cr.label}" onerror="this.outerHTML='<span style=font-size:18px>💲</span>'">${cr.label}<br><span style="font-size:9px;opacity:.55">${cr.net}</span>`;
+    btn.onclick=()=>{depCG.querySelectorAll(".csel").forEach(b=>b.classList.remove("on"));btn.classList.add("on");selCur=cr.cur;haptic("light");};
+    depCG.appendChild(btn);
+  });
+  $("depGenBtn").onclick=async()=>{
+    const amt=selAmt;if(!amt||amt<1){toast("Montant minimum 1€");return;}
+    const btn=$("depGenBtn");btn.disabled=true;btn.textContent="⏳ Génération…";
+    try{
+      const payment=await createPayment(amt,"dep_"+me.id+"_"+Date.now(),"Dépôt solde ACCESMAIL",selCur);
+      if(!payment.pay_address){toast("Erreur: "+(payment.message||"Vérifie NOWPayments"));btn.disabled=false;btn.textContent="💳 Générer l'adresse";return;}
+      const cr=CRYPTOS.find(c=>c.cur===selCur);
+      $("depPayArea").innerHTML=`<div class="pay-card">
+        <span class="pay-net">${cr?.label||selCur} · ${cr?.net||""}</span>
+        <div style="text-align:center;margin:12px 0">
+          <img style="border-radius:12px;width:140px;height:140px;border:3px solid var(--sf2)" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(payment.pay_address)}">
+        </div>
+        <div class="pay-addr"><span>${payment.pay_address}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${payment.pay_address}').then(()=>toast('Copié ✓'))">Copier</button></div>
+        <div style="text-align:center;margin:10px 0">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700">${payment.pay_amount} ${selCur.replace("trc20","").replace("erc20","").replace("bsc","").toUpperCase()}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">Créditera <b>${fmt(amt)}</b> sur ton solde</div>
+        </div>
+        <div class="pay-status" id="depStatus">⏳ En attente de paiement…</div>
+        <div class="pay-prog-wrap"><div class="pay-prog" id="depBar" style="width:8%"></div></div>
+        <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:7px">Vérification auto toutes les 10 secondes</p>
+      </div>`;
+      btn.style.display="none";
+      depPollInterval=setInterval(async()=>{
+        try{
+          const d=await checkPayment(payment.payment_id);
+          const ST={waiting:"⏳ En attente…",confirming:"🔄 Transaction détectée…",confirmed:"✅ Confirmé !",finished:"✅ Finalisé !"};
+          const p={waiting:8,confirming:55,confirmed:100,finished:100};
+          if($("depStatus"))$("depStatus").textContent=ST[d.payment_status]||d.payment_status;
+          if($("depBar"))$("depBar").style.width=(p[d.payment_status]||20)+"%";
+          if(d.payment_status==="confirmed"||d.payment_status==="finished"){
+            clearInterval(depPollInterval);depPollInterval=null;
+    if(fbOk&&me.id)db.ref("users/"+me.id+"/balance").set(parseFloat((myBal+amt).toFixed(2)));
+            hapticN("success");closeDeposit();toast("✅ "+fmt(amt)+" ajoutés à ton solde !",4000);
+            // Mettre à jour le solde affiché dans le sheet si encore ouvert
+            if($("sheetBal"))$("sheetBal").textContent=fmt(myBal+amt);
+          }
+        }catch(e){console.error(e);}
+      },10000);
+    }catch(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="💳 Générer l'adresse";}
+  };
 }
 
 /* COUNTRY PICKER */
