@@ -37,46 +37,74 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 #splash{
   position:fixed;inset:0;z-index:200;background:#040810;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  animation:splashAuto .65s ease 2.1s forwards;}
+  animation:splashAuto .7s ease 2.5s forwards;}
 #splash.out{animation:splashAuto .4s ease forwards;}
 @keyframes splashAuto{
   0%{opacity:1;pointer-events:auto;}
   99%{opacity:0;pointer-events:none;}
   100%{opacity:0;pointer-events:none;visibility:hidden;}
 }
+/* Particules flottantes */
+.spt{position:absolute;font-family:'IBM Plex Mono',monospace;font-weight:700;
+  color:#00C8A0;pointer-events:none;
+  animation:sptAnim var(--ss,2s) ease-in-out var(--sd,0s) infinite;
+  text-shadow:0 0 10px #00C8A0,0 0 20px #00FFCC;}
+@keyframes sptAnim{
+  0%,100%{opacity:.12;transform:translateY(0) scale(1);}
+  50%{opacity:.5;transform:translateY(-12px) scale(1.15);}
+}
+/* Étoiles filantes */
+.ssh{position:absolute;font-family:'IBM Plex Mono',monospace;font-weight:700;
+  font-size:14px;color:#00FFCC;left:-40px;pointer-events:none;
+  text-shadow:0 0 14px #00C8A0,10px 0 22px #00FFCC;
+  animation:sshAnim var(--sp,.5s) linear var(--sd,0s) infinite;
+  animation-fill-mode:both;}
+@keyframes sshAnim{
+  0%{transform:translate(-40px,0);opacity:0;}
+  8%{opacity:.9;}
+  92%{opacity:.9;}
+  100%{transform:translate(calc(100vw + 60px),-30px);opacity:0;}
+}
+/* Orbites */
+.sorb{position:absolute;font-family:'IBM Plex Mono',monospace;font-weight:700;
+  color:#00C8A0;left:50%;top:50%;pointer-events:none;
+  text-shadow:0 0 12px #00C8A0;
+  animation:sorbAnim var(--or,2s) linear var(--od,0s) infinite;}
+@keyframes sorbAnim{
+  0%{transform:rotate(0deg) translateX(var(--ox,80px)) rotate(0deg);}
+  100%{transform:rotate(360deg) translateX(var(--ox,80px)) rotate(-360deg);}
+}
+/* Glow central */
 .splash-glow{
   position:absolute;width:280px;height:280px;border-radius:50%;
-  background:radial-gradient(circle,rgba(0,200,160,.18) 0%,rgba(0,200,160,.05) 45%,transparent 70%);
-  pointer-events:none;}
+  background:radial-gradient(circle,rgba(0,200,160,.2) 0%,rgba(0,200,160,.06) 45%,transparent 70%);
+  pointer-events:none;
+  animation:glowP 2.2s ease-in-out infinite;}
+@keyframes glowP{
+  0%,100%{transform:scale(1);opacity:.7;}
+  50%{transform:scale(1.4);opacity:1;}
+}
 .splash-logo{
-  position:relative;z-index:1;
+  position:relative;z-index:2;
   font-family:'Space Grotesk',sans-serif;font-weight:800;
   font-size:3rem;letter-spacing:-.03em;text-align:center;
   background:linear-gradient(135deg,#00C8A0 0%,#00FFCC 45%,#D8F0FF 65%,#00C8A0 100%);
   background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
   background-clip:text;
-  animation:logoIn .9s cubic-bezier(.22,1,.36,1) .2s both,
-            metalShine 4s linear 1s infinite;}
+  animation:logoIn .9s cubic-bezier(.22,1,.36,1) .3s both,
+            logShine 4s linear 1.2s infinite;}
 .splash-sub{
-  position:relative;z-index:1;margin-top:8px;
+  position:relative;z-index:2;margin-top:8px;
   font-family:'IBM Plex Mono',monospace;font-size:11px;
   letter-spacing:.2em;text-transform:uppercase;color:#2A6070;
-  animation:logoIn .7s cubic-bezier(.22,1,.36,1) .65s both;}
-.splash-glow{
-  position:absolute;width:260px;height:260px;border-radius:50%;
-  background:radial-gradient(circle,rgba(0,200,160,.22) 0%,rgba(0,200,160,.06) 45%,transparent 70%);
-  pointer-events:none;
-  animation:glowPulse 2.4s ease-in-out infinite;}
+  animation:logoIn .7s cubic-bezier(.22,1,.36,1) .7s both;}
 @keyframes logoIn{
-  from{opacity:0;transform:scale(.72) translateY(18px);}
+  from{opacity:0;transform:scale(.7) translateY(20px);}
   to{opacity:1;transform:none;}
 }
-@keyframes metalShine{
-  0%{background-position:200%;}100%{background-position:-200%;}
-}
-@keyframes glowPulse{
-  0%,100%{transform:scale(1);opacity:.7;}
-  50%{transform:scale(1.35);opacity:1;}
+@keyframes logShine{
+  0%{background-position:200%;}
+  100%{background-position:-200%;}
 }
 
 /* ══ SPLASH ANIMATIONS ════════════════════════════════════ */
@@ -108,7 +136,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 }
 
 /* ══ APP ═══════════════════════════════ */
-.app{max-width:460px;margin:0 auto;min-height:100vh;padding-bottom:72px;background:#040810;position:relative;z-index:1;-webkit-overflow-scrolling:touch;}
+.app{max-width:460px;margin:0 auto;min-height:100vh;padding-bottom:72px;background:#040810;position:relative;z-index:1;}
 .screen{display:none;padding:0 0 8px;background:#040810;min-height:100vh;}
 .screen.active{display:block;}
 
@@ -169,7 +197,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   padding:6px 12px;border-radius:999px;border:1px solid var(--line);
   background:var(--sf);font-size:12px;font-weight:600;color:var(--sub);
   cursor:pointer;transition:all .15s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;flex:0 0 auto;}
-.chip:active{transform:scale(.93);}
+.chip:active{transform:scale(.92);}
 .chip.on{background:var(--ac);border-color:var(--ac);color:#111;}
 
 /* ══ STOCK LIST ═════════════════════════ */
@@ -255,7 +283,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .pays-flag{font-size:22px;line-height:1;}
 .pays-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:var(--ink);}
 .pays-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);background:rgba(0,200,160,.1);border:1px solid rgba(0,200,160,.2);padding:2px 9px;border-radius:999px;}
-.scard-compact{display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:0 12px 6px;transition:border-color .15s;animation:fadeUp .3s both;contain:layout style;}
+.scard-compact{display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:0 12px 6px;transition:border-color .15s;animation:fadeUp .3s both;}
 .scard-compact:active{border-color:rgba(0,200,160,.25);}
 .sc-info{flex:1;min-width:0;}
 .sc-dom{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ac);margin-bottom:4px;}
@@ -382,7 +410,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .overlay.on{opacity:1;pointer-events:auto;}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;max-width:460px;margin:0 auto;
   background:var(--sf);border-radius:18px 18px 0 0;
-  transform:translateY(101%);transition:transform .2s cubic-bezier(.2,.9,.4,1);
+  transform:translateY(101%);transition:transform .38s cubic-bezier(.16,1,.3,1);
   display:flex;flex-direction:column;max-height:90vh;will-change:transform;}
 .sheet.on{transform:translateY(0);}
 .sh-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:12px auto 0;flex:0 0 auto;}
@@ -392,7 +420,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   cursor:pointer;color:var(--sub);font-size:13px;display:flex;align-items:center;justify-content:center;
   transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
 .sh-close:active{transform:scale(.84);}
-.sh-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scroll-behavior:smooth;
+.sh-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
   padding:0 16px calc(20px + env(safe-area-inset-bottom));}
 
 .dep-hero{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
@@ -486,6 +514,27 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 <!-- ══ SPLASH ══════════════════════════════ -->
 <div id="splash">
   <div class="splash-glow"></div>
+  <!-- Particules CSS pures — fonctionnent sans JS -->
+  <span class="spt" style="left:8%;top:18%;font-size:13px;--sd:0s;--ss:2.1s">@</span>
+  <span class="spt" style="left:82%;top:12%;font-size:17px;--sd:.4s;--ss:2.6s">✉</span>
+  <span class="spt" style="left:15%;top:72%;font-size:11px;--sd:.8s;--ss:1.9s">@</span>
+  <span class="spt" style="left:78%;top:70%;font-size:15px;--sd:1.2s;--ss:2.3s">✉</span>
+  <span class="spt" style="left:50%;top:8%;font-size:14px;--sd:.6s;--ss:2.0s">@</span>
+  <span class="spt" style="left:5%;top:45%;font-size:10px;--sd:1.5s;--ss:2.5s">✉</span>
+  <span class="spt" style="left:90%;top:40%;font-size:16px;--sd:.3s;--ss:1.8s">@</span>
+  <span class="spt" style="left:40%;top:88%;font-size:12px;--sd:1.0s;--ss:2.2s">✉</span>
+  <!-- Étoiles filantes CSS pures -->
+  <span class="ssh" style="top:22%;--sd:0.5s;--sp:0.55s">@</span>
+  <span class="ssh" style="top:55%;--sd:0.9s;--sp:0.45s">✉</span>
+  <span class="ssh" style="top:35%;--sd:1.3s;--sp:0.5s">@</span>
+  <span class="ssh" style="top:70%;--sd:0.2s;--sp:0.6s">·</span>
+  <span class="ssh" style="top:15%;--sd:1.6s;--sp:0.4s">✉</span>
+  <span class="ssh" style="top:48%;--sd:0.7s;--sp:0.5s">@</span>
+  <!-- Orbites autour du logo -->
+  <span class="sorb" style="--od:0s;--or:1.5s;--ox:80px;font-size:13px">@</span>
+  <span class="sorb" style="--od:-.5s;--or:1.8s;--ox:95px;font-size:15px">✉</span>
+  <span class="sorb" style="--od:-1s;--or:2.1s;--ox:70px;font-size:11px">@</span>
+  <span class="sorb" style="--od:-1.5s;--or:1.6s;--ox:90px;font-size:14px">✉</span>
   <div class="splash-logo">ACCESMAIL</div>
   <div class="splash-sub">by @johndosql</div>
 </div>
@@ -804,7 +853,7 @@ function initSplash(){
       var sym=r>0.35?(Math.random()>0.5?"@":"\u2709"):"\u00B7";
       var sz=sym==="\u00B7"?3:12+Math.random()*14;
       var y=5+Math.random()*85;
-      var spd=0.3+Math.random()*0.45;
+      var spd=0.4+Math.random()*0.6;
       var c=Math.random()>0.3?"#00C8A0":"#00FFCC";
       var anim=Math.random()>0.5?"shootRight":"shootDiag";
       var star=document.createElement("div");
@@ -818,7 +867,7 @@ function initSplash(){
       launchStar();launchStar();
       if(Math.random()>0.4)launchStar();
       cnt++;if(cnt>14)clearInterval(iv);
-    },100);
+    },120);
   }catch(e){console.error("Splash particles:",e);}
 }
 
@@ -851,12 +900,17 @@ $("tbLogo").addEventListener("click",()=>{
 
 /* ══ USER ══════════════════════════════════════ */
 function initMe(){
+  /* Initialiser avec des valeurs par défaut d'abord */
+  me={id:"demo_"+Date.now(),tgId:null,name:"Invité",handle:"@accesmail",photo:null};
   try{
     const tg=window.Telegram&&window.Telegram.WebApp;
     const u=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
-    if(u&&u.id){me={id:"u"+u.id,tgId:u.id,name:[u.first_name,u.last_name].filter(Boolean).join(" ")||"Utilisateur",handle:u.username?"@"+u.username:"",photo:u.photo_url||null};}
-    else{me={id:"demo_"+Date.now(),tgId:null,name:"Invité",handle:"@accesmail",photo:null};}
-  }catch(e){me={id:"demo_1",tgId:null,name:"Invité",handle:"@accesmail",photo:null};}
+    if(u&&u.id){
+      me={id:"u"+u.id,tgId:u.id,
+        name:[u.first_name,u.last_name].filter(Boolean).join(" ")||"Utilisateur",
+        handle:u.username?"@"+u.username:"",photo:u.photo_url||null};
+    }
+  }catch(e){console.warn("Telegram init:",e);}
   const ini=me.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)||"?";
   const av=$("avEl");av.innerHTML=me.photo?`<img src="${me.photo}" alt="" style="width:100%;height:100%;object-fit:cover">`:`${ini}`;
   $("pName").textContent=me.name;
@@ -881,14 +935,29 @@ function initMe(){
 
 /* ══ PRODUCTS ═══════════════════════════════ */
 function loadProds(){
-  if(fbOk){
-    db.ref("products").on("value",s=>{
-      const v=s.val()||{};prods=Object.entries(v).map(([id,p])=>({id,...p}));
-      updateStockBadge();renderChips();renderCatalog();
-    });
-  }else{
-    prods=SEED.map((p,i)=>({id:"s"+i,...p}));updateStockBadge();renderChips();renderCatalog();
-  }
+  /* Afficher le SEED immédiatement pour que la page ne soit jamais vide */
+  prods=SEED.map((p,i)=>({id:"s"+i,...p}));
+  updateStockBadge();renderChips();renderCatalog();
+
+  if(!fbOk)return;
+
+  /* Puis charger Firebase et remplacer si des données existent */
+  db.ref("products").on("value",s=>{
+    const v=s.val();
+    if(v&&Object.keys(v).length>0){
+      /* Firebase a des données — remplacer le SEED */
+      prods=Object.entries(v).map(([id,p])=>({id,...p}));
+    }else{
+      /* Firebase vide — garder le SEED comme démo */
+      prods=SEED.map((p,i)=>({id:"s"+i,...p}));
+    }
+    updateStockBadge();renderChips();renderCatalog();
+  },err=>{
+    console.warn("Firebase read error:",err);
+    /* En cas d'erreur — garder le SEED */
+    prods=SEED.map((p,i)=>({id:"s"+i,...p}));
+    updateStockBadge();renderChips();renderCatalog();
+  });
 }
 
 function updateStockBadge(){
@@ -905,11 +974,6 @@ function renderChips(){
   const el=$("chips"),codes=activeCodes();el.innerHTML="";
   [{ c:"all",n:"🌍 TOUS" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c)+" "+cty.n}))].forEach(cty=>{
     const chip=document.createElement("div");chip.className="chip"+(activeC===cty.c?" on":"");chip.textContent=cty.n;
-    /* touchstart immédiat sur les chips */
-    let _cm=false,_cy=0;
-    chip.addEventListener("touchstart",e=>{_cm=false;_cy=e.touches[0].clientY;},{passive:true});
-    chip.addEventListener("touchmove",e=>{if(Math.abs(e.touches[0].clientY-_cy)>8)_cm=true;},{passive:true});
-    chip.addEventListener("touchend",e=>{if(!_cm){e.preventDefault();activeC=cty.c;showAll=false;renderChips();renderCatalog();}},{passive:false});
     chip.onclick=()=>{activeC=cty.c;showAll=false;renderChips();renderCatalog();};
     el.appendChild(chip);
   });
@@ -917,41 +981,27 @@ function renderChips(){
 
 /* ══ PAYS POPUP ═══════════════════════════════ */
 /* Bouton pays - pointerdown = réponse immédiate sans délai */
-/* Pre-cache pays grid, ouverture instantanée au touchstart */
-function buildPaysGrid(){
+$("statPaysBtn").addEventListener("click",()=>{
   const codes=activeCodes();
   const grid=$("paysGrid");grid.innerHTML="";
-  ALL_C.filter(c=>c.c!=="all"&&codes.has(c.c)).map(cty=>{
-    const total=prods.filter(p=>(p.countries||[]).includes(cty.c)).reduce((s,p)=>s+Number(p.stock||0),0);
-    return{...cty,total};
-  }).sort((a,b)=>b.total-a.total).forEach(cty=>{
+  ALL_C.filter(c=>c.c!=="all"&&codes.has(c.c)).sort((a,b)=>{
+    const sa=prods.filter(p=>(p.countries||[]).includes(a.c)).reduce((s,p)=>s+Number(p.stock||0),0);
+    const sb=prods.filter(p=>(p.countries||[]).includes(b.c)).reduce((s,p)=>s+Number(p.stock||0),0);
+    return sb-sa;
+  }).forEach(cty=>{
     const item=document.createElement("div");
-    item.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 8px;text-align:center;cursor:pointer;";
-    item.innerHTML="<div style='font-size:22px;margin-bottom:3px'>"+flag(cty.c)+"</div><div style='font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>"+cty.n+"</div><div style='font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--ac);margin-top:2px'>"+cty.total+" accès</div>";
-    let mv=false,sy=0;
-    item.addEventListener("touchstart",e=>{mv=false;sy=e.touches[0].clientY;item.style.background="rgba(0,200,160,.08)";},{passive:true});
-    item.addEventListener("touchmove",e=>{if(Math.abs(e.touches[0].clientY-sy)>8)mv=true;},{passive:true});
-    item.addEventListener("touchend",()=>{
-      item.style.background="var(--sf)";
-      if(mv)return;
-      activeC=cty.c;showAll=false;renderChips();renderCatalog();
-      $("paysSheet").classList.remove("on");
-      setTimeout(()=>$("paysOverlay").classList.remove("on"),180);
-    },{passive:true});
-    item.onclick=()=>{activeC=cty.c;showAll=false;renderChips();renderCatalog();$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),180);};
+    const total=prods.filter(p=>(p.countries||[]).includes(cty.c)).reduce((s,p)=>s+Number(p.stock||0),0);
+    item.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;";
+    item.innerHTML=`<div style="font-size:24px;margin-bottom:4px">${flag(cty.c)}</div><div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cty.n}</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ac);margin-top:3px">${total} accès</div>`;
+    item.addEventListener("touchstart",()=>item.style.borderColor="rgba(0,200,160,.3)",{passive:true});
+    item.addEventListener("touchend",()=>{item.style.borderColor="var(--line)";activeC=cty.c;showAll=false;renderChips();renderCatalog();$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),290);},{passive:true});
     grid.appendChild(item);
   });
-}
-function openPaysSheet(){
-  buildPaysGrid();
   $("paysOverlay").classList.add("on");
-  $("paysSheet").classList.add("on");
-}
-$("statPaysBtn").addEventListener("touchstart",e=>{e.preventDefault();openPaysSheet();},{passive:false});
-$("statPaysBtn").onclick=openPaysSheet;
-
-$("paysClose").onclick=()=>{$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),180);};
-$("paysOverlay").onclick=()=>{$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),180);};
+  requestAnimationFrame(()=>$("paysSheet").classList.add("on"));
+};
+$("paysClose").onclick=()=>{$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),290);};
+$("paysOverlay").onclick=()=>{$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),290);};
 function openMenu(){
   /* Sync état actuel */
   document.querySelectorAll("#menuVue .mopt").forEach(b=>b.classList.toggle("on",b.dataset.v===viewMode));
@@ -959,12 +1009,12 @@ function openMenu(){
   $("menuOverlay").classList.add("on");
   requestAnimationFrame(()=>$("menuSheet").classList.add("on"));
 }
-function closeMenu(){$("menuSheet").classList.remove("on");setTimeout(()=>$("menuOverlay").classList.remove("on"),180);}
+function closeMenu(){$("menuSheet").classList.remove("on");setTimeout(()=>$("menuOverlay").classList.remove("on"),290);}
 
 /* Tous les boutons de nav/sheets en pointerdown = 0ms délai */
 
-$("openMenu").addEventListener("touchstart",e=>{e.preventDefault();openMenu();},{passive:false});$("openMenu").onclick=openMenu;
-$("menuClose").addEventListener("touchstart",e=>{e.preventDefault();closeMenu();},{passive:false});$("menuClose").onclick=closeMenu;
+$("openMenu").addEventListener("click",openMenu);
+$("menuClose").addEventListener("click",closeMenu);
 $("menuOverlay").onclick=closeMenu;
 
 /* Sélection vue */
@@ -1022,7 +1072,7 @@ function renderCatalogDom(el){
     else if(st<=5){tagCls="orange";tagTxt="⚠ "+st+" restants";}
     else if(st<=15){tagCls="green";tagTxt=st+" en stock";}
     const pct=Math.max(4,Math.round(st/maxStock*100));
-    const card=document.createElement("div");card.className="scard";card.style.animationDelay=(i*.025)+"s";
+    const card=document.createElement("div");card.className="scard";card.style.animationDelay=(i*.04)+"s";
     card.innerHTML=`
       <div class="scard-top">
         <div class="scard-main">
@@ -1316,13 +1366,11 @@ function goTo(page){
 }
 /* Tous en pointerdown = 0ms de délai */
 ["btnBack","btnAdminBack"].forEach(id=>{const el=$(id);if(el)el.addEventListener("click",()=>goTo("shop"));});
-$("navShop").addEventListener("touchstart",e=>{e.preventDefault();goTo("shop");},{passive:false});
-$("navCart").addEventListener("touchstart",e=>{e.preventDefault();goTo("cart");},{passive:false});
 $("navShop").addEventListener("click",()=>goTo("shop"));
 $("navCart").addEventListener("click",()=>goTo("cart"));
-$("profileCard").addEventListener("touchstart",e=>{e.preventDefault();openDeposit();},{passive:false});$("profileCard").onclick=openDeposit;
-$("navSolde").addEventListener("touchstart",e=>{e.preventDefault();openDeposit();},{passive:false});$("navSolde").onclick=openDeposit;
-$("depClose").addEventListener("touchstart",e=>{e.preventDefault();closeSheet();},{passive:false});$("depClose").onclick=()=>closeSheet();
+$("profileCard").addEventListener("click",openDeposit);
+$("navSolde").addEventListener("click",openDeposit);
+$("depClose").addEventListener("click",()=>closeSheet());
 $("depOverlay").addEventListener("click",()=>closeSheet());
 
 function openDeposit(){
@@ -1337,7 +1385,7 @@ function openDeposit(){
 }
 function closeSheet(){
   $("depSheet").classList.remove("on");
-  setTimeout(()=>$("depOverlay").classList.remove("on"),180);
+  setTimeout(()=>$("depOverlay").classList.remove("on"),290);
   if(depPollInt){clearInterval(depPollInt);depPollInt=null;}
 }
 function renderDepContent(){
