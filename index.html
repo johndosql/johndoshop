@@ -550,6 +550,75 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 
 /* Minimums NOWPayments par crypto */
 .csel-min{font-size:8px;color:rgba(255,165,0,.8);display:block;margin-top:1px;}
+
+/* ══ PAYMENT FULLSCREEN ═══════════════ */
+.pay-screen{
+  position:fixed;inset:0;z-index:100;background:var(--bg);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.22,1,.36,1);
+  will-change:transform;}
+.pay-screen.open{transform:translateX(0);}
+.pay-screen-hdr{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px 10px;
+  background:var(--bg);border-bottom:1px solid var(--line);flex:0 0 auto;}
+.pay-screen-back{
+  background:var(--sf);border:1px solid var(--line);
+  width:38px;height:38px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:var(--ink);cursor:pointer;flex:0 0 auto;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.pay-screen-back:active{transform:scale(.86);}
+.pay-screen-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;flex:1;}
+.pay-screen-body{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:20px 16px calc(20px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;align-items:center;gap:16px;}
+
+/* QR Card centrée */
+.pay-qr-card{
+  width:100%;background:var(--sf);border:1px solid var(--line);
+  border-radius:16px;padding:20px;display:flex;flex-direction:column;
+  align-items:center;gap:12px;}
+.pay-qr-net{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);
+  background:rgba(0,200,160,.1);border:1px solid rgba(0,200,160,.2);
+  padding:4px 12px;border-radius:999px;}
+.pay-qr-img{
+  width:200px;height:200px;border-radius:14px;
+  border:3px solid var(--line);}
+.pay-qr-addr{
+  width:100%;display:flex;align-items:center;gap:8px;
+  background:var(--bg2);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;}
+.pay-qr-addr-txt{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  word-break:break-all;flex:1;color:var(--ink);}
+.pay-qr-amount{
+  font-family:'Space Grotesk',sans-serif;font-weight:800;
+  font-size:26px;color:var(--ac);letter-spacing:-.01em;}
+.pay-qr-hint{font-size:12px;color:var(--sub);}
+
+/* Status */
+.pay-status-bar{
+  width:100%;background:var(--sf);border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px;}
+.pay-status-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.pay-status-dot{
+  width:10px;height:10px;border-radius:50%;background:var(--sub);
+  flex:0 0 auto;transition:all .3s;}
+.pay-status-dot.wait{animation:dotBlink 1.5s ease-in-out infinite;}
+.pay-status-dot.detect{background:orange;box-shadow:0 0 8px orange;animation:dotBlink 1s ease-in-out infinite;}
+.pay-status-dot.done{background:var(--ok);box-shadow:0 0 10px var(--ok);}
+@keyframes dotBlink{0%,100%{opacity:1;}50%{opacity:.25;}}
+.pay-status-txt{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--sub);}
+
+.pay-cancel{
+  width:100%;padding:13px;background:transparent;
+  border:1px solid rgba(255,79,64,.25);border-radius:12px;
+  color:var(--err);font-family:'Inter',sans-serif;font-weight:600;
+  font-size:13px;cursor:pointer;transition:all .15s;}
+.pay-cancel:active{background:var(--errs);}
 </style>
 </head>
 <body>
@@ -680,6 +749,39 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   </div>
 
 </div><!-- /app -->
+
+<!-- ══ ÉCRAN PAIEMENT DÉDIÉ ══ -->
+<div class="pay-screen" id="S_depPayment">
+  <div class="pay-screen-hdr">
+    <button class="pay-screen-back" id="depPayBack">←</button>
+    <span class="pay-screen-title" id="depPayTitle">Paiement en cours</span>
+  </div>
+  <div class="pay-screen-body">
+    <div class="pay-qr-card">
+      <span class="pay-qr-net" id="depPayNet">—</span>
+      <img class="pay-qr-img" id="depPayQR" src="" alt="QR Code">
+      <div class="pay-qr-addr">
+        <span class="pay-qr-addr-txt" id="depPayAddr">—</span>
+        <button class="copy-btn" id="depPayCopy">📋 Copier</button>
+      </div>
+      <div class="pay-qr-amount" id="depPayAmt">—</div>
+      <div class="pay-qr-hint" id="depPayHint">—</div>
+    </div>
+
+    <div class="pay-status-bar">
+      <div class="pay-status-row">
+        <div class="pay-status-dot wait" id="depPayDot"></div>
+        <div class="pay-status-txt" id="depPaySt">⏳ En attente de paiement…</div>
+      </div>
+      <div class="pay-bar-w">
+        <div class="pay-bar" id="depPayBar" style="width:8%"></div>
+      </div>
+      <p style="font-size:10px;color:var(--sub);margin-top:6px;text-align:center">Vérifié automatiquement toutes les 10 secondes</p>
+    </div>
+
+    <button class="pay-cancel" id="depPayCancel">✕ Annuler — changer de crypto ou de montant</button>
+  </div>
+</div>
 
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottomNav">
@@ -1544,6 +1646,7 @@ function renderDepContent(){
   const presets=[5,10,20,50];let selAmt=10;
   const dc=$("depContent");
   dc.innerHTML=`
+    <div id="depFormZone">
     <p class="sl-lbl" style="margin-top:0">Recharger en crypto</p>
     <p style="font-size:12px;color:var(--sub);margin-bottom:12px;line-height:1.7">Génère une adresse et envoie le paiement.<br><b style="color:var(--ink)">Crédit automatique</b> après confirmation.</p>
     <div class="amt-grid" id="amtGrid"></div>
@@ -1551,6 +1654,7 @@ function renderDepContent(){
     <p class="sl-lbl" style="margin-top:0">Crypto</p>
     <div class="crypto-grid" id="depCG" style="margin-bottom:12px"></div>
     <button class="btn" id="depGenBtn" style="width:100%;padding:13px;font-size:14px">💳 Générer l'adresse</button>
+    </div>
     <div id="depPay" style="margin-top:10px"></div>`;
   const ag=$("amtGrid");
   presets.forEach(a=>{
@@ -1566,40 +1670,95 @@ function renderDepContent(){
     btn.onclick=()=>{dcg.querySelectorAll(".csel").forEach(b=>b.classList.remove("on"));btn.classList.add("on");haptic("light");};
     dcg.appendChild(btn);
   });
-  $("depGenBtn").onclick=async()=>{
+  $("depGenBtn").onclick=async function(){
     const amt=selAmt;if(!amt||amt<1){toast("Montant minimum 1€");return;}
     const selBtn=document.querySelector("#depCG .csel.on");
     const selCur=selBtn?selBtn.dataset.cur:"usdttrc20";
     const btn=$("depGenBtn");btn.disabled=true;btn.textContent="⏳ Génération…";
     try{
       const p=await apiPost("create-payment",{amount:amt,orderId:"dep_"+me.id+"_"+Date.now(),description:"Dépôt ACCESMAIL",payCurrency:selCur});
-      if(!p.pay_address){toast("Erreur: "+(p.message||"Vérifie NOWPayments"));btn.disabled=false;btn.textContent="💳 Générer l'adresse";return;}
-      const cr=CRYPTOS.find(c=>c.cur===selCur);
-      $("depPay").innerHTML=`<div class="pay-card">
-        <span class="pay-net">${cr?.label||selCur} · ${cr?.net||""}</span>
-        <div style="text-align:center;margin:11px 0"><img style="border-radius:12px;width:138px;height:138px;border:2px solid var(--line)" src="https://api.qrserver.com/v1/create-qr-code/?size=138x138&data=${encodeURIComponent(p.pay_address)}"></div>
-        <div class="pay-addr"><span>${p.pay_address}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${p.pay_address}').then(()=>toast('Copié ✓'))">Copier</button></div>
-        <div style="text-align:center;margin:9px 0"><div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700">${p.pay_amount} ${selCur.replace(/trc20|erc20|bsc/g,"").toUpperCase()}</div><div style="font-size:11px;color:var(--sub);margin-top:2px">Créditera <b>${fmt(amt)}</b> sur ton solde</div></div>
-        <div class="pay-st" id="depSt">⏳ En attente…</div>
-        <div class="pay-bar-w"><div class="pay-bar" id="depBar" style="width:8%"></div></div>
-        <p style="font-size:11px;color:var(--sub);text-align:center;margin-top:6px">Vérification auto toutes les 10s</p>
-      </div>`;
-      btn.style.display="none";
-      depPollInt=setInterval(async()=>{
+      if(!p||!p.pay_address){
+        toast("❌ "+(p&&p.message?p.message:"Erreur — essaie USDT TRC20"),5000);
+        btn.disabled=false;btn.textContent="💳 Générer l'adresse";return;
+      }
+      const cr=CRYPTOS.find(function(c){return c.cur===selCur;});
+      const symLabel=selCur.replace(/trc20|erc20|bsc/g,"").toUpperCase();
+      const addr=p.pay_address;
+
+      /* ══ OUVRIR L'ÉCRAN DE PAIEMENT DÉDIÉ ══ */
+      $("depPayNet").textContent=(cr?cr.label:selCur)+" · "+(cr?cr.net:"");
+      $("depPayTitle").textContent="Paiement "+(cr?cr.label:symLabel);
+      $("depPayQR").src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(addr);
+      $("depPayAddr").textContent=addr;
+      $("depPayAmt").textContent=p.pay_amount+" "+symLabel;
+      $("depPayHint").textContent="Créditera "+fmt(amt)+" sur ton solde";
+      $("depPaySt").textContent="⏳ En attente de paiement…";
+      $("depPayBar").style.width="8%";
+      $("depPayDot").className="pay-status-dot wait";
+      $("depPayCopy").onclick=function(){
+        navigator.clipboard.writeText(addr)
+          .then(function(){toast("Adresse copiée ✓");haptic("medium");})
+          .catch(function(){toast(addr,10000);});
+      };
+
+      /* Afficher l'écran plein écran */
+      $("S_depPayment").classList.add("open");
+      btn.disabled=false;btn.textContent="💳 Générer l'adresse";
+
+      /* Bouton retour / annuler */
+      function cancelAndClose(){
+        clearInterval(depPollInt);depPollInt=null;
+        $("S_depPayment").classList.remove("open");
+        toast("Annulé — choisis une autre crypto ou un autre montant");
+      }
+      $("depPayBack").onclick=cancelAndClose;
+      $("depPayCancel").onclick=cancelAndClose;
+
+      /* Polling statut paiement */
+      depPollInt=setInterval(async function(){
         try{
           const d=await checkPayment(p.payment_id);
-          const ST={waiting:"⏳ En attente…",confirming:"🔄 Détectée…",confirmed:"✅ Confirmé !",finished:"✅ Finalisé !"};
+          const ST={waiting:"⏳ En attente de paiement…",confirming:"🔄 Transaction détectée sur la blockchain…",confirmed:"✅ Paiement confirmé !",finished:"✅ Finalisé !"};
           const PP={waiting:8,confirming:55,confirmed:100,finished:100};
-          if($("depSt"))$("depSt").textContent=ST[d.payment_status]||d.payment_status;
-          if($("depBar"))$("depBar").style.width=(PP[d.payment_status]||20)+"%";
+          if($("depPaySt"))$("depPaySt").textContent=ST[d.payment_status]||d.payment_status;
+          if($("depPayBar"))$("depPayBar").style.width=(PP[d.payment_status]||20)+"%";
+          /* Dot couleur */
+          var dot=$("depPayDot");
+          if(dot){
+            dot.className="pay-status-dot";
+            if(d.payment_status==="waiting")dot.classList.add("wait");
+            else if(d.payment_status==="confirming")dot.classList.add("detect");
+            else if(d.payment_status==="confirmed"||d.payment_status==="finished")dot.classList.add("done");
+          }
           if(d.payment_status==="confirmed"||d.payment_status==="finished"){
             clearInterval(depPollInt);depPollInt=null;
-            if(fbOk&&me.id)db.ref("users/"+me.id+"/balance").set(parseFloat((myBal+amt).toFixed(2)));
-            hapticN("success");closeSheet();toast("✅ "+fmt(amt)+" ajoutés à ton solde !",4000);
+            var newBal=parseFloat((myBal+amt).toFixed(2));
+            if(fbOk&&me.id)db.ref("users/"+me.id+"/balance").set(newBal);
+            hapticN("success");
+            /* Notification Telegram */
+            if(me.tgId){
+              var notif="\uD83D\uDCB0 <b>ACCESMAIL \u2014 Solde recharg\u00e9 !</b>\n\nTon solde a \u00e9t\u00e9 cr\u00e9dit\u00e9 de <b>"+fmt(amt)+"</b>\nNouveau solde\u00a0: <b>"+fmt(newBal)+"</b>\n\nOuvre la boutique pour acheter tes acc\u00e8s. \uD83D\uDC47";
+              apiPost("send-message",{chatId:me.tgId,text:notif}).catch(function(e){console.error("notif:",e);});
+            }
+            /* Fermer l'écran + la sheet + toast */
+            setTimeout(function(){
+              $("S_depPayment").classList.remove("open");
+              closeSheet();
+              toast("\u2705 "+fmt(amt)+" ajout\u00e9s \u00e0 ton solde !",5000);
+            },1200);
           }
-        }catch(e){console.error(e);}
+          if(d.payment_status==="failed"||d.payment_status==="expired"){
+            clearInterval(depPollInt);depPollInt=null;
+            if($("depPaySt"))$("depPaySt").textContent="\u274C Paiement "+(d.payment_status==="expired"?"expir\u00e9":"échoué");
+            if($("depPayDot"))$("depPayDot").className="pay-status-dot";
+            setTimeout(cancelAndClose,3000);
+          }
+        }catch(e){console.error("depPoll:",e);}
       },10000);
-    }catch(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="💳 Générer l'adresse";}
+    }catch(e){
+      toast("Erreur réseau: "+e.message,5000);
+      btn.disabled=false;btn.textContent="💳 Générer l'adresse";
+    }
   };
 }
 
