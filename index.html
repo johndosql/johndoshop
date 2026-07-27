@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ACCESMAIL</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -907,7 +907,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 
 <div class="toast" id="toast"></div>
 
-<script defer>
+<script>
 /* ══ CONFIG ══════════════════════════════════════ */
 const VERCEL="https://johndoshop.vercel.app";
 const FB={apiKey:"AIzaSyCTc6PzMOjihlQtx4HfZM3foibvVMf51bs",authDomain:"johndoshop.firebaseapp.com",databaseURL:"https://johndoshop-default-rtdb.europe-west1.firebasedatabase.app",projectId:"johndoshop",storageBucket:"johndoshop.firebasestorage.app",messagingSenderId:"457831162431",appId:"1:457831162431:web:89177714cad61411710e8a"};
@@ -933,7 +933,12 @@ const CRYPTOS=[
 const TMAP={fr:"FR",de:"DE",be:"BE",es:"ES",it:"IT",nl:"NL",pt:"PT",uk:"UK",gb:"UK",ru:"RU",cn:"CN",jp:"JP",br:"BR",au:"AU",ch:"CH",at:"AT",pl:"PL",cz:"CZ",sk:"SK",ro:"RO",gr:"GR",tr:"TR",se:"SE",no:"NO",dk:"DK",fi:"FI",hu:"HU",bg:"BG",hr:"HR",ua:"UA","in":"IN",mx:"MX",ar:"AR",cl:"CL",za:"ZA",ng:"NG",eg:"EG",ma:"MA",dz:"DZ",tn:"TN",sn:"SN",ci:"CI",cm:"CM",re:"RE",gp:"GP",mq:"MQ",id:"ID",sg:"SG",my:"MY",th:"TH",vn:"VN",ph:"PH",pk:"PK",bd:"BD",kr:"KR",tw:"TW",hk:"HK",nz:"NZ",me:"ME",rs:"RS",si:"SI",lt:"LT",lv:"LV",ee:"EE",ge:"GE",am:"AM",az:"AZ",kz:"KZ",uz:"UZ",by:"BY",md:"MD",ie:"IE",is:"IS",lu:"LU",li:"LI",mt:"MT",cy:"CY",il:"IL",sa:"SA",ae:"AE",qa:"QA",kw:"KW",bh:"BH",om:"OM",jo:"JO",lb:"LB",ir:"IR",ke:"KE",gh:"GH",tz:"TZ",ug:"UG",rw:"RW",et:"ET",ao:"AO",mz:"MZ",zm:"ZM",zw:"ZW",pe:"PE",ve:"VE",ec:"EC",bo:"BO",py:"PY",uy:"UY",gt:"GT",cr:"CR",pa:"PA","do":"DO",cu:"CU",hn:"HN",ni:"NI",sv:"SV",lk:"LK",np:"NP",kh:"KH",mm:"MM",la:"LA",mn:"MN",dj:"DJ",yt:"YT",nc:"NC",gf:"FR"};
 const GENERIC=new Set(["com","net","org","info","biz","app","io","pro","shop","store","online","site","mail","email","us"]);
 const ALL_C=[{c:"all",n:"Tous"},{c:"AD",n:"Andorre"},{c:"AE",n:"Émirats"},{c:"AF",n:"Afghanistan"},{c:"AL",n:"Albanie"},{c:"AM",n:"Arménie"},{c:"AO",n:"Angola"},{c:"AR",n:"Argentine"},{c:"AT",n:"Autriche"},{c:"AU",n:"Australie"},{c:"AZ",n:"Azerbaïdjan"},{c:"BA",n:"Bosnie"},{c:"BD",n:"Bangladesh"},{c:"BE",n:"Belgique"},{c:"BF",n:"Burkina"},{c:"BG",n:"Bulgarie"},{c:"BH",n:"Bahreïn"},{c:"BI",n:"Burundi"},{c:"BJ",n:"Bénin"},{c:"BO",n:"Bolivie"},{c:"BR",n:"Brésil"},{c:"BY",n:"Biélorussie"},{c:"CA",n:"Canada"},{c:"CD",n:"Congo RDC"},{c:"CF",n:"Centrafrique"},{c:"CG",n:"Congo"},{c:"CH",n:"Suisse"},{c:"CI",n:"Côte d'Ivoire"},{c:"CL",n:"Chili"},{c:"CM",n:"Cameroun"},{c:"CN",n:"Chine"},{c:"CO",n:"Colombie"},{c:"CR",n:"Costa Rica"},{c:"CU",n:"Cuba"},{c:"CY",n:"Chypre"},{c:"CZ",n:"Tchéquie"},{c:"DE",n:"Allemagne"},{c:"DJ",n:"Djibouti"},{c:"DK",n:"Danemark"},{c:"DO",n:"Rép. dom."},{c:"DZ",n:"Algérie"},{c:"EC",n:"Équateur"},{c:"EE",n:"Estonie"},{c:"EG",n:"Égypte"},{c:"ES",n:"Espagne"},{c:"ET",n:"Éthiopie"},{c:"FI",n:"Finlande"},{c:"FJ",n:"Fidji"},{c:"FR",n:"France"},{c:"GA",n:"Gabon"},{c:"GB",n:"Royaume-Uni"},{c:"GE",n:"Géorgie"},{c:"GH",n:"Ghana"},{c:"GM",n:"Gambie"},{c:"GN",n:"Guinée"},{c:"GP",n:"Guadeloupe"},{c:"GR",n:"Grèce"},{c:"GT",n:"Guatemala"},{c:"GY",n:"Guyana"},{c:"HK",n:"Hong Kong"},{c:"HN",n:"Honduras"},{c:"HR",n:"Croatie"},{c:"HT",n:"Haïti"},{c:"HU",n:"Hongrie"},{c:"ID",n:"Indonésie"},{c:"IE",n:"Irlande"},{c:"IL",n:"Israël"},{c:"IN",n:"Inde"},{c:"IQ",n:"Irak"},{c:"IR",n:"Iran"},{c:"IS",n:"Islande"},{c:"IT",n:"Italie"},{c:"JM",n:"Jamaïque"},{c:"JO",n:"Jordanie"},{c:"JP",n:"Japon"},{c:"KE",n:"Kenya"},{c:"KH",n:"Cambodge"},{c:"KR",n:"Corée Sud"},{c:"KW",n:"Koweït"},{c:"KZ",n:"Kazakhstan"},{c:"LA",n:"Laos"},{c:"LB",n:"Liban"},{c:"LK",n:"Sri Lanka"},{c:"LT",n:"Lituanie"},{c:"LU",n:"Luxembourg"},{c:"LV",n:"Lettonie"},{c:"LY",n:"Libye"},{c:"MA",n:"Maroc"},{c:"MC",n:"Monaco"},{c:"MD",n:"Moldavie"},{c:"ME",n:"Monténégro"},{c:"MG",n:"Madagascar"},{c:"MK",n:"Macédoine"},{c:"ML",n:"Mali"},{c:"MM",n:"Myanmar"},{c:"MN",n:"Mongolie"},{c:"MQ",n:"Martinique"},{c:"MR",n:"Mauritanie"},{c:"MT",n:"Malte"},{c:"MU",n:"Maurice"},{c:"MW",n:"Malawi"},{c:"MX",n:"Mexique"},{c:"MY",n:"Malaisie"},{c:"MZ",n:"Mozambique"},{c:"NA",n:"Namibie"},{c:"NE",n:"Niger"},{c:"NG",n:"Nigeria"},{c:"NI",n:"Nicaragua"},{c:"NL",n:"Pays-Bas"},{c:"NO",n:"Norvège"},{c:"NP",n:"Népal"},{c:"NZ",n:"Nouvelle-Zél."},{c:"OM",n:"Oman"},{c:"PA",n:"Panama"},{c:"PE",n:"Pérou"},{c:"PH",n:"Philippines"},{c:"PK",n:"Pakistan"},{c:"PL",n:"Pologne"},{c:"PT",n:"Portugal"},{c:"PY",n:"Paraguay"},{c:"QA",n:"Qatar"},{c:"RE",n:"Réunion"},{c:"RO",n:"Roumanie"},{c:"RS",n:"Serbie"},{c:"RU",n:"Russie"},{c:"RW",n:"Rwanda"},{c:"SA",n:"Arabie saoud."},{c:"SC",n:"Seychelles"},{c:"SD",n:"Soudan"},{c:"SE",n:"Suède"},{c:"SG",n:"Singapour"},{c:"SI",n:"Slovénie"},{c:"SK",n:"Slovaquie"},{c:"SL",n:"Sierra Leone"},{c:"SN",n:"Sénégal"},{c:"SO",n:"Somalie"},{c:"SR",n:"Suriname"},{c:"SV",n:"Salvador"},{c:"SY",n:"Syrie"},{c:"TD",n:"Tchad"},{c:"TG",n:"Togo"},{c:"TH",n:"Thaïlande"},{c:"TN",n:"Tunisie"},{c:"TR",n:"Turquie"},{c:"TT",n:"Trinité"},{c:"TW",n:"Taïwan"},{c:"TZ",n:"Tanzanie"},{c:"UA",n:"Ukraine"},{c:"UG",n:"Ouganda"},{c:"US",n:"États-Unis"},{c:"UY",n:"Uruguay"},{c:"UZ",n:"Ouzbékistan"},{c:"VE",n:"Venezuela"},{c:"VN",n:"Viêt Nam"},{c:"WS",n:"Samoa"},{c:"XK",n:"Kosovo"},{c:"YE",n:"Yémen"},{c:"YT",n:"Mayotte"},{c:"ZA",n:"Afrique Sud"},{c:"ZM",n:"Zambie"},{c:"ZW",n:"Zimbabwe"},{c:"MIX",n:"Mix mondial"}];
-const SEED=[{domain:"hotmail.com",countries:["FR","US","UK","DE","ES","CA"],price:4,stock:25},{domain:"gmail.com",countries:["FR","US","UK","DE","ES","CA"],price:4,stock:40},{domain:"orange.fr",countries:["FR"],price:4,stock:9},{domain:"web.de",countries:["DE"],price:4,stock:10}];
+const SEED=[
+  {domain:"hotmail.com",countries:["FR","US","UK","DE","ES","CA"],price:4,stock:0},
+  {domain:"gmail.com",countries:["FR","US","UK","DE","ES","CA"],price:4,stock:0},
+  {domain:"orange.fr",countries:["FR"],price:4,stock:0},
+  {domain:"web.de",countries:["DE"],price:4,stock:0}
+];
 
 /* ══ STATE ═══════════════════════════════════ */
 let db=null,fbAuth=null,fbOk=false;
