@@ -1067,12 +1067,12 @@ _st.textContent=`
 document.head.appendChild(_st);
 
 /* ══ ADMIN SECRET — 5 taps sur le logo ═══════ */
-let tapCount=0,tapTimer=null;
-$("tbLogo").addEventListener("click",()=>{
+var tapCount=0,tapTimer=null;
+$("tbLogo").onclick=function(){
   tapCount++;clearTimeout(tapTimer);
-  tapTimer=setTimeout(()=>tapCount=0,2500);
-  if(tapCount>=5){tapCount=0;goTo("admin");}
-});
+  tapTimer=setTimeout(function(){tapCount=0;},4000);
+  if(tapCount>=3){tapCount=0;goTo("admin");}
+};
 
 /* ══ USER ══════════════════════════════════════ */
 function initMe(){
@@ -1111,28 +1111,39 @@ function initMe(){
 
 /* ══ PRODUCTS ═══════════════════════════════ */
 function loadProds(){
-  /* Afficher le SEED immédiatement pour que la page ne soit jamais vide */
-  prods=SEED.map((p,i)=>({id:"s"+i,...p}));
-  updateStockBadge();renderChips();renderCatalog();
+  if(!fbOk){
+    prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
+    updateStockBadge();renderChips();renderCatalog();
+    return;
+  }
 
-  if(!fbOk)return;
+  /* Charger Firebase — rendu différé pour ne pas bloquer les taps */
+  var renderPending=false;
+  function scheduleRender(){
+    if(renderPending)return;
+    renderPending=true;
+    requestAnimationFrame(function(){
+      renderPending=false;
+      updateStockBadge();
+      renderChips();
+      renderCatalog();
+    });
+  }
 
-  /* Puis charger Firebase et remplacer si des données existent */
-  db.ref("products").on("value",s=>{
-    const v=s.val();
+  db.ref("products").on("value",function(s){
+    var v=s.val();
     if(v&&Object.keys(v).length>0){
-      /* Firebase a des données — remplacer le SEED */
-      prods=Object.entries(v).map(([id,p])=>({id,...p}));
+      prods=Object.entries(v).map(function(entry){
+        return{id:entry[0],...entry[1]};
+      });
     }else{
-      /* Firebase vide — garder le SEED comme démo */
-      prods=SEED.map((p,i)=>({id:"s"+i,...p}));
+      prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
     }
-    updateStockBadge();renderChips();renderCatalog();
-  },err=>{
-    console.warn("Firebase read error:",err);
-    /* En cas d'erreur — garder le SEED */
-    prods=SEED.map((p,i)=>({id:"s"+i,...p}));
-    updateStockBadge();renderChips();renderCatalog();
+    scheduleRender();
+  },function(err){
+    console.warn("Firebase error:",err);
+    prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
+    scheduleRender();
   });
 }
 
@@ -1144,8 +1155,18 @@ function updateStockBadge(){
   if($("statPays"))$("statPays").textContent=pays;
 }
 
-function activeCodes(){const s=new Set();prods.filter(p=>Number(p.stock||0)>0).forEach(p=>(p.countries||[]).forEach(c=>s.add(c)));return s;}
-
+var _cachedCodes=null,_cachedProdsLen=-1;
+function activeCodes(){
+  /* Cache activeCodes — recalculer seulement si prods a changé */
+  if(_cachedCodes&&_cachedProdsLen===prods.length)return _cachedCodes;
+  var s=new Set();
+  for(var i=0;i<prods.length;i++){
+    var cs=prods[i].countries||[];
+    for(var j=0;j<cs.length;j++){if(Number(prods[i].stock||0)>0)s.add(cs[j]);}
+  }
+  _cachedCodes=s;_cachedProdsLen=prods.length;
+  return s;
+}
 function renderChips(){
   const el=$("chips"),codes=activeCodes();el.innerHTML="";
   [{ c:"all",n:"🌍 TOUS" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c)+" "+cty.n}))].forEach(cty=>{
@@ -1230,17 +1251,40 @@ $("menuApply").onclick=()=>{
 function setView(v){viewMode=v;showAll=false;renderCatalog();}
 
 function filtered(){
-  const q=query.trim().toLowerCase();
-  return prods.filter(p=>{
-    if(activeC!=="all"&&!(p.countries||[]).includes(activeC))return false;
-    if(!q)return true;
-    if(p.domain.toLowerCase().includes(q))return true;
-    return(p.countries||[]).some(c=>c.toLowerCase().includes(q)||cName(c).toLowerCase().includes(q));
-  });
+  var q=query.trim().toLowerCase();
+  var result=[];
+  for(var i=0;i<prods.length;i++){
+    var p=prods[i];
+    /* Filtre pays */
+    if(activeC!=="all"){
+      var cs=p.countries||[];
+      var ok=false;
+      for(var j=0;j<cs.length;j++){if(cs[j]===activeC){ok=true;break;}}
+      if(!ok)continue;
+    }
+    /* Filtre recherche */
+    if(q){
+      var dom=p.domain?p.domain.toLowerCase():"";
+      if(!dom.includes(q)){
+        var cs2=p.countries||[];var found=false;
+        for(var k=0;k<cs2.length;k++){
+          if(cs2[k].toLowerCase().includes(q)||cName(cs2[k]).toLowerCase().includes(q)){found=true;break;}
+        }
+        if(!found)continue;
+      }
+    }
+    result.push(p);
+  }
+  return result;
 }
 
+var _lastRenderKey="";
 function renderCatalog(){
-  const el=$("catalog");
+  /* Éviter les re-renders inutiles */
+  var key=viewMode+"|"+activeC+"|"+query+"|"+sortMode+"|"+prods.length;
+  if(key===_lastRenderKey)return;
+  _lastRenderKey=key;
+  var el=$("catalog");
   if(viewMode==="pays"){renderCatalogPays(el);}
   else{renderCatalogDom(el);}
 }
