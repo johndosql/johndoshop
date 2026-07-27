@@ -765,7 +765,10 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
         <button class="copy-btn" id="depPayCopy">📋 Copier</button>
       </div>
       <div class="pay-qr-amount" id="depPayAmt">—</div>
-      <div class="pay-qr-hint" id="depPayHint">—</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:-8px">
+        <div class="pay-qr-hint" id="depPayHint" style="flex:1">—</div>
+        <button class="copy-btn" id="depPayAmtCopy" style="white-space:nowrap;font-size:11px">📋 Copier montant</button>
+      </div>
     </div>
 
     <div class="pay-status-bar">
@@ -1692,6 +1695,12 @@ function renderDepContent(){
       $("depPayAddr").textContent=addr;
       $("depPayAmt").textContent=p.pay_amount+" "+symLabel;
       $("depPayHint").textContent="Créditera "+fmt(amt)+" sur ton solde";
+      /* Bouton copier le montant exact */
+      $("depPayAmtCopy").onclick=function(){
+        navigator.clipboard.writeText(p.pay_amount)
+          .then(function(){toast("Montant copié : "+p.pay_amount+" "+symLabel);haptic("medium");})
+          .catch(function(){toast(p.pay_amount+" "+symLabel,6000);});
+      };
       $("depPaySt").textContent="⏳ En attente de paiement…";
       $("depPayBar").style.width="8%";
       $("depPayDot").className="pay-status-dot wait";
