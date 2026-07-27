@@ -507,6 +507,49 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   .bottom-nav{left:50%;transform:translateX(-50%);}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+
+/* ══ PAYMENT ENHANCED ══════════════════════════ */
+.crypto-step{background:var(--sf);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+.step-hdr{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--ac);color:#040810;
+  font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:12px;
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+.step-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;}
+.step-body{padding:14px 16px;}
+
+.qr-section{display:flex;flex-direction:column;align-items:center;padding:16px;
+  background:var(--sf);border:1px solid var(--line);border-radius:var(--r);margin-top:10px;}
+.qr-img{width:150px;height:150px;border-radius:12px;border:2px solid var(--line);}
+.addr-box{display:flex;align-items:center;gap:8px;background:var(--bg2);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  width:100%;margin-top:10px;}
+.addr-txt{font-family:'IBM Plex Mono',monospace;font-size:10px;word-break:break-all;
+  flex:1;color:var(--ink);}
+.amt-display{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:22px;
+  color:var(--ac);margin:10px 0 4px;}
+.amt-hint{font-size:11px;color:var(--sub);}
+.status-row{display:flex;align-items:center;gap:10px;padding:10px 0;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--sub);flex:0 0 auto;
+  transition:background .3s;}
+.status-dot.waiting{background:var(--sub);animation:dotPulse 1.5s ease-in-out infinite;}
+.status-dot.detecting{background:orange;animation:dotPulse 1s ease-in-out infinite;}
+.status-dot.confirmed{background:var(--ok);}
+.status-txt{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--sub);}
+@keyframes dotPulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.cancel-pay{width:100%;padding:11px;margin-top:10px;background:transparent;
+  border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);
+  font-family:'Inter',sans-serif;font-weight:600;font-size:13px;cursor:pointer;
+  transition:all .15s;}
+.cancel-pay:active{background:var(--errs);}
+
+.min-warn{background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.2);
+  border-radius:9px;padding:8px 11px;margin-bottom:10px;font-size:11px;
+  color:orange;display:none;}
+.min-warn.show{display:block;}
+
+/* Minimums NOWPayments par crypto */
+.csel-min{font-size:8px;color:rgba(255,165,0,.8);display:block;margin-top:1px;}
 </style>
 </head>
 <body>
@@ -789,6 +832,22 @@ if(typeof firebase!=="undefined"){try{firebase.initializeApp(FB);db=firebase.dat
 /* ══ UTILS ════════════════════════════════════ */
 const $=id=>document.getElementById(id);
 const fmt=n=>Number(n).toFixed(2).replace(".",",")+CURRENCY;
+
+/* fastClick — répond immédiatement sans bloquer le scroll */
+function fastClick(el,fn){
+  if(!el)return;
+  var _moved=false,_sy=0;
+  el.addEventListener("touchstart",function(e){
+    _moved=false;_sy=e.touches[0].clientY;
+  },{passive:true});
+  el.addEventListener("touchmove",function(e){
+    if(Math.abs(e.touches[0].clientY-_sy)>8)_moved=true;
+  },{passive:true});
+  el.addEventListener("touchend",function(e){
+    if(!_moved){e.preventDefault();fn(e);}
+  },{passive:false});
+  el.onclick=fn; /* fallback desktop */
+}
 const flag=iso=>{if(!iso||iso==="all"||iso==="MIX")return"🌍";const c=(iso==="UK"?"GB":iso).toUpperCase();return c.split("").map(x=>String.fromCodePoint(x.charCodeAt(0)+127397)).join("");};
 const cName=c=>ALL_C.find(x=>x.c===c)?.n||c;
 function toast(msg,dur=3000){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),dur);}
@@ -974,7 +1033,7 @@ function renderChips(){
   const el=$("chips"),codes=activeCodes();el.innerHTML="";
   [{ c:"all",n:"🌍 TOUS" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c)+" "+cty.n}))].forEach(cty=>{
     const chip=document.createElement("div");chip.className="chip"+(activeC===cty.c?" on":"");chip.textContent=cty.n;
-    chip.onclick=()=>{activeC=cty.c;showAll=false;renderChips();renderCatalog();};
+    fastClick(chip,function(){activeC=cty.c;showAll=false;renderChips();renderCatalog();});
     el.appendChild(chip);
   });
 }
@@ -1240,25 +1299,50 @@ function renderCartPage(){
       </div>
     </div>
     <div class="pay-panel" id="pCrypto">
-      <div class="pay-card">
-        <p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6">Via <b style="color:var(--ink)">NOWPayments</b>. Accès livrés après confirmation blockchain.</p>
-        <div style="background:rgba(62,201,92,.07);border:1px solid rgba(62,201,92,.15);border-radius:9px;padding:8px 11px;margin-bottom:10px;font-size:12px;color:var(--ok)">💡 Petits montants → utilise <b>USDT TRC20</b></div>
-        <p class="sl-lbl" style="margin-top:0">Choisir la crypto</p>
-        <div class="crypto-grid" id="cryptoGrid"></div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac);background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.15);padding:8px 12px;border-radius:9px;margin-bottom:12px">Total : <b>${fmt(tot)}</b></div>
-        <button class="btn" id="npBtn" style="width:100%;padding:13px;font-size:14px">₿ Générer le paiement</button>
-      </div>
-      <div id="npActive" style="display:none;margin-top:10px">
-        <div class="pay-card">
-          <div style="text-align:center;margin-bottom:12px"><img id="npQR" style="border-radius:12px;width:140px;height:140px;border:2px solid var(--line)" src="" alt="QR"></div>
-          <span class="pay-net" id="npNet"></span>
-          <div class="pay-addr"><span id="npAddr"></span><button class="copy-btn" id="npCopy">Copier</button></div>
-          <div style="text-align:center;margin:10px 0"><div style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700" id="npAmt"></div><div style="font-size:11px;color:var(--sub);margin-top:2px">Montant exact à envoyer</div></div>
-          <div class="pay-st" id="npStatus">⏳ En attente…</div>
-          <div class="pay-bar-w"><div class="pay-bar" id="npBar" style="width:8%"></div></div>
-          <p style="font-size:11px;color:var(--sub);text-align:center;margin-top:6px">Vérification auto toutes les 10s</p>
+
+      <!-- Étape 1 : Choisir la crypto -->
+      <div id="stepChoix">
+        <div class="crypto-step">
+          <div class="step-hdr">
+            <div class="step-num">1</div>
+            <div class="step-title">Choisir la crypto</div>
+          </div>
+          <div class="step-body">
+            <div class="min-warn" id="minWarn">⚠ Pour moins de 15€ : utilise <b>USDT TRC20</b> pour éviter les minimums</div>
+            <div class="crypto-grid" id="cryptoGrid" style="margin-bottom:12px"></div>
+            <div style="background:rgba(0,200,160,.06);border:1px solid rgba(0,200,160,.12);border-radius:9px;padding:9px 12px;font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ac);margin-bottom:12px">
+              Total : <b>${fmt(tot)}</b>
+            </div>
+            <button class="btn" id="npBtn" style="width:100%;padding:14px;font-size:15px;font-weight:700;letter-spacing:.01em">
+              Générer le paiement →
+            </button>
+          </div>
         </div>
       </div>
+
+      <!-- Étape 2 : QR + adresse (caché par défaut) -->
+      <div id="npActive" style="display:none;margin-top:10px">
+        <div class="qr-section">
+          <span class="pay-net" id="npNet" style="margin-bottom:12px"></span>
+          <img class="qr-img" id="npQR" src="" alt="QR Code" style="width:150px;height:150px;border-radius:12px;border:2px solid var(--line)">
+          <div class="addr-box" style="margin-top:12px">
+            <span class="addr-txt" id="npAddr"></span>
+            <button class="copy-btn" id="npCopy" style="white-space:nowrap">📋 Copier</button>
+          </div>
+          <div class="amt-display" id="npAmt" style="margin-top:12px;font-family:Space Grotesk,sans-serif;font-weight:800;font-size:22px;color:var(--ac)"></div>
+          <div style="font-size:11px;color:var(--sub);margin-bottom:10px">Montant exact à envoyer</div>
+          <div class="status-row">
+            <div class="status-dot waiting" id="npDot"></div>
+            <div class="status-txt" id="npStatus">⏳ En attente de paiement…</div>
+          </div>
+          <div class="pay-bar-w" style="width:100%;margin-top:6px">
+            <div class="pay-bar" id="npBar" style="width:8%"></div>
+          </div>
+          <p style="font-size:10px;color:var(--sub);margin-top:6px">Vérifié automatiquement toutes les 10s</p>
+        </div>
+        <button class="cancel-pay" id="npCancel">✕ Annuler — changer de crypto</button>
+      </div>
+
       <div id="npSuccess" style="display:none;margin-top:10px"></div>
     </div>`;
   const grid=$("cryptoGrid");
@@ -1269,23 +1353,75 @@ function renderCartPage(){
     grid.appendChild(btn);
   });
   const pb2=$("payBalBtn");if(pb2)pb2.onclick=()=>doOrder("balance");
-  $("npBtn").onclick=async()=>{
+  /* Warning minimum selon montant */
+  const mw=$("minWarn");
+  if(mw&&tot<15)mw.classList.add("show");
+
+  /* Sélection crypto — warning minimum */
+  const cg=$("cryptoGrid");
+  if(cg)cg.addEventListener("click",function(){
+    const sel=cg.querySelector(".csel.on");
+    if(!sel||!mw)return;
+    const highMin=["eth","usdterc20","usdcerc20","bnbbsc","sol","btc"];
+    const cur=sel.dataset.cur||"";
+    if(tot<15&&highMin.includes(cur))mw.classList.add("show");
+    else mw.classList.remove("show");
+  });
+
+  /* Bouton Annuler */
+  function cancelPayment(){
+    stopPoll();
+    $("npActive").style.display="none";
+    $("stepChoix").style.display="block";
+    const btn=$("npBtn");if(btn){btn.disabled=false;btn.textContent="Générer le paiement →";}
+    toast("Paiement annulé — choisis une autre crypto");
+  }
+  const npCancel=$("npCancel");
+  if(npCancel)npCancel.onclick=cancelPayment;
+
+  $("npBtn").onclick=async function(){
     const selBtn=document.querySelector("#cryptoGrid .csel.on");
     const selCur=selBtn?selBtn.dataset.cur:"usdttrc20";
-    const btn=$("npBtn");btn.disabled=true;btn.textContent="⏳ Génération…";
+    const btn=$("npBtn");
+    btn.disabled=true;
+    btn.textContent="⏳ Génération en cours…";
     try{
-      const p=await apiPost("create-payment",{amount:tot,orderId:"acm_"+Date.now(),description:entries().map(e=>e.qty+"x @"+e.item.domain).join(", "),payCurrency:selCur});
-      if(!p.pay_address){toast("Erreur: "+(p.message||"Vérifie NOWPayments"));btn.disabled=false;btn.textContent="₿ Générer le paiement";return;}
-      btn.closest(".pay-card").querySelector("button").style.display="none";
+      const p=await apiPost("create-payment",{
+        amount:tot,
+        orderId:"acm_"+Date.now(),
+        description:entries().map(function(e){return e.qty+"x @"+e.item.domain;}).join(", "),
+        payCurrency:selCur
+      });
+      if(!p||!p.pay_address){
+        var errMsg=p&&p.message?p.message:"Vérifie NOWPayments ou choisis USDT TRC20";
+        toast("❌ "+errMsg,5000);
+        btn.disabled=false;
+        btn.textContent="Générer le paiement →";
+        return;
+      }
+      /* Cacher l'étape 1, afficher étape 2 */
+      $("stepChoix").style.display="none";
       $("npActive").style.display="block";
-      const cr=CRYPTOS.find(c=>c.cur===selCur);
-      $("npNet").textContent=(cr?.label||selCur)+" · "+(cr?.net||"");
+      window.scrollTo(0,0);
+
+      const cr=CRYPTOS.find(function(c){return c.cur===selCur;});
+      var netLabel=(cr?cr.label:selCur)+" · "+(cr?cr.net:"");
+      $("npNet").textContent=netLabel;
       $("npAddr").textContent=p.pay_address;
-      $("npAmt").textContent=p.pay_amount+" "+(selCur.replace(/trc20|erc20|bsc/g,"").toUpperCase());
-      $("npQR").src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data="+encodeURIComponent(p.pay_address);
-      $("npCopy").onclick=()=>navigator.clipboard.writeText(p.pay_address).then(()=>toast("Copié ✓"));
+      var symLabel=selCur.replace(/trc20|erc20|bsc/g,"").toUpperCase();
+      $("npAmt").textContent=p.pay_amount+" "+symLabel;
+      $("npQR").src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data="+encodeURIComponent(p.pay_address);
+      $("npCopy").onclick=function(){
+        navigator.clipboard.writeText(p.pay_address)
+          .then(function(){toast("Adresse copiée ✓");haptic("medium");})
+          .catch(function(){toast(p.pay_address,8000);});
+      };
       startPoll(p.payment_id,entries());
-    }catch(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="₿ Générer le paiement";}
+    }catch(e){
+      toast("Erreur réseau: "+e.message,5000);
+      btn.disabled=false;
+      btn.textContent="Générer le paiement →";
+    }
   };
 }
 function swTab(t){$("tSolde").classList.toggle("on",t==="solde");$("tCrypto").classList.toggle("on",t==="crypto");$("pSolde").classList.toggle("on",t==="solde");$("pCrypto").classList.toggle("on",t==="crypto");}
@@ -1331,7 +1467,15 @@ function startPoll(pid,oe){
   pollInt=setInterval(async()=>{
     try{
       const d=await checkPayment(pid);const st=ST[d.payment_status]||{l:d.payment_status,p:20};
-      if($("npStatus"))$("npStatus").textContent=st.l;if($("npBar"))$("npBar").style.width=st.p+"%";
+      if($("npStatus"))$("npStatus").textContent=st.l;
+      if($("npBar"))$("npBar").style.width=st.p+"%";
+      var dot=$("npDot");
+      if(dot){
+        dot.className="status-dot";
+        if(d.payment_status==="waiting")dot.classList.add("waiting");
+        else if(d.payment_status==="confirming")dot.classList.add("detecting");
+        else if(d.payment_status==="confirmed"||d.payment_status==="finished")dot.classList.add("confirmed");
+      }
       if(d.payment_status==="confirmed"||d.payment_status==="finished"){
         stopPoll();hapticN("success");
         const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
@@ -1372,14 +1516,14 @@ function goTo(page){
   if(page==="admin")renderAdmin();
   window.scrollTo(0,0);
 }
-/* Tous en pointerdown = 0ms de délai */
-["btnBack","btnAdminBack"].forEach(id=>{const el=$(id);if(el)el.addEventListener("click",()=>goTo("shop"));});
-$("navShop").addEventListener("click",()=>goTo("shop"));
-$("navCart").addEventListener("click",()=>goTo("cart"));
-$("profileCard").addEventListener("click",openDeposit);
-$("navSolde").addEventListener("click",openDeposit);
-$("depClose").addEventListener("click",()=>closeSheet());
-$("depOverlay").addEventListener("click",()=>closeSheet());
+/* fastClick sur tous les éléments nav — réponse immédiate sans bloquer le scroll */
+["btnBack","btnAdminBack"].forEach(function(id){fastClick($(id),function(){goTo("shop");});});
+fastClick($("navShop"),function(){goTo("shop");});
+fastClick($("navCart"),function(){goTo("cart");});
+fastClick($("profileCard"),openDeposit);
+fastClick($("navSolde"),openDeposit);
+fastClick($("depClose"),function(){closeSheet();});
+$("depOverlay").onclick=function(){closeSheet();};
 
 function openDeposit(){
   const ini=me.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)||"?";
