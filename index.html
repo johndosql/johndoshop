@@ -635,6 +635,34 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   color:var(--err);font-family:'Inter',sans-serif;font-weight:600;
   font-size:13px;cursor:pointer;transition:all .15s;}
 .pay-cancel:active{background:var(--errs);}
+
+/* ══ CRYPTO PICKER COMPACT ═══════════════ */
+.crypto-pick-wrap{margin-bottom:12px;}
+.crypto-pick-btn{
+  width:100%;display:flex;align-items:center;gap:12px;
+  background:var(--sf);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;cursor:pointer;transition:border-color .15s;}
+.crypto-pick-btn:active{border-color:var(--ac);}
+.crypto-pick-logo{width:32px;height:32px;border-radius:50%;object-fit:contain;flex:0 0 auto;background:var(--sf2);}
+.crypto-pick-info{flex:1;min-width:0;text-align:left;}
+.crypto-pick-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;}
+.crypto-pick-net{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);margin-top:1px;}
+.crypto-pick-arrow{font-size:14px;color:var(--sub);}
+
+/* Sheet liste cryptos */
+.crypto-list{display:flex;flex-direction:column;gap:6px;}
+.crypto-item{
+  display:flex;align-items:center;gap:12px;
+  background:var(--sf);border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;cursor:pointer;transition:all .15s;}
+.crypto-item:active{border-color:var(--ac);background:rgba(0,200,160,.06);}
+.crypto-item.on{border-color:var(--ac);background:rgba(0,200,160,.08);}
+.crypto-item-logo{width:36px;height:36px;border-radius:50%;object-fit:contain;flex:0 0 auto;}
+.crypto-item-info{flex:1;}
+.crypto-item-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;}
+.crypto-item-net{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);margin-top:1px;}
+.crypto-item-check{font-size:16px;color:var(--ac);opacity:0;transition:opacity .15s;}
+.crypto-item.on .crypto-item-check{opacity:1;}
 </style>
 </head>
 <body>
@@ -837,6 +865,19 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   </div>
 </div>
 
+
+<!-- CRYPTO PICKER SHEET -->
+<div class="overlay" id="cryptoPickOverlay"></div>
+<div class="sheet" id="cryptoPickSheet">
+  <div class="sh-handle"></div>
+  <div class="sh-hdr">
+    <span class="sh-title">Choisir la crypto</span>
+    <button class="sh-close" id="cryptoPickClose">✕</button>
+  </div>
+  <div class="sh-body">
+    <div class="crypto-list" id="cryptoPickList"></div>
+  </div>
+</div>
 <!-- PAYS DISPO SHEET -->
 <div class="overlay" id="paysOverlay"></div>
 <div class="sheet" id="paysSheet">
@@ -1122,12 +1163,16 @@ function loadProds(){
   function scheduleRender(){
     if(renderPending)return;
     renderPending=true;
-    requestAnimationFrame(function(){
-      renderPending=false;
-      updateStockBadge();
-      renderChips();
-      renderCatalog();
-    });
+    /* Attendre 400ms après le dernier touch avant de re-render */
+    var delay=window._lastTouch&&(Date.now()-window._lastTouch)<600?600:0;
+    setTimeout(function(){
+      requestAnimationFrame(function(){
+        renderPending=false;
+        updateStockBadge();
+        renderChips();
+        renderCatalog();
+      });
+    },delay);
   }
 
   db.ref("products").on("value",function(s){
@@ -1518,7 +1563,7 @@ function renderCartPage(){
   const grid=$("cryptoGrid");
   CRYPTOS.forEach(cr=>{
     const btn=document.createElement("button");btn.className="csel"+(cr.cur==="usdttrc20"?" on":"");btn.dataset.cur=cr.cur;
-    btn.innerHTML=`<img class="csel-logo" src="${cr.logo}" alt="${cr.label}" onerror="this.outerHTML='<span style=font-size:16px>💲</span>'">${cr.label}<br><span style="font-size:9px;opacity:.5">${cr.net}</span>`;
+    btn.innerHTML=`<img class="csel-logo" src="${cr.logo}" alt="${cr.label}">${cr.label}<br><span style="font-size:9px;opacity:.5">${cr.net}</span>`;
     btn.onclick=()=>{grid.querySelectorAll(".csel").forEach(b=>b.classList.remove("on"));btn.classList.add("on");haptic("light");};
     grid.appendChild(btn);
   });
@@ -1725,8 +1770,18 @@ function renderDepContent(){
     <p style="font-size:12px;color:var(--sub);margin-bottom:12px;line-height:1.7">Génère une adresse et envoie le paiement.<br><b style="color:var(--ink)">Crédit automatique</b> après confirmation.</p>
     <div class="amt-grid" id="amtGrid"></div>
     <input class="field" id="customAmt" type="number" min="1" placeholder="Autre montant (€)" style="margin-bottom:12px">
-    <p class="sl-lbl" style="margin-top:0">Crypto</p>
-    <div class="crypto-grid" id="depCG" style="margin-bottom:12px"></div>
+    <p class="sl-lbl" style="margin-top:0">Crypto & réseau</p>
+    <div class="crypto-pick-wrap">
+      <div class="crypto-pick-btn" id="depCryptoBtn" onclick="openCryptoPicker()">
+        <img class="crypto-pick-logo" id="depCryptoLogo" src="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/usdt.png" alt="">
+        <div class="crypto-pick-info">
+          <div class="crypto-pick-name" id="depCryptoName">USDT TRX</div>
+          <div class="crypto-pick-net" id="depCryptoNet">TRC20 — recommandé pour petits montants</div>
+        </div>
+        <span class="crypto-pick-arrow">▾</span>
+      </div>
+    </div>
+    <input type="hidden" id="depCG" data-cur="usdttrc20">
     <button class="btn" id="depGenBtn" style="width:100%;padding:13px;font-size:14px">💳 Générer l'adresse</button>
     </div>
     <div id="depPay" style="margin-top:10px"></div>`;
@@ -1737,17 +1792,11 @@ function renderDepContent(){
     ag.appendChild(btn);
   });
   $("customAmt").oninput=e=>{const v=parseFloat(e.target.value);if(v>0){selAmt=v;ag.querySelectorAll(".amt-btn").forEach(b=>b.classList.remove("on"));}};
-  const dcg=$("depCG");
-  CRYPTOS.slice(0,6).forEach(cr=>{
-    const btn=document.createElement("button");btn.className="csel"+(cr.cur==="usdttrc20"?" on":"");btn.dataset.cur=cr.cur;
-    btn.innerHTML=`<img class="csel-logo" src="${cr.logo}" alt="${cr.label}" onerror="this.outerHTML='<span style=font-size:16px>💲</span>'">${cr.label}<br><span style="font-size:9px;opacity:.5">${cr.net}</span>`;
-    btn.onclick=()=>{dcg.querySelectorAll(".csel").forEach(b=>b.classList.remove("on"));btn.classList.add("on");haptic("light");};
-    dcg.appendChild(btn);
-  });
+  /* Crypto sélectionné via openCryptoPicker() */
   $("depGenBtn").onclick=async function(){
     const amt=selAmt;if(!amt||amt<1){toast("Montant minimum 1€");return;}
-    const selBtn=document.querySelector("#depCG .csel.on");
-    const selCur=selBtn?selBtn.dataset.cur:"usdttrc20";
+    const depCGEl=$("depCG");
+    const selCur=depCGEl?depCGEl.dataset.cur:"usdttrc20";
     const btn=$("depGenBtn");btn.disabled=true;btn.textContent="⏳ Génération…";
     try{
       const p=await apiPost("create-payment",{amount:amt,orderId:"dep_"+me.id+"_"+Date.now(),description:"Dépôt ACCESMAIL",payCurrency:selCur});
@@ -1922,7 +1971,40 @@ function renderAdmin(){
   el.querySelectorAll(".atab").forEach(b=>b.onclick=()=>showTab(b.dataset.t));showTab("stock");
 }
 
+/* ══ CRYPTO PICKER ════════════════════════════ */
+var _selDepCrypto=CRYPTOS[0];
+function openCryptoPicker(){
+  var list=$("cryptoPickList");
+  list.innerHTML="";
+  CRYPTOS.forEach(function(cr){
+    var item=document.createElement("div");
+    item.className="crypto-item"+(_selDepCrypto.cur===cr.cur?" on":"");
+    var hints={"usdttrc20":"Recommandé — frais très bas","usdterc20":"Frais ETH élevés","btc":"Minimum ~$1","eth":"Frais élevés","sol":"Rapide","ltc":"Frais bas","usdcerc20":"Frais ETH","bnbbsc":"Frais bas","matic":"Frais très bas","doge":"Frais bas","xrp":"Rapide","trx":"Frais très bas"};
+    item.innerHTML="<img class='crypto-item-logo' src='"+cr.logo+"' alt='"+cr.label+"'>"
+      +"<div class='crypto-item-info'><div class='crypto-item-name'>"+cr.label+"</div>"
+      +"<div class='crypto-item-net'>"+cr.net+(hints[cr.cur]?" · "+hints[cr.cur]:"")+"</div></div>"
+      +"<span class='crypto-item-check'>✓</span>";
+    item.onclick=function(){
+      _selDepCrypto=cr;
+      /* Mettre à jour le bouton sélecteur */
+      var el=$("depCryptoLogo");if(el)el.src=cr.logo;
+      var en=$("depCryptoName");if(en)en.textContent=cr.label;
+      var et=$("depCryptoNet");if(et)et.textContent=cr.net+(hints[cr.cur]?" · "+hints[cr.cur]:"");
+      var dg=$("depCG");if(dg)dg.dataset.cur=cr.cur;
+      haptic("light");
+      $("cryptoPickSheet").classList.remove("on");
+      setTimeout(function(){$("cryptoPickOverlay").classList.remove("on");},180);
+    };
+    list.appendChild(item);
+  });
+  $("cryptoPickOverlay").classList.add("on");
+  requestAnimationFrame(function(){$("cryptoPickSheet").classList.add("on");});
+}
+$("cryptoPickClose").onclick=function(){$("cryptoPickSheet").classList.remove("on");setTimeout(function(){$("cryptoPickOverlay").classList.remove("on");},180);};
+$("cryptoPickOverlay").onclick=function(){$("cryptoPickSheet").classList.remove("on");setTimeout(function(){$("cryptoPickOverlay").classList.remove("on");},180);};
+
 /* ══ BOOT ══════════════════════════════════════ */
+document.addEventListener("touchstart",function(){window._lastTouch=Date.now();},{passive:true});
 initSplash();
 initMe();
 loadProds();
