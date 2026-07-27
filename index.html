@@ -1194,56 +1194,19 @@ function initMe(){
 /* ══ PRODUCTS ═══════════════════════════════ */
 function loadProds(){
   if(!fbOk){
-    prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
-    updateStockBadge();renderChips();renderCatalog();
+    renderCatalog();
     return;
   }
-
-  /* Charger Firebase — rendu différé pour ne pas bloquer les taps */
-  var renderPending=false;
-  function scheduleRender(){
-    if(renderPending)return;
-    renderPending=true;
-    /* Attendre 400ms après le dernier touch avant de re-render */
-    var delay=window._lastTouch&&(Date.now()-window._lastTouch)<600?600:0;
-    setTimeout(function(){
-      requestAnimationFrame(function(){
-        renderPending=false;
-        updateStockBadge();
-        renderChips();
-        renderCatalog();
-      });
-    },delay);
-  }
-
-  /* Chargement initial une seule fois */
-  db.ref("products").once("value").then(function(s){
-    var v=s.val();
-    if(v&&Object.keys(v).length>0){
-      prods=Object.entries(v).map(function(entry){
-        return{id:entry[0],...entry[1]};
-      });
-    }else{
-      prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
-    }
-    scheduleRender();
-    /* Après le chargement initial, écouter les changements en temps réel */
-    /* Throttle : max 1 re-render toutes les 5 secondes */
-    var lastRT=0;
-    db.ref("products").on("value",function(s){
-      var now=Date.now();
-      if(now-lastRT<5000)return;
-      lastRT=now;
-      var v=s.val();
-      if(v&&Object.keys(v).length>0){
-        prods=Object.entries(v).map(function(entry){return{id:entry[0],...entry[1]};});
-      }
-      scheduleRender();
-    });
-  }).catch(function(err){
-    console.warn("Firebase error:",err);
-    prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
-    scheduleRender();
+  /* Simple et direct — Firebase real-time */
+  db.ref("products").on("value",function(s){
+    var v=s.val()||{};
+    prods=Object.entries(v).map(function(e){return{id:e[0],...e[1]};});
+    updateStockBadge();
+    renderChips();
+    renderCatalog();
+  },function(err){
+    console.warn("Firebase:",err);
+    renderCatalog();
   });
 }
 
@@ -1379,22 +1342,10 @@ function filtered(){
   return result;
 }
 
-var _lastRenderKey="",_renderTimer=null;
 function renderCatalog(){
-  var key=viewMode+"|"+activeC+"|"+query+"|"+sortMode+"|"+prods.length;
-  if(key===_lastRenderKey)return;
-  _lastRenderKey=key;
-  var el=$("catalog");
-  /* Feedback immédiat — vider sans bloquer */
-  if(!el)return;
-  /* Annuler tout render en cours */
-  if(_renderTimer){clearTimeout(_renderTimer);_renderTimer=null;}
-  /* Laisser le thread respirer avant de render */
-  _renderTimer=setTimeout(function(){
-    _renderTimer=null;
-    if(viewMode==="pays"){renderCatalogPays(el);}
-    else{renderCatalogDom(el);}
-  },16);
+  var el=$("catalog");if(!el)return;
+  if(viewMode==="pays"){renderCatalogPays(el);}
+  else{renderCatalogDom(el);}
 }
 
 function renderCatalogDom(el){
@@ -2144,17 +2095,11 @@ $("cryptoPickClose").onclick=function(){$("cryptoPickSheet").classList.remove("o
 $("cryptoPickOverlay").onclick=function(){$("cryptoPickSheet").classList.remove("on");setTimeout(function(){$("cryptoPickOverlay").classList.remove("on");},180);};
 
 /* ══ BOOT ══════════════════════════════════════ */
-document.addEventListener("touchstart",function(){window._lastTouch=Date.now();},{passive:true});
 
 /* Afficher le splash immédiatement */
 initSplash();
-
-/* initMe sans attendre Firebase */
 initMe();
-
-/* Charger les produits APRÈS que le splash soit terminé et l'UI prête */
-/* setTimeout 0 = prochain tick du navigateur = UI déjà réactive */
-setTimeout(function(){loadProds();},100);
+loadProds();
 try{
   const tg=window.Telegram&&window.Telegram.WebApp;
   if(tg){
