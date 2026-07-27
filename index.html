@@ -19,12 +19,19 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-/* touch-action:manipulation sur les éléments interactifs UNIQUEMENT = 0ms délai sans bloquer le scroll */
-button,a,.chip,.ci,.mopt,.add-btn,.sh-close,.menu-btn,.s-x,
+/* Éliminer le délai 300ms iOS sur TOUS les éléments interactifs */
+button,a,input[type=button],input[type=submit],
+.chip,.ci,.mopt,.add-btn,.sh-close,.menu-btn,.s-x,
 .back-btn,.vtab,.atab,.sm-btn,.amt-btn,.csel,.nav-item,
 .profile-row,.stat-item,.scard,.scard-compact,.copy-btn,
-.pays-section div,.see-more-btn,.trust{
+.pays-section div,.see-more-btn,.pay-cancel,.cancel-pay,
+.pay-screen-back,.pay-qr-amount,.btn,.btn-ghost,
+[onclick],[role=button]{
   touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  cursor:pointer;
+  -webkit-user-select:none;
+  user-select:none;
 }
 html,body{min-height:100%;overscroll-behavior:none;background:#040810;}
 body{color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
