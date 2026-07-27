@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ACCESMAIL</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -907,7 +907,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 
 <div class="toast" id="toast"></div>
 
-<script>
+<script defer>
 /* ══ CONFIG ══════════════════════════════════════ */
 const VERCEL="https://johndoshop.vercel.app";
 const FB={apiKey:"AIzaSyCTc6PzMOjihlQtx4HfZM3foibvVMf51bs",authDomain:"johndoshop.firebaseapp.com",databaseURL:"https://johndoshop-default-rtdb.europe-west1.firebasedatabase.app",projectId:"johndoshop",storageBucket:"johndoshop.firebasestorage.app",messagingSenderId:"457831162431",appId:"1:457831162431:web:89177714cad61411710e8a"};
@@ -1162,7 +1162,11 @@ function renderChips(){
   const el=$("chips"),codes=activeCodes();el.innerHTML="";
   [{ c:"all",n:"🌍 TOUS" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c)+" "+cty.n}))].forEach(cty=>{
     const chip=document.createElement("div");chip.className="chip"+(activeC===cty.c?" on":"");chip.textContent=cty.n;
-    fastClick(chip,function(){activeC=cty.c;showAll=false;renderChips();renderCatalog();});
+    fastClick(chip,function(){
+      activeC=cty.c;showAll=false;
+      renderChips();
+      requestAnimationFrame(function(){renderCatalog();});
+    });
     el.appendChild(chip);
   });
 }
@@ -1358,7 +1362,12 @@ function renderCatalogPays(el){
   const row=$("searchRow"),inp=$("searchIn"),clr=$("searchClear");
   inp.addEventListener("focus",()=>{row.classList.add("on");clr.style.display="flex";});
   inp.addEventListener("blur",()=>{if(!inp.value){row.classList.remove("on");clr.style.display="none";}});
-  inp.addEventListener("input",e=>{query=e.target.value;showAll=!!e.target.value;renderCatalog();});
+  inp.addEventListener("input",e=>{
+    query=e.target.value;showAll=!!e.target.value;
+    /* Différer le rendu pour que le clavier reste fluide */
+    clearTimeout(inp._t);
+    inp._t=setTimeout(function(){renderCatalog();},120);
+  });
   clr.onclick=()=>{inp.value="";query="";showAll=false;renderCatalog();inp.blur();row.classList.remove("on");clr.style.display="none";};
   /* Fermer le clavier si on touche en dehors ou si on scroll */
   document.addEventListener("touchstart",(e)=>{if(!row.contains(e.target))inp.blur();},{passive:true});
@@ -1640,10 +1649,16 @@ function doOrder(method){
 function goTo(page){
   ["shop","cart","admin"].forEach(p=>$("S_"+p).classList.toggle("active",p===page));
   document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("on"));
-  if(page==="shop")$("navShop").classList.add("on");
-  if(page==="cart"){$("navCart").classList.add("on");renderCartPage();}
-  if(page==="admin")renderAdmin();
   window.scrollTo(0,0);
+  if(page==="shop"){$("navShop").classList.add("on");}
+  if(page==="cart"){
+    $("navCart").classList.add("on");
+    /* Différer le rendu du panier pour ne pas bloquer l'animation de transition */
+    requestAnimationFrame(function(){renderCartPage();});
+  }
+  if(page==="admin"){
+    requestAnimationFrame(function(){renderAdmin();});
+  }
 }
 /* fastClick sur tous les éléments nav — réponse immédiate sans bloquer le scroll */
 ["btnBack","btnAdminBack"].forEach(function(id){fastClick($(id),function(){goTo("shop");});});
@@ -1773,6 +1788,9 @@ function renderDepContent(){
               var notif="\uD83D\uDCB0 <b>ACCESMAIL \u2014 Solde recharg\u00e9 !</b>\n\nTon solde a \u00e9t\u00e9 cr\u00e9dit\u00e9 de <b>"+fmt(amt)+"</b>\nNouveau solde\u00a0: <b>"+fmt(newBal)+"</b>\n\nOuvre la boutique pour acheter tes acc\u00e8s. \uD83D\uDC47";
               apiPost("send-message",{chatId:me.tgId,text:notif}).catch(function(e){console.error("notif:",e);});
             }
+            /* Notification admin */
+            var adminNotif="\uD83D\uDCB8 <b>Nouveau d\u00e9p\u00f4t re\u00e7u</b>\n\nClient\u00a0: <b>"+(me.name||"Inconnu")+"</b> "+(me.handle?"("+me.handle+")":"")+"\nMontant\u00a0: <b>"+fmt(amt)+"</b>\nNouveau solde\u00a0: <b>"+fmt(newBal)+"</b>";
+            apiPost("send-message",{chatId:1363470410,text:adminNotif}).catch(function(e){console.error("admin notif:",e);});
             /* Fermer l'écran + la sheet + toast */
             setTimeout(function(){
               $("S_depPayment").classList.remove("open");
