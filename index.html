@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ACCESMAIL</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#040810;--bg2:#070D18;--sf:#0D1424;--sf2:#131B2E;
+  --ink:#D8F0FF;--sub:#3A5070;--muted:#1E3048;
+  --ac:#00C8A0;--ac2:#00FFCC;
+  --ok:#00E878;--err:#FF4F40;--errs:rgba(255,79,64,.14);
+  --line:rgba(0,200,160,.08);--r:12px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+/* Éliminer le délai 300ms des navigateurs mobiles */
+a,button,input,select,textarea,
+.nav-item,.chip,.ci,.mopt,.stat-item,.scard,.scard-compact,
+.profile-row,.add-btn,.sh-close,.menu-btn,.s-x,.back-btn,
+.vtab,.atab,.btn,.sm-btn,.amt-btn,.csel,.pays-section{
+  touch-action:manipulation;}
+html,body{min-height:100%;overscroll-behavior:none;background:#040810;}
+body{color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,200,160,.07) 0%,transparent 50%),radial-gradient(ellipse at 90% 90%,rgba(0,160,220,.04) 0%,transparent 45%);}
+input,button,textarea{font-family:'Inter',sans-serif;color:var(--ink);background:transparent;}
+input::placeholder,textarea::placeholder{color:var(--sub);}
+
+/* ══ SPLASH ═══════════════════════════ */
+#splash{
+  position:fixed;inset:0;z-index:200;background:#040810;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .6s ease;}
+#splash.out{opacity:0;pointer-events:none;}
+.splash-glow{
+  position:absolute;width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,200,160,.18) 0%,rgba(0,200,160,.05) 45%,transparent 70%);
+  pointer-events:none;}
+.splash-logo{
+  position:relative;z-index:1;
+  font-family:'Space Grotesk',sans-serif;font-weight:800;
+  font-size:3rem;letter-spacing:-.03em;text-align:center;
+  background:linear-gradient(135deg,#00C8A0 0%,#00FFCC 45%,#D8F0FF 65%,#00C8A0 100%);
+  background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;}
+.splash-sub{
+  position:relative;z-index:1;margin-top:8px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  letter-spacing:.2em;text-transform:uppercase;color:#2A4060;}
+
+/* ══ SPLASH ANIMATIONS ════════════════════════════════════ */
+@keyframes shootRight{
+  0%{transform:translate(-80px,0) rotate(-5deg);opacity:0;}
+  8%{opacity:.9;}
+  92%{opacity:.9;}
+  100%{transform:translate(calc(100vw + 120px),-60px) rotate(-5deg);opacity:0;}
+}
+@keyframes shootDiag{
+  0%{transform:translate(-60px,60px);opacity:0;}
+  8%{opacity:.85;}
+  92%{opacity:.85;}
+  100%{transform:translate(calc(100vw + 80px),-180px);opacity:0;}
+}
+@keyframes shootUp{
+  0%{transform:translateY(80px);opacity:0;}
+  10%{opacity:.7;}
+  90%{opacity:.7;}
+  100%{transform:translateY(calc(-100vh - 60px));opacity:0;}
+}
+@keyframes orbit{
+  0%{transform:rotate(0deg) translateX(90px) rotate(0deg);}
+  100%{transform:rotate(360deg) translateX(90px) rotate(-360deg);}
+}
+@keyframes pulseGlow{
+  0%,100%{transform:scale(1);opacity:.3;}
+  50%{transform:scale(1.4);opacity:.6;}
+}
+
+/* ══ APP ═══════════════════════════════ */
+.app{max-width:460px;margin:0 auto;min-height:100vh;padding-bottom:72px;background:#040810;position:relative;z-index:1;}
+.screen{display:none;padding:0 0 8px;background:#040810;min-height:100vh;}
+.screen.active{display:block;}
+
+/* ══ TOP BAR ═══════════════════════════ */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 10px;}
+.tb-logo{
+  font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;
+  background:linear-gradient(135deg,var(--ac),var(--ac2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;cursor:default;user-select:none;}.stock-badge{
+  display:flex;align-items:center;gap:6px;
+  background:var(--sf);border:1px solid var(--line);border-radius:999px;
+  padding:6px 12px;font-size:12px;font-weight:600;}
+.stock-badge::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ok);
+  box-shadow:0 0 6px var(--ok);}
+
+/* ══ PROFILE ROW ════════════════════════ */
+.profile-row{
+  margin:0 12px 14px;
+  background:var(--sf);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;
+  transition:border-color .15s;}
+.profile-row:active{border-color:var(--ac);}
+.av{width:44px;height:44px;border-radius:11px;flex:0 0 auto;overflow:hidden;
+  background:var(--sf2);display:flex;align-items:center;justify-content:center;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;border:1px solid var(--line);}
+.av img{width:100%;height:100%;object-fit:cover;}
+.pinfo{flex:1;min-width:0;}
+.pname{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.puid{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);margin-top:1px;}
+.pbal-area{text-align:right;}
+.pbal-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--sub);}
+.pbal-val{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:17px;color:var(--ac);}
+
+/* ══ SEARCH ═════════════════════════════ */
+.search-row{margin:0 12px 12px;
+  display:flex;align-items:center;gap:8px;
+  background:var(--sf);border:1px solid var(--line);border-radius:var(--r);
+  padding:0 14px;height:44px;transition:border-color .18s;}
+.search-row.on{border-color:rgba(240,165,0,.3);}
+.s-hash{font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--ac);flex:0 0 auto;}
+.s-in{flex:1;background:transparent;border:none;outline:none;font-size:14px;color:var(--ink);}
+.s-in::placeholder{color:var(--sub);}
+.s-x{background:var(--sf2);border:1px solid var(--line);border-radius:7px;
+  width:26px;height:26px;font-size:11px;cursor:pointer;color:var(--sub);
+  display:none;align-items:center;justify-content:center;flex:0 0 auto;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.s-x:active{transform:scale(.82);}
+
+/* ══ FILTER CHIPS ═══════════════════════ */
+.chips-wrap{overflow-x:auto;scrollbar-width:none;padding:0 12px 12px;}
+.chips-wrap::-webkit-scrollbar{display:none;}
+.chips{display:flex;gap:6px;white-space:nowrap;}
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:999px;border:1px solid var(--line);
+  background:var(--sf);font-size:12px;font-weight:600;color:var(--sub);
+  cursor:pointer;transition:all .15s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;flex:0 0 auto;}
+.chip:active{transform:scale(.92);}
+.chip.on{background:var(--ac);border-color:var(--ac);color:#111;}
+
+/* ══ STOCK LIST ═════════════════════════ */
+.stock-list{display:flex;flex-direction:column;gap:10px;padding:0 12px;}
+
+/* ── STOCK CARD ── */
+.scard{
+  background:var(--sf);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px;transition:border-color .15s;animation:fadeUp .35s cubic-bezier(.22,1,.36,1) both;}
+.scard:active{border-color:rgba(240,165,0,.3);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.scard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.scard-main{flex:1;min-width:0;}
+.scard-dom{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:15px;color:var(--ink);margin-bottom:6px;}
+.scard-flags{font-size:15px;letter-spacing:2px;}
+.scard-right{text-align:right;flex:0 0 auto;}
+.scard-price{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--ac);margin-bottom:8px;}
+
+.add-btn{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--ac);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:300;color:#111;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .18s;}
+.add-btn:active{transform:scale(.88);}
+.add-btn:not(:disabled):hover{box-shadow:0 4px 16px rgba(240,165,0,.35);}
+.add-btn:disabled{background:var(--sf2);color:var(--sub);cursor:default;}
+
+.scard-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.tag{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:3px 9px;border-radius:5px;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;
+  background:var(--sf2);color:var(--sub);border:1px solid var(--line);}
+.tag.gold{background:rgba(240,165,0,.12);color:var(--ac);border-color:rgba(240,165,0,.2);}
+.tag.green{background:rgba(62,201,92,.1);color:var(--ok);border-color:rgba(62,201,92,.2);}
+.tag.red{background:var(--errs);color:var(--err);border-color:rgba(255,79,64,.2);}
+.tag.orange{background:rgba(255,140,0,.1);color:orange;border-color:rgba(255,140,0,.2);}
+
+.stats-row{
+  margin:0 12px 14px;display:flex;align-items:center;
+  background:var(--sf);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 0;overflow:hidden;}
+.stat-item{flex:1;text-align:center;padding:0 4px;}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;
+  color:var(--ac);line-height:1;}
+.stat-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--sub);margin-top:4px;}
+.stat-sep{width:1px;background:var(--line);height:36px;flex:0 0 auto;}
+  text-align:center;padding:13px;border:1px dashed rgba(240,165,0,.2);
+  border-radius:var(--r);cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sub);
+  transition:color .15s,border-color .15s;background:transparent;}
+.see-more-btn:active{color:var(--ac);border-color:rgba(0,200,160,.4);}
+
+.menu-btn{background:var(--sf);border:1px solid var(--line);border-radius:8px;
+  width:34px;height:34px;cursor:pointer;color:var(--sub);flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;margin-left:4px;
+  transition:all .15s cubic-bezier(.34,1.56,.64,1);}
+.menu-btn:active{transform:scale(.86);color:var(--ac);border-color:rgba(0,200,160,.3);}
+
+.menu-section-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--sub);margin:16px 0 8px;}
+.menu-section-lbl:first-child{margin-top:4px;}
+.menu-opts{display:flex;flex-direction:column;gap:6px;}
+.mopt{display:flex;align-items:center;gap:12px;background:var(--sf);border:1px solid var(--line);
+  border-radius:12px;padding:13px 14px;cursor:pointer;text-align:left;width:100%;
+  transition:all .18s cubic-bezier(.34,1.56,.64,1);}
+.mopt:active{transform:scale(.98);}
+.mopt.on{background:rgba(0,200,160,.08);border-color:rgba(0,200,160,.3);}
+.mopt-ico{font-family:'IBM Plex Mono',monospace;font-size:16px;width:28px;text-align:center;flex:0 0 auto;color:var(--sub);}
+.mopt.on .mopt-ico{color:var(--ac);}
+.mopt-info{flex:1;}
+.mopt-title{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;color:var(--ink);}
+.mopt-sub{font-size:11px;color:var(--sub);margin-top:2px;}
+.mopt-check{font-size:14px;color:var(--ac);opacity:0;transition:opacity .15s;}
+.mopt.on .mopt-check{opacity:1;}
+.pays-section{margin-bottom:14px;}
+.pays-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:8px;}
+.pays-hdr-left{display:flex;align-items:center;gap:8px;}
+.pays-flag{font-size:22px;line-height:1;}
+.pays-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:var(--ink);}
+.pays-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);background:rgba(0,200,160,.1);border:1px solid rgba(0,200,160,.2);padding:2px 9px;border-radius:999px;}
+.scard-compact{display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:0 12px 6px;transition:border-color .15s;animation:fadeUp .3s both;}
+.scard-compact:active{border-color:rgba(0,200,160,.25);}
+.sc-info{flex:1;min-width:0;}
+.sc-dom{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ac);margin-bottom:4px;}
+.sc-meta{display:flex;align-items:center;gap:8px;}
+.sc-stock{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);}
+.sc-bar{height:3px;background:var(--muted);border-radius:2px;overflow:hidden;width:50px;}
+.sc-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--ac),var(--ac2));}
+.sc-price{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:15px;color:var(--ac);white-space:nowrap;margin-right:6px;}
+.dom-sbar{height:3px;background:var(--muted);border-radius:2px;overflow:hidden;width:100%;margin-top:7px;}
+.dom-sbar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--ac),var(--ac2));}
+
+.trust{text-align:center;color:var(--muted);font-family:'IBM Plex Mono',monospace;
+  font-size:10px;padding:20px 0 4px;letter-spacing:.05em;}
+.empty{text-align:center;color:var(--sub);font-size:14px;padding:50px 0;}
+
+/* ══ TICKER ═════════════════════════════ */
+.ticker-bar{
+  margin:0 12px 14px;
+  background:var(--sf);border:1px solid var(--line);border-radius:var(--r);
+  padding:8px 12px;display:flex;align-items:center;gap:8px;overflow:hidden;}
+.t-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:0 0 auto;
+  box-shadow:0 0 5px var(--ok);}
+.t-mask{flex:1;overflow:hidden;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);}
+.t-inner{display:flex;white-space:nowrap;animation:tick 4.5s linear infinite;will-change:transform;}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.ti{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sub);padding:0 6px;}
+.ti.g{color:var(--ok);}
+.ti.r{color:var(--err);}
+.ti.s{color:rgba(255,255,255,.1);padding:0 12px;}
+
+/* ══ BOTTOM NAV ════════════════════════ */
+.bottom-nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:10;
+  max-width:460px;margin:0 auto;
+  background:#070D18;border-top:1px solid rgba(0,200,160,.12);
+  display:flex;padding:0 0 env(safe-area-inset-bottom);}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  gap:3px;padding:10px 0;cursor:pointer;position:relative;
+  transition:color .15s;}
+.nav-item.on{color:var(--ac);}
+.nav-item:not(.on){color:var(--sub);}
+.nav-item:active{opacity:.7;}
+.nav-ico{font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;position:relative;}
+.nav-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.08em;}
+.nav-badge{
+  position:absolute;top:-4px;right:-8px;
+  background:var(--ac);color:#040810;border-radius:999px;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;
+  padding:1px 5px;min-width:16px;text-align:center;display:none;}
+
+/* ══ PAGE HEADER ════════════════════════ */
+.phdr{display:flex;align-items:center;gap:12px;padding:14px 16px 12px;}
+.back-btn{
+  background:var(--sf);border:1px solid var(--line);width:38px;height:38px;
+  border-radius:10px;font-size:16px;cursor:pointer;color:var(--ink);flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.back-btn:active{transform:scale(.86);}
+.ptitle{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.4rem;}
+
+/* ══ CART ═══════════════════════════════ */
+.cart-wrap{padding:0 12px 8px;}
+.cart-item{
+  display:flex;align-items:center;gap:10px;background:var(--sf);
+  border:1px solid var(--line);border-radius:var(--r);padding:13px 14px;
+  margin-bottom:8px;}
+.ci-info{flex:1;min-width:0;}
+.ci-dom{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ac);margin-bottom:2px;}
+.ci-unit{font-size:11px;color:var(--sub);}
+.ci-tot{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;}
+.stepper{display:flex;align-items:center;gap:3px;background:var(--bg2);border-radius:999px;padding:3px;}
+.stepper button{
+  background:var(--sf);border:none;width:28px;height:28px;border-radius:999px;
+  font-size:15px;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.stepper button:active{transform:scale(.82);}
+.stepper span{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;min-width:22px;text-align:center;}
+
+.sum-box{background:var(--sf);border:1px solid var(--line);border-radius:var(--r);padding:14px;}
+.sum-row{display:flex;justify-content:space-between;font-size:13px;color:var(--sub);padding:4px 0;}
+.sum-tot{color:var(--ink);font-weight:700;font-size:17px;font-family:'Space Grotesk',sans-serif;
+  border-top:1px solid var(--line);margin-top:7px;padding-top:12px;}
+.sl-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--sub);margin:14px 0 8px;}
+
+/* ══ PAYMENT ════════════════════════════ */
+.pay-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.pay-tab{flex:1;padding:10px;background:var(--sf);border:1px solid var(--line);
+  border-radius:var(--r);font-size:13px;font-weight:600;color:var(--sub);
+  cursor:pointer;text-align:center;transition:all .15s;}
+.pay-tab:active{transform:scale(.93);}
+.pay-tab.on{background:rgba(240,165,0,.12);border-color:rgba(240,165,0,.35);color:var(--ac);}
+.pay-panel{display:none;}
+.pay-panel.on{display:block;}
+.bal-box{background:var(--sf);border:1px solid var(--line);border-radius:var(--r);padding:22px;text-align:center;}
+.bal-big{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:2.4rem;color:var(--ac);margin:8px 0 5px;}
+.pay-card{background:var(--sf);border:1px solid var(--line);border-radius:var(--r);padding:14px;}
+.pay-net{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ac);
+  background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.2);
+  display:inline-block;padding:3px 10px;border-radius:999px;margin-bottom:12px;}
+.pay-addr{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;margin-bottom:10px;}
+.pay-addr span{font-family:'IBM Plex Mono',monospace;font-size:10px;word-break:break-all;flex:1;}
+.copy-btn{background:var(--sf2);border:1px solid var(--line);border-radius:7px;
+  padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink);flex:0 0 auto;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.copy-btn:active{transform:scale(.87);}
+.pay-st{text-align:center;font-size:13px;color:var(--sub);padding:8px 0;}
+.pay-bar-w{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:3px;}
+.pay-bar{height:100%;background:linear-gradient(90deg,var(--ac),var(--ac2));border-radius:2px;transition:width 2.2s ease;}
+.crypto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px;}
+.csel{padding:10px 4px;background:var(--sf2);border:1px solid var(--line);
+  border-radius:10px;font-size:10px;font-weight:600;color:var(--sub);
+  cursor:pointer;text-align:center;line-height:1.4;transition:all .15s;}
+.csel:active{transform:scale(.87);}
+.csel.on{background:rgba(240,165,0,.12);border-color:rgba(240,165,0,.3);color:var(--ac);}
+.csel-logo{width:26px;height:26px;border-radius:50%;display:block;margin:0 auto 4px;object-fit:contain;}
+
+/* ══ SOLDE SHEET (PROFIL) ══════════════ */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:30;
+  opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.on{opacity:1;pointer-events:auto;}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;max-width:460px;margin:0 auto;
+  background:var(--sf);border-radius:18px 18px 0 0;
+  transform:translateY(101%);transition:transform .38s cubic-bezier(.16,1,.3,1);
+  display:flex;flex-direction:column;max-height:90vh;will-change:transform;}
+.sheet.on{transform:translateY(0);}
+.sh-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:12px auto 0;flex:0 0 auto;}
+.sh-hdr{display:flex;justify-content:space-between;align-items:center;padding:12px 16px 10px;flex:0 0 auto;}
+.sh-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;}
+.sh-close{background:var(--bg2);border:1px solid var(--line);width:30px;height:30px;border-radius:8px;
+  cursor:pointer;color:var(--sub);font-size:13px;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.sh-close:active{transform:scale(.84);}
+.sh-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  padding:0 16px calc(20px + env(safe-area-inset-bottom));}
+
+.dep-hero{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+  padding:20px;text-align:center;margin-bottom:16px;}
+.dep-av{width:56px;height:56px;border-radius:14px;background:var(--sf);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;margin:0 auto 10px;overflow:hidden;}
+.dep-av img{width:100%;height:100%;object-fit:cover;}
+.dep-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;}
+.dep-hdl{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);margin-top:2px;}
+.dep-bal-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--sub);margin-top:12px;}
+.dep-bal{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:2.2rem;color:var(--ac);margin-top:3px;}
+.amt-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px;}
+.amt-btn{padding:12px 4px;background:var(--sf2);border:1px solid var(--line);
+  border-radius:10px;font-family:'Space Grotesk',sans-serif;font-weight:700;
+  font-size:14px;color:var(--sub);cursor:pointer;text-align:center;transition:all .15s;}
+.amt-btn:active{transform:scale(.87);}
+.amt-btn.on{background:rgba(240,165,0,.14);border-color:rgba(240,165,0,.4);color:var(--ac);}
+
+/* ══ BTN GLOBAL ══════════════════════════ */
+.btn{font-family:'Inter',sans-serif;font-weight:700;font-size:13px;
+  background:var(--ac);color:#111;border:none;padding:12px 18px;
+  border-radius:10px;cursor:pointer;transition:transform .15s cubic-bezier(.34,1.56,.64,1),opacity .15s;}
+.btn:active{transform:scale(.92);opacity:.9;}
+.btn:disabled{opacity:.25;cursor:default;transform:none!important;}
+.btn-outline{background:transparent;color:var(--ink);border:1px solid var(--line);}
+.btn-outline:active{border-color:rgba(240,165,0,.3);}
+.btn-danger{background:var(--err);color:#fff;}
+
+/* ══ SUCCESS ══════════════════════════════ */
+.success-card{background:var(--sf);border:1px solid var(--line);border-radius:var(--r);padding:18px;}
+.cred-row{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px;}
+.cred-dom{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ac);margin-bottom:4px;}
+.cred-val{font-family:'IBM Plex Mono',monospace;font-size:12px;word-break:break-all;line-height:1.6;}
+
+/* ══ ADMIN ═════════════════════════════════ */
+.lock-wrap{display:flex;align-items:center;justify-content:center;min-height:70vh;padding:16px;}
+.lock-card{background:var(--sf);border:1px solid var(--line);border-radius:16px;
+  padding:28px 22px;width:100%;max-width:360px;}
+.lock-ico{font-size:32px;text-align:center;margin-bottom:12px;}
+.lock-card p{font-size:13px;color:var(--sub);margin-bottom:16px;text-align:center;line-height:1.6;}
+.field{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+  padding:11px 13px;font-size:14px;color:var(--ink);outline:none;margin-bottom:10px;
+  transition:border-color .15s;-webkit-text-fill-color:var(--ink);}
+.field:focus{border-color:rgba(240,165,0,.4);}
+.a-card{background:var(--sf);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:10px;}
+.a-title{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac);margin-bottom:10px;font-weight:500;}
+.a-row{display:flex;gap:7px;margin-bottom:7px;align-items:center;}
+.a-row label{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--sub);width:50px;flex:0 0 auto;}
+.a-row .field{margin-bottom:0;padding:8px 11px;font-size:13px;}
+.a-acts{display:flex;gap:7px;margin-top:9px;}
+.a-acts .btn{flex:1;padding:9px;font-size:12px;}
+.u-row{display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:8px;}
+.u-av{width:34px;height:34px;border-radius:9px;flex:0 0 auto;background:var(--sf2);
+  display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;}
+.u-name{font-weight:600;font-size:13px;}
+.u-bal{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ac);}
+.sm-btn{font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;
+  border:1px solid var(--line);background:var(--sf2);cursor:pointer;color:var(--ink);
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.sm-btn:active{transform:scale(.88);}
+.atab{flex:1;padding:9px 4px;font-size:12px;font-weight:600;border-radius:9px;
+  background:var(--sf);border:1px solid var(--line);color:var(--sub);cursor:pointer;text-align:center;transition:all .15s;}
+.atab:active{transform:scale(.91);}
+.atab.on{background:rgba(240,165,0,.12);border-color:rgba(240,165,0,.3);color:var(--ac);}
+.banner{background:rgba(240,165,0,.1);color:var(--ac);font-size:12px;padding:9px 12px;
+  border-radius:10px;margin-bottom:12px;line-height:1.5;border:1px solid rgba(240,165,0,.2);}
+.banner.err{background:var(--errs);color:var(--err);border-color:rgba(255,79,64,.2);}
+
+/* ══ TOAST ════════════════════════════════ */
+.toast{position:fixed;left:50%;bottom:88px;transform:translate(-50%,12px);
+  background:var(--sf2);color:var(--ink);border:1px solid rgba(240,165,0,.15);
+  font-size:13px;font-weight:500;padding:10px 16px;border-radius:11px;
+  opacity:0;pointer-events:none;transition:opacity .22s,transform .22s cubic-bezier(.34,1.56,.64,1);
+  max-width:88%;text-align:center;z-index:60;box-shadow:0 6px 20px rgba(0,0,0,.3);}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+
+/* ══ RESPONSIVE ═══════════════════════════ */
+@media(max-width:375px){.scard-price{font-size:17px;}.scard-dom{font-size:13px;}}
+@media(min-width:600px){
+  .sheet{max-width:460px;left:50%;right:auto;transform:translateX(-50%) translateY(101%);}
+  .sheet.on{transform:translateX(-50%) translateY(0);}
+  .bottom-nav{left:50%;transform:translateX(-50%);}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+
+<!-- ══ SPLASH ══════════════════════════════ -->
+<div id="splash">
+  <div class="splash-glow"></div>
+  <div class="splash-logo">ACCESMAIL</div>
+  <div class="splash-sub">by @johndosql</div>
+</div>
+
+<!-- ══ APP ═════════════════════════════════ -->
+<div class="app" id="app" style="display:none">
+
+  <!-- SHOP -->
+  <div class="screen active" id="S_shop">
+    <div class="topbar">
+      <div class="tb-logo" id="tbLogo">ACCESMAIL</div>
+      <div class="stock-badge" id="stockBadge">0 disponibles</div>
+    </div>
+    <div class="profile-row" id="profileCard">
+      <div class="av" id="avEl">?</div>
+      <div class="pinfo">
+        <div class="pname" id="pName">Chargement…</div>
+        <div class="puid" id="pUid"></div>
+      </div>
+      <div class="pbal-area">
+        <div class="pbal-lbl">Solde</div>
+        <div class="pbal-val" id="pBal">0,00€</div>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-val" id="statAcces">—</div>
+        <div class="stat-lbl">accès dispo</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item" id="statPaysBtn" style="cursor:pointer" title="Voir les pays">
+        <div class="stat-val" id="statPays" style="text-decoration:underline dotted;text-underline-offset:3px">—</div>
+        <div class="stat-lbl">pays 👆</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item">
+        <div class="stat-val" style="color:var(--ok)">4€</div>
+        <div class="stat-lbl">prix unitaire</div>
+      </div>
+      <div class="stat-sep"></div>
+      <div class="stat-item">
+        <div class="stat-val" style="color:var(--ac)">3€</div>
+        <div class="stat-lbl">dès 10 accès</div>
+      </div>
+    </div>
+    <div class="search-row" id="searchRow">
+      <span class="s-hash">#</span>
+      <input class="s-in" id="searchIn" type="text" placeholder="Rechercher par domaine ou pays…" inputmode="search">
+      <button class="s-x" id="searchClear">✕</button>
+      <button class="menu-btn" id="openMenu" title="Options">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <rect x="1" y="3.5" width="16" height="1.8" rx="1" fill="currentColor"/>
+          <rect x="1" y="8.1" width="16" height="1.8" rx="1" fill="currentColor"/>
+          <rect x="1" y="12.7" width="16" height="1.8" rx="1" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+    <div class="ticker-bar">
+      <div class="t-dot"></div>
+      <div class="t-mask">
+        <div class="t-inner" style="animation-duration:18s">
+          <span class="ti g">Stock quotidien</span>
+          <span class="ti s">·</span>
+          <span class="ti r">Non dispo : GMX · Yahoo · Gmail · iCloud</span>
+          <span class="ti s">·</span>
+          <span class="ti g">Stock quotidien</span>
+          <span class="ti s">·</span>
+          <span class="ti r">Non dispo : GMX · Yahoo · Gmail · iCloud</span>
+          <span class="ti s">·</span>
+        </div>
+      </div>
+    </div>
+    <div class="chips-wrap"><div class="chips" id="chips"></div></div>
+    <div id="shopBanner"></div>
+    <div class="stock-list" id="catalog"></div>
+  </div>
+
+  <!-- PANIER -->
+  <div class="screen" id="S_cart">
+    <div class="phdr">
+      <button class="back-btn" id="btnBack">←</button>
+      <span class="ptitle">Mon panier</span>
+    </div>
+    <div class="cart-wrap">
+      <div id="cartList"></div>
+      <div id="sumBlock"></div>
+      <div id="payBlock"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div class="screen" id="S_admin">
+    <div class="phdr">
+      <button class="back-btn" id="btnAdminBack">←</button>
+      <span class="ptitle">Administration</span>
+    </div>
+    <div id="adminContent" style="padding:0 12px"></div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottomNav" style="display:none">
+  <div class="nav-item on" data-tab="shop" id="navShop">
+    <div class="nav-ico">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="4" width="20" height="16" rx="3"/>
+        <path d="M2 8l10 7 10-7"/>
+      </svg>
+    </div>
+    <div class="nav-lbl">Shop</div>
+  </div>
+  <div class="nav-item" data-tab="cart" id="navCart">
+    <div class="nav-ico" style="position:relative">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+      <div class="nav-badge" id="navBadge"></div>
+    </div>
+    <div class="nav-lbl">Panier</div>
+  </div>
+  <div class="nav-item" id="navSolde">
+    <div class="nav-ico">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="6" width="22" height="14" rx="3"/>
+        <path d="M1 10h22"/>
+        <circle cx="16" cy="15" r="1.5" fill="currentColor" stroke="none"/>
+      </svg>
+    </div>
+    <div class="nav-lbl">Solde</div>
+  </div>
+</div>
+
+<!-- PAYS DISPO SHEET -->
+<div class="overlay" id="paysOverlay"></div>
+<div class="sheet" id="paysSheet">
+  <div class="sh-handle"></div>
+  <div class="sh-hdr">
+    <span class="sh-title">Pays disponibles</span>
+    <button class="sh-close" id="paysClose">✕</button>
+  </div>
+  <div class="sh-body">
+    <div id="paysGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
+  </div>
+</div>
+
+<!-- MENU CATALOGUE -->
+<div class="overlay" id="menuOverlay"></div>
+<div class="sheet" id="menuSheet">
+  <div class="sh-handle"></div>
+  <div class="sh-hdr">
+    <span class="sh-title">Catalogue</span>
+    <button class="sh-close" id="menuClose">✕</button>
+  </div>
+  <div class="sh-body">
+    <p class="menu-section-lbl">Vue</p>
+    <div class="menu-opts" id="menuVue">
+      <button class="mopt on" data-v="pays">
+        <span class="mopt-ico">🌍</span>
+        <div class="mopt-info"><div class="mopt-title">Par pays</div><div class="mopt-sub">Groupé par pays, trié par stock</div></div>
+        <span class="mopt-check">✓</span>
+      </button>
+      <button class="mopt" data-v="dom">
+        <span class="mopt-ico">📧</span>
+        <div class="mopt-info"><div class="mopt-title">Par domaine</div><div class="mopt-sub">Tous les domaines, du plus stocké</div></div>
+        <span class="mopt-check">✓</span>
+      </button>
+    </div>
+    <p class="menu-section-lbl">Tri</p>
+    <div class="menu-opts" id="menuSort">
+      <button class="mopt on" data-s="desc">
+        <span class="mopt-ico">↓</span>
+        <div class="mopt-info"><div class="mopt-title">Stock décroissant</div><div class="mopt-sub">Du plus disponible au moins</div></div>
+        <span class="mopt-check">✓</span>
+      </button>
+      <button class="mopt" data-s="asc">
+        <span class="mopt-ico">↑</span>
+        <div class="mopt-info"><div class="mopt-title">Stock croissant</div><div class="mopt-sub">Du moins disponible au plus</div></div>
+        <span class="mopt-check">✓</span>
+      </button>
+      <button class="mopt" data-s="alpha">
+        <span class="mopt-ico">A→Z</span>
+        <div class="mopt-info"><div class="mopt-title">Alphabétique</div><div class="mopt-sub">Par nom de domaine A → Z</div></div>
+        <span class="mopt-check">✓</span>
+      </button>
+    </div>
+    <button class="btn" id="menuApply" style="width:100%;padding:13px;font-size:14px;margin-top:4px">Appliquer</button>
+  </div>
+</div>
+<div class="overlay" id="depOverlay"></div>
+<div class="sheet" id="depSheet">
+  <div class="sh-handle"></div>
+  <div class="sh-hdr">
+    <span class="sh-title">Mon profil</span>
+    <button class="sh-close" id="depClose">✕</button>
+  </div>
+  <div class="sh-body">
+    <div class="dep-hero">
+      <div class="dep-av" id="depAv">?</div>
+      <div class="dep-name" id="depName"></div>
+      <div class="dep-hdl" id="depHdl"></div>
+      <div class="dep-bal-lbl">Solde disponible</div>
+      <div class="dep-bal" id="depBal">0,00€</div>
+    </div>
+    <div id="depContent"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══ CONFIG ══════════════════════════════════════ */
+const VERCEL="https://johndoshop.vercel.app";
+const FB={apiKey:"AIzaSyCTc6PzMOjihlQtx4HfZM3foibvVMf51bs",authDomain:"johndoshop.firebaseapp.com",databaseURL:"https://johndoshop-default-rtdb.europe-west1.firebasedatabase.app",projectId:"johndoshop",storageBucket:"johndoshop.firebasestorage.app",messagingSenderId:"457831162431",appId:"1:457831162431:web:89177714cad61411710e8a"};
+const PRICE_BASE=4,PRICE_PRO=3,PRICE_MIN=10,GRID_LIMIT=8;
+const CURRENCY="€";
+
+const _L="https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/";
+const CRYPTOS=[
+  {cur:"usdttrc20",label:"USDT TRX",logo:_L+"usdt.png",net:"TRC20"},
+  {cur:"usdterc20",label:"USDT ETH",logo:_L+"usdt.png",net:"ERC20"},
+  {cur:"btc",label:"Bitcoin",logo:_L+"btc.png",net:"BTC"},
+  {cur:"eth",label:"Ethereum",logo:_L+"eth.png",net:"ETH"},
+  {cur:"ltc",label:"Litecoin",logo:_L+"ltc.png",net:"LTC"},
+  {cur:"sol",label:"Solana",logo:_L+"sol.png",net:"SOL"},
+  {cur:"usdcerc20",label:"USDC ETH",logo:_L+"usdc.png",net:"ERC20"},
+  {cur:"bnbbsc",label:"BNB",logo:_L+"bnb.png",net:"BSC"},
+  {cur:"matic",label:"MATIC",logo:_L+"matic.png",net:"Polygon"},
+  {cur:"doge",label:"Doge",logo:_L+"doge.png",net:"DOGE"},
+  {cur:"xrp",label:"XRP",logo:_L+"xrp.png",net:"XRP"},
+  {cur:"trx",label:"TRON",logo:_L+"trx.png",net:"TRX"},
+];
+
+const TMAP={fr:"FR",de:"DE",be:"BE",es:"ES",it:"IT",nl:"NL",pt:"PT",uk:"UK",gb:"UK",ru:"RU",cn:"CN",jp:"JP",br:"BR",au:"AU",ch:"CH",at:"AT",pl:"PL",cz:"CZ",sk:"SK",ro:"RO",gr:"GR",tr:"TR",se:"SE",no:"NO",dk:"DK",fi:"FI",hu:"HU",bg:"BG",hr:"HR",ua:"UA","in":"IN",mx:"MX",ar:"AR",cl:"CL",za:"ZA",ng:"NG",eg:"EG",ma:"MA",dz:"DZ",tn:"TN",sn:"SN",ci:"CI",cm:"CM",re:"RE",gp:"GP",mq:"MQ",id:"ID",sg:"SG",my:"MY",th:"TH",vn:"VN",ph:"PH",pk:"PK",bd:"BD",kr:"KR",tw:"TW",hk:"HK",nz:"NZ",me:"ME",rs:"RS",si:"SI",lt:"LT",lv:"LV",ee:"EE",ge:"GE",am:"AM",az:"AZ",kz:"KZ",uz:"UZ",by:"BY",md:"MD",ie:"IE",is:"IS",lu:"LU",li:"LI",mt:"MT",cy:"CY",il:"IL",sa:"SA",ae:"AE",qa:"QA",kw:"KW",bh:"BH",om:"OM",jo:"JO",lb:"LB",ir:"IR",ke:"KE",gh:"GH",tz:"TZ",ug:"UG",rw:"RW",et:"ET",ao:"AO",mz:"MZ",zm:"ZM",zw:"ZW",pe:"PE",ve:"VE",ec:"EC",bo:"BO",py:"PY",uy:"UY",gt:"GT",cr:"CR",pa:"PA","do":"DO",cu:"CU",hn:"HN",ni:"NI",sv:"SV",lk:"LK",np:"NP",kh:"KH",mm:"MM",la:"LA",mn:"MN",dj:"DJ",yt:"YT",nc:"NC",gf:"FR"};
+const GENERIC=new Set(["com","net","org","info","biz","app","io","pro","shop","store","online","site","mail","email","us"]);
+const ALL_C=[{c:"all",n:"Tous"},{c:"AD",n:"Andorre"},{c:"AE",n:"Émirats"},{c:"AF",n:"Afghanistan"},{c:"AL",n:"Albanie"},{c:"AM",n:"Arménie"},{c:"AO",n:"Angola"},{c:"AR",n:"Argentine"},{c:"AT",n:"Autriche"},{c:"AU",n:"Australie"},{c:"AZ",n:"Azerbaïdjan"},{c:"BA",n:"Bosnie"},{c:"BD",n:"Bangladesh"},{c:"BE",n:"Belgique"},{c:"BF",n:"Burkina"},{c:"BG",n:"Bulgarie"},{c:"BH",n:"Bahreïn"},{c:"BI",n:"Burundi"},{c:"BJ",n:"Bénin"},{c:"BO",n:"Bolivie"},{c:"BR",n:"Brésil"},{c:"BY",n:"Biélorussie"},{c:"CA",n:"Canada"},{c:"CD",n:"Congo RDC"},{c:"CF",n:"Centrafrique"},{c:"CG",n:"Congo"},{c:"CH",n:"Suisse"},{c:"CI",n:"Côte d'Ivoire"},{c:"CL",n:"Chili"},{c:"CM",n:"Cameroun"},{c:"CN",n:"Chine"},{c:"CO",n:"Colombie"},{c:"CR",n:"Costa Rica"},{c:"CU",n:"Cuba"},{c:"CY",n:"Chypre"},{c:"CZ",n:"Tchéquie"},{c:"DE",n:"Allemagne"},{c:"DJ",n:"Djibouti"},{c:"DK",n:"Danemark"},{c:"DO",n:"Rép. dom."},{c:"DZ",n:"Algérie"},{c:"EC",n:"Équateur"},{c:"EE",n:"Estonie"},{c:"EG",n:"Égypte"},{c:"ES",n:"Espagne"},{c:"ET",n:"Éthiopie"},{c:"FI",n:"Finlande"},{c:"FJ",n:"Fidji"},{c:"FR",n:"France"},{c:"GA",n:"Gabon"},{c:"GB",n:"Royaume-Uni"},{c:"GE",n:"Géorgie"},{c:"GH",n:"Ghana"},{c:"GM",n:"Gambie"},{c:"GN",n:"Guinée"},{c:"GP",n:"Guadeloupe"},{c:"GR",n:"Grèce"},{c:"GT",n:"Guatemala"},{c:"GY",n:"Guyana"},{c:"HK",n:"Hong Kong"},{c:"HN",n:"Honduras"},{c:"HR",n:"Croatie"},{c:"HT",n:"Haïti"},{c:"HU",n:"Hongrie"},{c:"ID",n:"Indonésie"},{c:"IE",n:"Irlande"},{c:"IL",n:"Israël"},{c:"IN",n:"Inde"},{c:"IQ",n:"Irak"},{c:"IR",n:"Iran"},{c:"IS",n:"Islande"},{c:"IT",n:"Italie"},{c:"JM",n:"Jamaïque"},{c:"JO",n:"Jordanie"},{c:"JP",n:"Japon"},{c:"KE",n:"Kenya"},{c:"KH",n:"Cambodge"},{c:"KR",n:"Corée Sud"},{c:"KW",n:"Koweït"},{c:"KZ",n:"Kazakhstan"},{c:"LA",n:"Laos"},{c:"LB",n:"Liban"},{c:"LK",n:"Sri Lanka"},{c:"LT",n:"Lituanie"},{c:"LU",n:"Luxembourg"},{c:"LV",n:"Lettonie"},{c:"LY",n:"Libye"},{c:"MA",n:"Maroc"},{c:"MC",n:"Monaco"},{c:"MD",n:"Moldavie"},{c:"ME",n:"Monténégro"},{c:"MG",n:"Madagascar"},{c:"MK",n:"Macédoine"},{c:"ML",n:"Mali"},{c:"MM",n:"Myanmar"},{c:"MN",n:"Mongolie"},{c:"MQ",n:"Martinique"},{c:"MR",n:"Mauritanie"},{c:"MT",n:"Malte"},{c:"MU",n:"Maurice"},{c:"MW",n:"Malawi"},{c:"MX",n:"Mexique"},{c:"MY",n:"Malaisie"},{c:"MZ",n:"Mozambique"},{c:"NA",n:"Namibie"},{c:"NE",n:"Niger"},{c:"NG",n:"Nigeria"},{c:"NI",n:"Nicaragua"},{c:"NL",n:"Pays-Bas"},{c:"NO",n:"Norvège"},{c:"NP",n:"Népal"},{c:"NZ",n:"Nouvelle-Zél."},{c:"OM",n:"Oman"},{c:"PA",n:"Panama"},{c:"PE",n:"Pérou"},{c:"PH",n:"Philippines"},{c:"PK",n:"Pakistan"},{c:"PL",n:"Pologne"},{c:"PT",n:"Portugal"},{c:"PY",n:"Paraguay"},{c:"QA",n:"Qatar"},{c:"RE",n:"Réunion"},{c:"RO",n:"Roumanie"},{c:"RS",n:"Serbie"},{c:"RU",n:"Russie"},{c:"RW",n:"Rwanda"},{c:"SA",n:"Arabie saoud."},{c:"SC",n:"Seychelles"},{c:"SD",n:"Soudan"},{c:"SE",n:"Suède"},{c:"SG",n:"Singapour"},{c:"SI",n:"Slovénie"},{c:"SK",n:"Slovaquie"},{c:"SL",n:"Sierra Leone"},{c:"SN",n:"Sénégal"},{c:"SO",n:"Somalie"},{c:"SR",n:"Suriname"},{c:"SV",n:"Salvador"},{c:"SY",n:"Syrie"},{c:"TD",n:"Tchad"},{c:"TG",n:"Togo"},{c:"TH",n:"Thaïlande"},{c:"TN",n:"Tunisie"},{c:"TR",n:"Turquie"},{c:"TT",n:"Trinité"},{c:"TW",n:"Taïwan"},{c:"TZ",n:"Tanzanie"},{c:"UA",n:"Ukraine"},{c:"UG",n:"Ouganda"},{c:"US",n:"États-Unis"},{c:"UY",n:"Uruguay"},{c:"UZ",n:"Ouzbékistan"},{c:"VE",n:"Venezuela"},{c:"VN",n:"Viêt Nam"},{c:"WS",n:"Samoa"},{c:"XK",n:"Kosovo"},{c:"YE",n:"Yémen"},{c:"YT",n:"Mayotte"},{c:"ZA",n:"Afrique Sud"},{c:"ZM",n:"Zambie"},{c:"ZW",n:"Zimbabwe"},{c:"MIX",n:"Mix mondial"}];
+const SEED=[{domain:"hotmail.com",countries:["FR","US","UK","DE","ES","CA"],price:4,stock:25},{domain:"gmail.com",countries:["FR","US","UK","DE","ES","CA"],price:4,stock:40},{domain:"orange.fr",countries:["FR"],price:4,stock:9},{domain:"web.de",countries:["DE"],price:4,stock:10}];
+
+/* ══ STATE ═══════════════════════════════════ */
+let db=null,fbAuth=null,fbOk=false;
+let prods=[],users={},cart={};
+let query="",activeC="all",showAll=false,adminOk=false,viewMode="pays",sortMode="desc";
+let me={id:null,tgId:null,name:"Invité",handle:"",photo:null},myBal=0;
+let pollInt=null,depPollInt=null;
+
+try{firebase.initializeApp(FB);db=firebase.database();fbAuth=firebase.auth();fbOk=true;}catch(e){console.error(e);}
+
+/* ══ UTILS ════════════════════════════════════ */
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n).toFixed(2).replace(".",",")+CURRENCY;
+const flag=iso=>{if(!iso||iso==="all"||iso==="MIX")return"🌍";const c=(iso==="UK"?"GB":iso).toUpperCase();return c.split("").map(x=>String.fromCodePoint(x.charCodeAt(0)+127397)).join("");};
+const cName=c=>ALL_C.find(x=>x.c===c)?.n||c;
+function toast(msg,dur=3000){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),dur);}
+function haptic(s){try{window.Telegram.WebApp.HapticFeedback.impactOccurred(s||"light");}catch(e){}}
+function hapticN(s){try{window.Telegram.WebApp.HapticFeedback.notificationOccurred(s||"success");}catch(e){}}
+async function apiPost(ep,body){const r=await fetch(VERCEL+"/api/"+ep,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});return r.json();}
+async function checkPayment(pid){const r=await fetch(VERCEL+"/api/check-payment?id="+pid);return r.json();}
+
+/* Tap immédiat (supprime le délai 300ms mobile) : touchend + fallback click */
+function onFastTap(el,fn){
+  if(!el)return;
+  let moved=false,last=0;
+  el.addEventListener("touchstart",()=>{moved=false;},{passive:true});
+  el.addEventListener("touchmove",()=>{moved=true;},{passive:true});
+  el.addEventListener("touchend",e=>{
+    if(moved)return;
+    e.preventDefault();
+    last=Date.now();
+    fn(e);
+  },{passive:false});
+  el.addEventListener("click",e=>{
+    if(Date.now()-last<400){e.preventDefault();e.stopPropagation();return;}
+    fn(e);
+  });
+}
+
+/* ══ SPLASH + PARTICLES ═══════════════════════ */
+function initSplash(){
+  const sp=$("splash");
+
+  /* Anneaux orbitaux */
+  [200,280].forEach((sz,i)=>{
+    const r=document.createElement("div");
+    r.style.cssText=`position:absolute;width:${sz}px;height:${sz}px;border-radius:50%;border:1px solid rgba(0,200,160,${i===0?.14:.06});pointer-events:none;`;
+    sp.appendChild(r);
+  });
+
+  /* Points twinkling */
+  for(let i=0;i<35;i++){
+    const d=document.createElement("div");const sz=.8+Math.random()*1.8;
+    const c=Math.random()>.5?"#00C8A0":"#00FFCC";
+    d.style.cssText=`position:absolute;width:${sz}px;height:${sz}px;border-radius:50%;background:${c};left:${Math.random()*100}%;top:${Math.random()*100}%;--op:${.2+Math.random()*.5};animation:twinkle ${2+Math.random()*4}s ease-in-out ${Math.random()*3}s infinite;box-shadow:0 0 ${sz*3}px ${c};`;
+    sp.appendChild(d);
+  }
+
+  /* @ et enveloppes en orbite RAPIDE */
+  ["@","@","✉","@","✉","@"].forEach((sym,i)=>{
+    const el=document.createElement("div");
+    el.style.cssText=`position:absolute;font-family:'IBM Plex Mono',monospace;font-size:${10+Math.random()*10}px;color:#00C8A0;left:50%;top:50%;opacity:${.15+Math.random()*.3};pointer-events:none;transform-origin:center;animation:orbit ${1.2+i*0.5}s linear ${i*-0.4}s infinite;text-shadow:0 0 12px #00C8A0,0 0 24px #00FFCC;`;
+    el.textContent=sym;
+    sp.appendChild(el);
+  });
+
+  /* Etoiles filantes */
+  function launchStar(){
+    const star=document.createElement("div");
+    const sym=Math.random()>.35?(Math.random()>.5?"@":"✉"):"·";
+    const sz=sym==="·"?3:12+Math.random()*14;
+    const y=5+Math.random()*85;
+    const spd=.5+Math.random()*.8;
+    const c=Math.random()>.3?"#00C8A0":"#00FFCC";
+    const anim=Math.random()>.5?"shootRight":"shootDiag";
+    star.style.cssText=`position:absolute;font-family:'IBM Plex Mono',monospace;font-size:${sz}px;color:${c};left:0;top:${y}%;text-shadow:0 0 14px ${c},8px 0 20px ${c};font-weight:700;pointer-events:none;animation:${anim} ${spd}s linear forwards;`;
+    star.textContent=sym;sp.appendChild(star);
+    setTimeout(()=>star.remove(),spd*1000+200);
+  }
+
+  let cnt=0;const iv=setInterval(()=>{
+    launchStar();launchStar();
+    if(Math.random()>.3)launchStar();
+    cnt++;if(cnt>16)clearInterval(iv);
+  },100);
+
+  setTimeout(()=>{clearInterval(iv);sp.classList.add("out");$("app").style.display="block";$("bottomNav").style.display="flex";initShopParticles();setTimeout(()=>sp.style.display="none",650);},2100);
+}
+
+function initShopParticles(){
+  const syms=["@","✉","@","@","✉","@","@","✉"];
+  syms.forEach((sym,i)=>{
+    const el=document.createElement("div");
+    const sz=12+Math.random()*18;
+    el.style.cssText=`position:fixed;font-family:'IBM Plex Mono',monospace;font-size:${sz}px;color:#00C8A0;left:${5+Math.random()*90}%;--op:${.025+Math.random()*.04};animation:floatShop ${18+Math.random()*14}s ease-in-out ${Math.random()*8}s infinite;pointer-events:none;z-index:0;user-select:none;`;
+    el.textContent=sym;document.body.appendChild(el);
+  });
+}
+
+/* Styles dynamiques */
+const _st=document.createElement("style");
+_st.textContent=`
+  @keyframes twinkle{0%,100%{opacity:var(--op,.3)}50%{opacity:.03;}}
+  @keyframes floatShop{0%{opacity:0;transform:translateY(40px);}12%{opacity:var(--op,.04);}88%{opacity:var(--op,.04);}100%{opacity:0;transform:translateY(-40px);}}
+  @keyframes cartBounce{0%{transform:scale(1)}30%{transform:scale(1.5)}60%{transform:scale(.9)}100%{transform:scale(1)}}
+`;
+document.head.appendChild(_st);
+
+/* ══ ADMIN SECRET — 5 taps sur le logo ═══════ */
+let tapCount=0,tapTimer=null;
+$("tbLogo").addEventListener("click",()=>{
+  tapCount++;clearTimeout(tapTimer);
+  tapTimer=setTimeout(()=>tapCount=0,2500);
+  if(tapCount>=5){tapCount=0;goTo("admin");}
+});
+
+/* ══ USER ══════════════════════════════════════ */
+function initMe(){
+  try{
+    const tg=window.Telegram&&window.Telegram.WebApp;
+    const u=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
+    if(u&&u.id){me={id:"u"+u.id,tgId:u.id,name:[u.first_name,u.last_name].filter(Boolean).join(" ")||"Utilisateur",handle:u.username?"@"+u.username:"",photo:u.photo_url||null};}
+    else{me={id:"demo_"+Date.now(),tgId:null,name:"Invité",handle:"@accesmail",photo:null};}
+  }catch(e){me={id:"demo_1",tgId:null,name:"Invité",handle:"@accesmail",photo:null};}
+  const ini=me.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)||"?";
+  const av=$("avEl");av.innerHTML=me.photo?`<img src="${me.photo}" alt="" style="width:100%;height:100%;object-fit:cover">`:`${ini}`;
+  $("pName").textContent=me.name;
+  $("pUid").textContent=me.handle?me.handle:(me.tgId?"ID "+me.tgId:"ACCESMAIL");
+  if(!fbOk||!me.id)return;
+  if(!fbAuth.currentUser)fbAuth.signInAnonymously().catch(e=>console.error(e));
+  db.ref("users/"+me.id+"/name").set(me.name);
+  db.ref("users/"+me.id+"/handle").set(me.handle);
+  if(me.tgId)db.ref("users/"+me.id+"/tgId").set(me.tgId);
+  db.ref("users/"+me.id+"/balance").on("value",s=>{myBal=parseFloat(s.val()||0);$("pBal").textContent=fmt(myBal);});
+  db.ref("users").on("value",s=>{users=s.val()||{};});
+  if(me.tgId){
+    db.ref("users/"+me.id+"/welcomed").once("value",snap=>{
+      if(!snap.val()){
+        db.ref("users/"+me.id+"/welcomed").set(true);
+        const w=`Bienvenue sur ACCESMAIL — votre Mini App by @johndosql 👋\n\nIci tu peux acheter des accès email,\nlivrés instantanément après paiement.\n\n• Paiement en crypto\n• Livraison automatique dans ce bot\n• Stock mis à jour en temps réel\n\n👇 Ouvre la boutique ci-dessous`;
+        apiPost("send-message",{chatId:me.tgId,text:w}).catch(e=>console.error(e));
+      }
+    });
+  }
+}
+
+/* ══ PRODUCTS ═══════════════════════════════ */
+function loadProds(){
+  if(fbOk){
+    db.ref("products").on("value",s=>{
+      const v=s.val()||{};prods=Object.entries(v).map(([id,p])=>({id,...p}));
+      updateStockBadge();renderChips();renderCatalog();
+    });
+  }else{
+    prods=SEED.map((p,i)=>({id:"s"+i,...p}));updateStockBadge();renderChips();renderCatalog();
+  }
+}
+
+function updateStockBadge(){
+  const total=prods.reduce((s,p)=>s+Number(p.stock||0),0);
+  const pays=activeCodes().size;
+  $("stockBadge").textContent=total+" disponibles";
+  if($("statAcces"))$("statAcces").textContent=total;
+  if($("statPays"))$("statPays").textContent=pays;
+}
+
+function activeCodes(){const s=new Set();prods.filter(p=>Number(p.stock||0)>0).forEach(p=>(p.countries||[]).forEach(c=>s.add(c)));return s;}
+
+function renderChips(){
+  const el=$("chips"),codes=activeCodes();el.innerHTML="";
+  [{ c:"all",n:"🌍 TOUS" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c)+" "+cty.n}))].forEach(cty=>{
+    const chip=document.createElement("div");chip.className="chip"+(activeC===cty.c?" on":"");chip.textContent=cty.n;
+    onFastTap(chip,()=>{activeC=cty.c;showAll=false;renderChips();renderCatalog();haptic("light");});
+    el.appendChild(chip);
+  });
+}
+
+/* ══ PAYS POPUP ═══════════════════════════════ */
+function openPaysSheet(){
+  /* Une seule passe : totals par pays (évite N×filtres = latence) */
+  const totals={};
+  prods.forEach(p=>{
+    const st=Number(p.stock||0);
+    if(st<=0)return;
+    (p.countries||[]).forEach(c=>{totals[c]=(totals[c]||0)+st;});
+  });
+  const list=ALL_C.filter(c=>c.c!=="all"&&totals[c]).sort((a,b)=>(totals[b.c]||0)-(totals[a.c]||0));
+  const grid=$("paysGrid");
+  grid.innerHTML="";
+  const frag=document.createDocumentFragment();
+  list.forEach(cty=>{
+    const total=totals[cty.c]||0;
+    const item=document.createElement("div");
+    item.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;touch-action:manipulation;";
+    item.innerHTML=`<div style="font-size:24px;margin-bottom:4px">${flag(cty.c)}</div><div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cty.n}</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ac);margin-top:3px">${total} accès</div>`;
+    onFastTap(item,()=>{
+      item.style.borderColor="var(--line)";
+      activeC=cty.c;showAll=false;renderChips();renderCatalog();
+      $("paysSheet").classList.remove("on");
+      setTimeout(()=>$("paysOverlay").classList.remove("on"),290);
+      haptic("light");
+    });
+    item.addEventListener("touchstart",()=>{item.style.borderColor="rgba(0,200,160,.3)";},{passive:true});
+    frag.appendChild(item);
+  });
+  grid.appendChild(frag);
+  $("paysOverlay").classList.add("on");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$("paysSheet").classList.add("on")));
+}
+onFastTap($("statPaysBtn"),openPaysSheet);
+onFastTap($("paysClose"),()=>{$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),290);});
+onFastTap($("paysOverlay"),()=>{$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),290);});
+function openMenu(){
+  /* Sync état actuel */
+  document.querySelectorAll("#menuVue .mopt").forEach(b=>b.classList.toggle("on",b.dataset.v===viewMode));
+  document.querySelectorAll("#menuSort .mopt").forEach(b=>b.classList.toggle("on",b.dataset.s===sortMode));
+  $("menuOverlay").classList.add("on");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$("menuSheet").classList.add("on")));
+}
+function closeMenu(){$("menuSheet").classList.remove("on");setTimeout(()=>$("menuOverlay").classList.remove("on"),290);}
+
+onFastTap($("openMenu"),openMenu);
+onFastTap($("menuClose"),closeMenu);
+onFastTap($("menuOverlay"),closeMenu);
+
+/* Sélection vue */
+document.querySelectorAll("#menuVue .mopt").forEach(b=>{
+  onFastTap(b,()=>{document.querySelectorAll("#menuVue .mopt").forEach(x=>x.classList.remove("on"));b.classList.add("on");haptic("light");});
+});
+/* Sélection tri */
+document.querySelectorAll("#menuSort .mopt").forEach(b=>{
+  onFastTap(b,()=>{document.querySelectorAll("#menuSort .mopt").forEach(x=>x.classList.remove("on"));b.classList.add("on");haptic("light");});
+});
+/* Appliquer */
+onFastTap($("menuApply"),()=>{
+  const selV=document.querySelector("#menuVue .mopt.on");
+  const selS=document.querySelector("#menuSort .mopt.on");
+  if(selV)viewMode=selV.dataset.v;
+  if(selS)sortMode=selS.dataset.s;
+  closeMenu();
+  setTimeout(()=>{showAll=false;renderCatalog();},300);
+});
+
+function setView(v){viewMode=v;showAll=false;renderCatalog();}
+
+function filtered(){
+  const q=query.trim().toLowerCase();
+  return prods.filter(p=>{
+    if(activeC!=="all"&&!(p.countries||[]).includes(activeC))return false;
+    if(!q)return true;
+    if(p.domain.toLowerCase().includes(q))return true;
+    return(p.countries||[]).some(c=>c.toLowerCase().includes(q)||cName(c).toLowerCase().includes(q));
+  });
+}
+
+function renderCatalog(){
+  const el=$("catalog");
+  if(viewMode==="pays"){renderCatalogPays(el);}
+  else{renderCatalogDom(el);}
+}
+
+function renderCatalogDom(el){
+  let all=filtered();
+  /* Tri */
+  if(sortMode==="desc")all=all.sort((a,b)=>Number(b.stock||0)-Number(a.stock||0));
+  else if(sortMode==="asc")all=all.sort((a,b)=>Number(a.stock||0)-Number(b.stock||0));
+  else all=all.sort((a,b)=>a.domain.localeCompare(b.domain));
+  const isFiltered=activeC!=="all"||query.trim()!=="";
+  const items=(!isFiltered&&!showAll)?all.slice(0,GRID_LIMIT):all;
+  const hasMore=!isFiltered&&all.length>GRID_LIMIT&&!showAll;
+  el.innerHTML="";
+  if(!items.length){el.innerHTML='<p class="empty">Aucun accès trouvé.</p>';return;}
+  const maxStock=Math.max(...items.map(p=>Number(p.stock||0)),1);
+  items.forEach((p,i)=>{
+    const st=Number(p.stock||0);
+    let tagCls="gold",tagTxt=st+" en stock";
+    if(st<=0){tagCls="red";tagTxt="Épuisé";}
+    else if(st<=5){tagCls="orange";tagTxt="⚠ "+st+" restants";}
+    else if(st<=15){tagCls="green";tagTxt=st+" en stock";}
+    const pct=Math.max(4,Math.round(st/maxStock*100));
+    const card=document.createElement("div");card.className="scard";card.style.animationDelay=(i*.04)+"s";
+    card.innerHTML=`
+      <div class="scard-top">
+        <div class="scard-main">
+          <div class="scard-dom">@${p.domain}</div>
+          <div class="scard-flags">${(p.countries||[]).map(c=>flag(c)).join(" ")}</div>
+        </div>
+        <div class="scard-right">
+          <div class="scard-price">${fmt(PRICE_BASE)}</div>
+          <button class="add-btn" ${st<=0?"disabled":""}>+</button>
+        </div>
+      </div>
+      <div class="scard-tags">
+        <span class="tag ${tagCls}">${tagTxt}</span>
+        ${(p.countries||[]).slice(0,4).map(c=>`<span class="tag">${flag(c)} ${cName(c)}</span>`).join("")}
+        ${(p.countries||[]).length>4?`<span class="tag">+${(p.countries||[]).length-4}</span>`:""}
+      </div>
+      <div class="dom-sbar"><div class="dom-sbar-fill" style="width:${pct}%"></div></div>`;
+    onFastTap(card.querySelector(".add-btn"),()=>addCart(p));
+    el.appendChild(card);
+  });
+  if(hasMore){const m=document.createElement("div");m.className="see-more-btn";m.textContent="Voir les "+(all.length-GRID_LIMIT)+" autres accès →";onFastTap(m,()=>{showAll=true;renderCatalog();});el.appendChild(m);}
+  const t=document.createElement("div");t.className="trust";t.textContent="Crypto sécurisé · Livraison instantanée · Stock temps réel";el.appendChild(t);
+}
+
+function renderCatalogPays(el){
+  /* Vue pays : groupé par pays, trié par stock total desc */
+  const all=filtered();
+  el.innerHTML="";
+  if(!all.length){el.innerHTML='<p class="empty">Aucun accès trouvé.</p>';return;}
+
+  /* Construire map pays → produits */
+  const paysMap={};
+  all.forEach(p=>{
+    (p.countries||[]).forEach(c=>{
+      if(activeC!=="all"&&c!==activeC)return;
+      if(!paysMap[c])paysMap[c]={code:c,prods:[],total:0};
+      paysMap[c].prods.push(p);
+      paysMap[c].total+=Number(p.stock||0);
+    });
+  });
+
+  /* Trier par stock total desc */
+  const sections=Object.values(paysMap).sort((a,b)=>b.total-a.total);
+  if(!sections.length){el.innerHTML='<p class="empty">Aucun résultat.</p>';return;}
+
+  sections.forEach((section,si)=>{
+    const div=document.createElement("div");div.className="pays-section";
+    div.style.animationDelay=(si*.06)+"s";
+    const cn=cName(section.code);
+    div.innerHTML=`<div class="pays-hdr">
+      <div class="pays-hdr-left">
+        <span class="pays-flag">${flag(section.code)}</span>
+        <span class="pays-name">${cn}</span>
+      </div>
+      <span class="pays-count">${section.total} accès</span>
+    </div>`;
+    /* Produits du pays triés par stock desc */
+    section.prods.sort((a,b)=>Number(b.stock||0)-Number(a.stock||0)).forEach((p,pi)=>{
+      const st=Number(p.stock||0);
+      let barColor=st<=0?"var(--err)":st<=5?"orange":"var(--ac)";
+      const card=document.createElement("div");card.className="scard-compact";
+      card.style.animationDelay=((si*.06)+(pi*.04))+"s";
+      card.innerHTML=`
+        <div class="sc-info">
+          <div class="sc-dom">@${p.domain}</div>
+          <div class="sc-meta">
+            <span class="sc-stock">${st<=0?"Épuisé":st+" en stock"}</span>
+            <div class="sc-bar"><div class="sc-bar-fill" style="width:${st<=0?0:Math.max(8,Math.round(st/Math.max(...section.prods.map(x=>Number(x.stock||0)),1)*100))}%;background:${barColor}"></div></div>
+          </div>
+        </div>
+        <div class="sc-price">${fmt(PRICE_BASE)}</div>
+        <button class="add-btn" style="width:34px;height:34px;font-size:18px" ${st<=0?"disabled":""}>+</button>`;
+      onFastTap(card.querySelector(".add-btn"),()=>addCart(p));
+      div.appendChild(card);
+    });
+    el.appendChild(div);
+  });
+  const t=document.createElement("div");t.className="trust";t.style.margin="12px 0 0";t.textContent="Crypto sécurisé · Livraison instantanée";el.appendChild(t);
+}
+
+/* ══ SEARCH ════════════════════════════════ */
+(()=>{
+  const row=$("searchRow"),inp=$("searchIn"),clr=$("searchClear");
+  inp.addEventListener("focus",()=>{row.classList.add("on");clr.style.display="flex";});
+  inp.addEventListener("blur",()=>{if(!inp.value){row.classList.remove("on");clr.style.display="none";}});
+  inp.addEventListener("input",e=>{query=e.target.value;showAll=!!e.target.value;renderCatalog();});
+  onFastTap(clr,()=>{inp.value="";query="";showAll=false;renderCatalog();inp.blur();row.classList.remove("on");clr.style.display="none";});
+  /* Fermer le clavier si on touche en dehors ou si on scroll */
+  document.addEventListener("touchstart",(e)=>{if(!row.contains(e.target))inp.blur();},{passive:true});
+  document.getElementById("catalog").addEventListener("scroll",()=>inp.blur(),{passive:true});
+  window.addEventListener("scroll",()=>inp.blur(),{passive:true});
+})();
+
+/* ══ CART ════════════════════════════════════ */
+function uPrice(item,qty){return qty>=PRICE_MIN?PRICE_PRO:PRICE_BASE;}
+function addCart(p){
+  if((cart[p.id]||0)>=Number(p.stock||0)){toast("Stock max atteint.");return;}
+  cart[p.id]=(cart[p.id]||0)+1;haptic("light");toast("@"+p.domain+" ajouté ✓");updateCartBadge();
+}
+function chQty(id,d){
+  const p=prods.find(x=>x.id===id);let n=(cart[id]||0)+d;
+  if(n>Number(p?.stock||0))n=Number(p?.stock||0);
+  if(n<=0)delete cart[id];else cart[id]=n;
+  updateCartBadge();renderCartPage();
+}
+function entries(){return Object.entries(cart).map(([id,qty])=>({item:prods.find(p=>p.id===id),qty})).filter(e=>e.item);}
+function cartTotal(){return entries().reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);}
+function cartCount(){return entries().reduce((s,e)=>s+e.qty,0);}
+function updateCartBadge(){
+  const n=cartCount(),badge=$("navBadge");
+  badge.style.display=n?"block":"none";badge.textContent=n;
+  if(n){badge.style.animation="none";void badge.offsetWidth;badge.style.animation="cartBounce .4s cubic-bezier(.34,1.56,.64,1)";}
+}
+
+function renderCartPage(){
+  const es=entries();
+  const cl=$("cartList"),sb=$("sumBlock"),pb=$("payBlock");
+  cl.innerHTML="";
+  if(!es.length){cl.innerHTML='<p style="text-align:center;color:var(--sub);padding:50px 0;font-size:14px">Panier vide</p>';sb.innerHTML="";pb.innerHTML="";return;}
+  es.forEach(({item,qty})=>{
+    const row=document.createElement("div");row.className="cart-item";
+    const up=uPrice(item,qty),disc=qty>=PRICE_MIN;
+    row.innerHTML=`
+      <div class="ci-info">
+        <div class="ci-dom">@${item.domain}</div>
+        <div class="ci-unit">${fmt(up)}/unité${disc?` <span style="color:var(--ok);font-size:10px">✓ pro</span>`:""}</div>
+      </div>
+      <div class="stepper"><button data-d="-1">−</button><span>${qty}</span><button data-d="1">+</button></div>
+      <div class="ci-tot">${fmt(up*qty)}</div>`;
+    row.querySelectorAll(".stepper button").forEach(b=>onFastTap(b,()=>{haptic("light");chQty(item.id,parseInt(b.dataset.d));}));
+    cl.appendChild(row);
+  });
+  const tot=cartTotal(),canBal=myBal>=tot;
+  sb.innerHTML=`<p class="sl-lbl">Résumé</p>
+    <div class="sum-box">
+      <div class="sum-row"><span>Articles (${cartCount()})</span><span>${fmt(cartTotal())}</span></div>
+      <div class="sum-row"><span>Mon solde</span><span style="color:var(--ac)">${fmt(myBal)}</span></div>
+      <div class="sum-row sum-tot"><span>Total</span><span>${fmt(tot)}</span></div>
+    </div>`;
+  pb.innerHTML=`<p class="sl-lbl">Paiement</p>
+    <div class="pay-tabs">
+      <div class="pay-tab on" id="tSolde" onclick="swTab('solde')">💳 Solde</div>
+      <div class="pay-tab"   id="tCrypto" onclick="swTab('crypto')">₿ Crypto</div>
+    </div>
+    <div class="pay-panel on" id="pSolde">
+      <div class="bal-box">
+        <div style="font-size:12px;color:var(--sub)">Solde disponible</div>
+        <div class="bal-big">${fmt(myBal)}</div>
+        <div style="font-size:12px;color:var(--sub);margin-bottom:16px">Total : <b style="color:var(--ink)">${fmt(tot)}</b></div>
+        ${canBal
+          ?`<button class="btn" id="payBalBtn" style="width:100%;padding:13px;font-size:14px">✓ Payer avec mon solde</button>`
+          :`<div style="border:1px solid rgba(255,79,64,.2);border-radius:10px;padding:14px;text-align:center"><div style="color:var(--err);font-size:13px;margin-bottom:5px">Solde insuffisant</div><div style="color:var(--sub);font-size:11px">Recharge depuis ton profil</div></div>`}
+      </div>
+    </div>
+    <div class="pay-panel" id="pCrypto">
+      <div class="pay-card">
+        <p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6">Via <b style="color:var(--ink)">NOWPayments</b>. Accès livrés après confirmation blockchain.</p>
+        <div style="background:rgba(62,201,92,.07);border:1px solid rgba(62,201,92,.15);border-radius:9px;padding:8px 11px;margin-bottom:10px;font-size:12px;color:var(--ok)">💡 Petits montants → utilise <b>USDT TRC20</b></div>
+        <p class="sl-lbl" style="margin-top:0">Choisir la crypto</p>
+        <div class="crypto-grid" id="cryptoGrid"></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ac);background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.15);padding:8px 12px;border-radius:9px;margin-bottom:12px">Total : <b>${fmt(tot)}</b></div>
+        <button class="btn" id="npBtn" style="width:100%;padding:13px;font-size:14px">₿ Générer le paiement</button>
+      </div>
+      <div id="npActive" style="display:none;margin-top:10px">
+        <div class="pay-card">
+          <div style="text-align:center;margin-bottom:12px"><img id="npQR" style="border-radius:12px;width:140px;height:140px;border:2px solid var(--line)" src="" alt="QR"></div>
+          <span class="pay-net" id="npNet"></span>
+          <div class="pay-addr"><span id="npAddr"></span><button class="copy-btn" id="npCopy">Copier</button></div>
+          <div style="text-align:center;margin:10px 0"><div style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:700" id="npAmt"></div><div style="font-size:11px;color:var(--sub);margin-top:2px">Montant exact à envoyer</div></div>
+          <div class="pay-st" id="npStatus">⏳ En attente…</div>
+          <div class="pay-bar-w"><div class="pay-bar" id="npBar" style="width:8%"></div></div>
+          <p style="font-size:11px;color:var(--sub);text-align:center;margin-top:6px">Vérification auto toutes les 10s</p>
+        </div>
+      </div>
+      <div id="npSuccess" style="display:none;margin-top:10px"></div>
+    </div>`;
+  const grid=$("cryptoGrid");
+  CRYPTOS.forEach(cr=>{
+    const btn=document.createElement("button");btn.className="csel"+(cr.cur==="usdttrc20"?" on":"");btn.dataset.cur=cr.cur;
+    btn.innerHTML=`<img class="csel-logo" src="${cr.logo}" alt="${cr.label}" onerror="this.outerHTML='<span style=font-size:16px>💲</span>'">${cr.label}<br><span style="font-size:9px;opacity:.5">${cr.net}</span>`;
+    onFastTap(btn,()=>{grid.querySelectorAll(".csel").forEach(b=>b.classList.remove("on"));btn.classList.add("on");haptic("light");});
+    grid.appendChild(btn);
+  });
+  const pb2=$("payBalBtn");if(pb2)onFastTap(pb2,()=>doOrder("balance"));
+  onFastTap($("npBtn"),async()=>{
+    const selBtn=document.querySelector("#cryptoGrid .csel.on");
+    const selCur=selBtn?selBtn.dataset.cur:"usdttrc20";
+    const btn=$("npBtn");btn.disabled=true;btn.textContent="⏳ Génération…";
+    try{
+      const p=await apiPost("create-payment",{amount:tot,orderId:"acm_"+Date.now(),description:entries().map(e=>e.qty+"x @"+e.item.domain).join(", "),payCurrency:selCur});
+      if(!p.pay_address){toast("Erreur: "+(p.message||"Vérifie NOWPayments"));btn.disabled=false;btn.textContent="₿ Générer le paiement";return;}
+      btn.closest(".pay-card").querySelector("button").style.display="none";
+      $("npActive").style.display="block";
+      const cr=CRYPTOS.find(c=>c.cur===selCur);
+      $("npNet").textContent=(cr?.label||selCur)+" · "+(cr?.net||"");
+      $("npAddr").textContent=p.pay_address;
+      $("npAmt").textContent=p.pay_amount+" "+(selCur.replace(/trc20|erc20|bsc/g,"").toUpperCase());
+      $("npQR").src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data="+encodeURIComponent(p.pay_address);
+      $("npCopy").onclick=()=>navigator.clipboard.writeText(p.pay_address).then(()=>toast("Copié ✓"));
+      startPoll(p.payment_id,entries());
+    }catch(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="₿ Générer le paiement";}
+  };
+}
+function swTab(t){$("tSolde").classList.toggle("on",t==="solde");$("tCrypto").classList.toggle("on",t==="crypto");$("pSolde").classList.toggle("on",t==="solde");$("pCrypto").classList.toggle("on",t==="crypto");}
+
+/* ══ DELIVERY ═══════════════════════════════ */
+async function deliverCreds(entries){
+  if(!fbOk)return[];const out=[];
+  for(const{item,qty}of entries){
+    const snap=await db.ref("credentials/"+item.id).orderByChild("sold").equalTo(false).limitToFirst(qty).once("value");
+    const cr=snap.val()||{};const keys=Object.keys(cr).slice(0,qty);
+    for(const k of keys){await db.ref("credentials/"+item.id+"/"+k).remove();out.push({domain:item.domain,email:cr[k].email,pass:cr[k].pass});}
+    await db.ref("products/"+item.id+"/stock").set(Math.max(0,Number(item.stock||0)-keys.length));
+  }
+  return out;
+}
+async function sendBot(chatId,creds,total){
+  if(!chatId)return;
+  const def=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\nBonjour <b>{prenom}</b> ({handle})\n\n<pre>{acces}</pre>\nTotal : <b>{total}</b>\n\nPour toute question, réponds à ce message.`;
+  let tpl=def;
+  try{const s=await db.ref("settings/botMessage").once("value");if(s.val())tpl=s.val();}catch(e){}
+  let acces="";creds.forEach(c=>{acces+=`${c.email}${c.pass?":"+c.pass:""}\n`;});acces=acces.trim();
+  const msg=tpl.replace(/\{prenom\}/g,me.name.split(" ")[0]).replace(/\{handle\}/g,me.handle||"").replace(/\{acces\}/g,acces).replace(/\{total\}/g,fmt(total));
+  try{await apiPost("send-message",{chatId,text:msg});}catch(e){}
+}
+function stopPoll(){if(pollInt){clearInterval(pollInt);pollInt=null;}}
+function startPoll(pid,oe){
+  stopPoll();
+  const ST={waiting:{l:"⏳ En attente…",p:8},confirming:{l:"🔄 Détecté…",p:55},confirmed:{l:"✅ Confirmé !",p:100},finished:{l:"✅ Finalisé !",p:100},failed:{l:"❌ Échoué",p:0},expired:{l:"⌛ Expiré",p:0}};
+  pollInt=setInterval(async()=>{
+    try{
+      const d=await checkPayment(pid);const st=ST[d.payment_status]||{l:d.payment_status,p:20};
+      if($("npStatus"))$("npStatus").textContent=st.l;if($("npBar"))$("npBar").style.width=st.p+"%";
+      if(d.payment_status==="confirmed"||d.payment_status==="finished"){
+        stopPoll();hapticN("success");
+        const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
+        const creds=await deliverCreds(se);if(me.tgId)sendBot(me.tgId,creds,stot);
+        cart={};updateCartBadge();
+        const ae=$("npActive"),seEl=$("npSuccess");if(ae)ae.style.display="none";
+        if(seEl){
+          let h=`<div class="success-card"><div style="text-align:center;margin-bottom:16px"><div style="font-size:40px">✅</div><div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;margin-top:8px;color:var(--ac)">Paiement confirmé</div><div style="font-size:12px;color:var(--sub);margin-top:4px">Tes accès arrivent dans le bot</div></div>`;
+          if(creds.length){let all="";h+='<div style="display:flex;flex-direction:column;gap:7px">';creds.forEach(c=>{const line=c.email+(c.pass?":"+c.pass:"");all+=line+"\n";h+=`<div class="cred-row"><div class="cred-dom">@${c.domain}</div><div class="cred-val">${c.email}${c.pass?"<br>"+c.pass:""}</div></div>`;});const enc=encodeURIComponent(all.trim());h+=`</div><button class="btn" style="width:100%;margin-top:12px;padding:11px" onclick="navigator.clipboard.writeText(decodeURIComponent('${enc}')).then(()=>toast('Copié ✓'))">📋 Copier les accès</button>`;}
+          else{h+='<p style="text-align:center;font-size:13px;color:var(--sub)">Accès envoyés dans le bot.</p>';}
+          h+="</div>";seEl.innerHTML=h;seEl.style.display="block";
+        }
+      }
+      if(d.payment_status==="failed"||d.payment_status==="expired"){stopPoll();toast("Paiement "+d.payment_status+".");}
+    }catch(e){console.error(e);}
+  },10000);
+}
+function doOrder(method){
+  const tot=cartTotal(),se=entries();
+  if(method==="balance"){
+    if(myBal<tot){toast("Solde insuffisant.");return;}
+    if(fbOk&&me.id)db.ref("users/"+me.id+"/balance").set(parseFloat((myBal-tot).toFixed(2)));
+    deliverCreds(se).then(c=>{if(me.tgId)sendBot(me.tgId,c,tot);});
+    hapticN("success");toast("✅ Accès livrés dans le bot !",4000);
+  }else{toast("Confirmation envoyée.");}
+  cart={};updateCartBadge();goTo("shop");
+}
+
+/* ══ NAV ═════════════════════════════════════ */
+function goTo(page){
+  ["shop","cart","admin"].forEach(p=>$("S_"+p).classList.toggle("active",p===page));
+  document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("on"));
+  if(page==="shop")$("navShop").classList.add("on");
+  if(page==="cart"){$("navCart").classList.add("on");renderCartPage();}
+  if(page==="admin")renderAdmin();
+  window.scrollTo(0,0);
+}
+onFastTap($("btnBack"),()=>goTo("shop"));
+onFastTap($("btnAdminBack"),()=>goTo("shop"));
+onFastTap($("navShop"),()=>goTo("shop"));
+onFastTap($("navCart"),()=>goTo("cart"));
+
+/* Profile / Solde sheet */
+onFastTap($("profileCard"),openDeposit);
+onFastTap($("navSolde"),openDeposit);
+onFastTap($("depClose"),()=>closeSheet());
+onFastTap($("depOverlay"),()=>closeSheet());
+
+function openDeposit(){
+  const ini=me.name.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)||"?";
+  $("depAv").innerHTML=me.photo?`<img src="${me.photo}" alt="" style="width:100%;height:100%;object-fit:cover">`:`${ini}`;
+  $("depName").textContent=me.name;
+  $("depHdl").textContent=me.handle||"ACCESMAIL";
+  $("depBal").textContent=fmt(myBal);
+  renderDepContent();
+  $("depOverlay").classList.add("on");
+  requestAnimationFrame(()=>requestAnimationFrame(()=>$("depSheet").classList.add("on")));
+}
+function closeSheet(){
+  $("depSheet").classList.remove("on");
+  setTimeout(()=>$("depOverlay").classList.remove("on"),290);
+  if(depPollInt){clearInterval(depPollInt);depPollInt=null;}
+}
+function renderDepContent(){
+  const presets=[5,10,20,50];let selAmt=10;
+  const dc=$("depContent");
+  dc.innerHTML=`
+    <p class="sl-lbl" style="margin-top:0">Recharger en crypto</p>
+    <p style="font-size:12px;color:var(--sub);margin-bottom:12px;line-height:1.7">Génère une adresse et envoie le paiement.<br><b style="color:var(--ink)">Crédit automatique</b> après confirmation.</p>
+    <div class="amt-grid" id="amtGrid"></div>
+    <input class="field" id="customAmt" type="number" min="1" placeholder="Autre montant (€)" style="margin-bottom:12px">
+    <p class="sl-lbl" style="margin-top:0">Crypto</p>
+    <div class="crypto-grid" id="depCG" style="margin-bottom:12px"></div>
+    <button class="btn" id="depGenBtn" style="width:100%;padding:13px;font-size:14px">💳 Générer l'adresse</button>
+    <div id="depPay" style="margin-top:10px"></div>`;
+  const ag=$("amtGrid");
+  presets.forEach(a=>{
+    const btn=document.createElement("button");btn.className="amt-btn"+(a===selAmt?" on":"");btn.textContent=a+"€";
+    onFastTap(btn,()=>{selAmt=a;$("customAmt").value="";ag.querySelectorAll(".amt-btn").forEach(b=>b.classList.remove("on"));btn.classList.add("on");haptic("light");});
+    ag.appendChild(btn);
+  });
+  $("customAmt").oninput=e=>{const v=parseFloat(e.target.value);if(v>0){selAmt=v;ag.querySelectorAll(".amt-btn").forEach(b=>b.classList.remove("on"));}};
+  const dcg=$("depCG");
+  CRYPTOS.slice(0,6).forEach(cr=>{
+    const btn=document.createElement("button");btn.className="csel"+(cr.cur==="usdttrc20"?" on":"");btn.dataset.cur=cr.cur;
+    btn.innerHTML=`<img class="csel-logo" src="${cr.logo}" alt="${cr.label}" onerror="this.outerHTML='<span style=font-size:16px>💲</span>'">${cr.label}<br><span style="font-size:9px;opacity:.5">${cr.net}</span>`;
+    onFastTap(btn,()=>{dcg.querySelectorAll(".csel").forEach(b=>b.classList.remove("on"));btn.classList.add("on");haptic("light");});
+    dcg.appendChild(btn);
+  });
+  onFastTap($("depGenBtn"),async()=>{
+    const amt=selAmt;if(!amt||amt<1){toast("Montant minimum 1€");return;}
+    const selBtn=document.querySelector("#depCG .csel.on");
+    const selCur=selBtn?selBtn.dataset.cur:"usdttrc20";
+    const btn=$("depGenBtn");btn.disabled=true;btn.textContent="⏳ Génération…";
+    try{
+      const p=await apiPost("create-payment",{amount:amt,orderId:"dep_"+me.id+"_"+Date.now(),description:"Dépôt ACCESMAIL",payCurrency:selCur});
+      if(!p.pay_address){toast("Erreur: "+(p.message||"Vérifie NOWPayments"));btn.disabled=false;btn.textContent="💳 Générer l'adresse";return;}
+      const cr=CRYPTOS.find(c=>c.cur===selCur);
+      $("depPay").innerHTML=`<div class="pay-card">
+        <span class="pay-net">${cr?.label||selCur} · ${cr?.net||""}</span>
+        <div style="text-align:center;margin:11px 0"><img style="border-radius:12px;width:138px;height:138px;border:2px solid var(--line)" src="https://api.qrserver.com/v1/create-qr-code/?size=138x138&data=${encodeURIComponent(p.pay_address)}"></div>
+        <div class="pay-addr"><span>${p.pay_address}</span><button class="copy-btn" onclick="navigator.clipboard.writeText('${p.pay_address}').then(()=>toast('Copié ✓'))">Copier</button></div>
+        <div style="text-align:center;margin:9px 0"><div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700">${p.pay_amount} ${selCur.replace(/trc20|erc20|bsc/g,"").toUpperCase()}</div><div style="font-size:11px;color:var(--sub);margin-top:2px">Créditera <b>${fmt(amt)}</b> sur ton solde</div></div>
+        <div class="pay-st" id="depSt">⏳ En attente…</div>
+        <div class="pay-bar-w"><div class="pay-bar" id="depBar" style="width:8%"></div></div>
+        <p style="font-size:11px;color:var(--sub);text-align:center;margin-top:6px">Vérification auto toutes les 10s</p>
+      </div>`;
+      btn.style.display="none";
+      depPollInt=setInterval(async()=>{
+        try{
+          const d=await checkPayment(p.payment_id);
+          const ST={waiting:"⏳ En attente…",confirming:"🔄 Détectée…",confirmed:"✅ Confirmé !",finished:"✅ Finalisé !"};
+          const PP={waiting:8,confirming:55,confirmed:100,finished:100};
+          if($("depSt"))$("depSt").textContent=ST[d.payment_status]||d.payment_status;
+          if($("depBar"))$("depBar").style.width=(PP[d.payment_status]||20)+"%";
+          if(d.payment_status==="confirmed"||d.payment_status==="finished"){
+            clearInterval(depPollInt);depPollInt=null;
+            if(fbOk&&me.id)db.ref("users/"+me.id+"/balance").set(parseFloat((myBal+amt).toFixed(2)));
+            hapticN("success");closeSheet();toast("✅ "+fmt(amt)+" ajoutés à ton solde !",4000);
+          }
+        }catch(e){console.error(e);}
+      },10000);
+    }catch(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="💳 Générer l'adresse";}
+  };
+}
+
+/* ══ PARSER ═══════════════════════════════════ */
+function parseMP(txt){
+  const lines=txt.split("\n").map(l=>l.trim()).filter(l=>l&&l.includes("@"));
+  const seen=new Set(),grouped={};let dupes=0,invalid=0;
+  lines.forEach(line=>{
+    let email="",pass="",country=null;
+    if(line.includes("Data =")&&line.includes("|")){const dm=line.match(/Data\s*=\s*([^\s|]+)/),cm=line.match(/Country\s*=\s*([A-Z]{2})/);if(dm){const raw=dm[1],sep=raw.indexOf(":");email=sep>-1?raw.slice(0,sep).toLowerCase():raw.toLowerCase();pass=sep>-1?raw.slice(sep+1):"";}if(cm)country=cm[1].toUpperCase();}
+    else{const sep=line.indexOf(":");email=(sep>-1?line.slice(0,sep):line).trim().toLowerCase();pass=sep>-1?line.slice(sep+1).trim():"";}
+    if(!email.includes("@")||!email.includes(".")){invalid++;return;}
+    if(seen.has(email)){dupes++;return;}
+    seen.add(email);
+    if(!country){const domain=email.split("@")[1],tld=domain.split(".").pop().toLowerCase();country=TMAP[tld]||null;if(!country)country=GENERIC.has(tld)?"MIX":tld.toUpperCase();}
+    const domain=email.split("@")[1],key=domain+"||"+country;
+    if(!grouped[key])grouped[key]={domain,country,accounts:[]};
+    grouped[key].accounts.push({email,pass});
+  });
+  return{groups:Object.values(grouped),dupes,invalid,total:seen.size};
+}
+function importMP(groups){
+  const upd={};
+  groups.forEach(g=>{
+    const ex=prods.find(p=>p.domain===g.domain&&(p.countries||[]).includes(g.country));
+    const ref=ex?null:db.ref("products").push();const pid=ex?ex.id:ref.key;
+    const old=ex?Number(ex.stock||0):0;
+    upd["products/"+pid]={domain:g.domain,countries:[g.country],price:PRICE_BASE,stock:old+g.accounts.length};
+    g.accounts.forEach(a=>{const r=db.ref("credentials/"+pid).push();upd["credentials/"+pid+"/"+r.key]={email:a.email,pass:a.pass,sold:false};});
+  });
+  return db.ref("/").update(upd);
+}
+
+/* ══ ADMIN ════════════════════════════════════ */
+function renderAdmin(){
+  const el=$("adminContent");
+  if(!adminOk){
+    el.innerHTML=`<div class="lock-wrap"><div class="lock-card"><div class="lock-ico">🔐</div><p>Accès sécurisé — Firebase Auth requis</p><input class="field" id="adminEmail" type="email" placeholder="Email administrateur"><input class="field" id="adminPass" type="password" placeholder="Mot de passe"><button class="btn" id="pwBtn" style="width:100%;padding:12px">Connexion</button><div id="loginErr" style="font-size:12px;color:var(--err);text-align:center;margin-top:8px;display:none"></div></div></div>`;
+    $("pwBtn").onclick=async()=>{
+      const em=$("adminEmail").value.trim(),pw=$("adminPass").value;if(!em||!pw){toast("Remplis les champs.");return;}
+      $("pwBtn").disabled=true;$("pwBtn").textContent="Connexion…";
+      try{await fbAuth.signInWithEmailAndPassword(em,pw);adminOk=true;db.ref("users").once("value",s=>{users=s.val()||{};renderAdmin();});}
+      catch(e){$("loginErr").textContent="Identifiants incorrects.";$("loginErr").style.display="block";$("pwBtn").disabled=false;$("pwBtn").textContent="Connexion";}
+    };return;
+  }
+  if(!fbOk){el.innerHTML='<div class="banner err">Firebase non connecté.</div>';return;}
+  el.innerHTML=`<div style="display:flex;gap:6px;margin-bottom:12px"><button class="atab on" data-t="stock">📦 Stock</button><button class="atab" data-t="catalogue">🗂 Catalogue</button><button class="atab" data-t="users">👥 Clients</button><button class="atab" data-t="bot">📱 Bot</button></div><button class="btn btn-outline" id="logoutBtn" style="width:100%;margin-bottom:12px;font-size:12px;padding:8px">Déconnexion</button><div id="adminPane"></div>`;
+  $("logoutBtn").onclick=()=>{fbAuth.signOut().then(()=>{adminOk=false;goTo("shop");});};
+  function showTab(t){
+    el.querySelectorAll(".atab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+    const pane=$("adminPane");
+    if(t==="stock"){
+      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div id="parsePrev" style="margin-top:10px"></div></div>`;
+      const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
+      fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
+      function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=()=>{$("confirmImp").disabled=true;$("confirmImp").textContent="Import en cours…";const doImport=()=>importMP(groups).then(()=>{toast("✅ "+tot+" comptes importés !");$("parsePrev").innerHTML="";$("txtImp").value="";fb.textContent="📁 Choisir un fichier .txt";}).catch(e=>toast("Erreur: "+e.message));if(rm)db.ref("products").remove().then(()=>db.ref("credentials").remove()).then(doImport);else doImport();};}
+      $("parseBtn").onclick=()=>doAnalyse(false);$("replaceBtn").onclick=()=>{if(confirm("⚠️ Vider tout et remplacer ?"))doAnalyse(true);};
+    }
+    else if(t==="catalogue"){
+      pane.innerHTML=`<button class="btn btn-danger" id="clearBtn" style="width:100%;margin-bottom:12px">🗑 Vider le catalogue</button><div class="a-card" style="margin-bottom:12px"><div class="a-title">➕ Ajouter manuellement</div><input class="field" id="nD" placeholder="Domaine (ex: hotmail.com)"><input class="field" id="nC" placeholder="Pays (ex: FR,US,DE)"><div style="display:flex;gap:7px"><input class="field" id="nP" type="number" step="0.01" value="4" placeholder="Prix"><input class="field" id="nS" type="number" placeholder="Stock"></div><button class="btn" id="addBtn" style="width:100%">Ajouter</button></div><p class="sl-lbl">Catalogue (${prods.length})</p><div id="aProd"></div>`;
+      $("clearBtn").onclick=()=>{if(!confirm("⚠️ Supprimer TOUS les produits ?"))return;db.ref("products").remove().then(()=>{db.ref("credentials").remove();toast("Catalogue vidé.");});};
+      $("addBtn").onclick=()=>{const dom=$("nD").value.trim(),ctry=$("nC").value.split(",").map(c=>c.trim().toUpperCase()).filter(Boolean);const price=parseFloat($("nP").value)||PRICE_BASE,stock=parseInt($("nS").value);if(!dom||!ctry.length||isNaN(stock)){toast("Remplis tous les champs.");return;}db.ref("products").push({domain:dom,countries:ctry,price,stock}).then(()=>{toast("Ajouté !");["nD","nC","nS"].forEach(id=>$(id).value="");$("nP").value="4";});};
+      const ap=$("aProd");if(!prods.length)ap.innerHTML='<p style="text-align:center;color:var(--sub);padding:20px 0">Catalogue vide.</p>';
+      prods.forEach(p=>{const row=document.createElement("div");row.className="a-card";row.innerHTML=`<div class="a-title">@${p.domain} <span style="font-size:11px;color:var(--sub)">${(p.countries||[]).join(",")} · ${p.stock} en stock</span></div><div class="a-row"><label>Pays</label><input class="field" value="${(p.countries||[]).join(",")}" data-f="c"></div><div class="a-row"><label>Prix</label><input class="field" type="number" step="0.01" value="${p.price}" data-f="p"></div><div class="a-row"><label>Stock</label><input class="field" type="number" value="${p.stock}" data-f="s"></div><div class="a-acts"><button class="btn" data-a="save">Sauvegarder</button><button class="btn btn-danger" data-a="del">Supprimer</button></div>`;row.querySelector('[data-a="save"]').onclick=()=>{const c=row.querySelector('[data-f="c"]').value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);const pr=parseFloat(row.querySelector('[data-f="p"]').value);const st=parseInt(row.querySelector('[data-f="s"]').value);db.ref("products/"+p.id).update({countries:c,price:pr,stock:st}).then(()=>toast("Mis à jour."));};row.querySelector('[data-a="del"]').onclick=()=>{if(confirm("Supprimer @"+p.domain+" ?"))db.ref("products/"+p.id).remove().then(()=>toast("Supprimé."));};ap.appendChild(row);});
+    }
+    else if(t==="users"){
+      pane.innerHTML='<div id="aUsers"></div>';const au=$("aUsers");const ua=Object.entries(users).filter(([uid,u])=>/^u\d+$/.test(uid)&&u.name);if(!ua.length)au.innerHTML='<p style="text-align:center;color:var(--sub);padding:24px 0">Aucun client enregistré.</p>';
+      else ua.forEach(([uid,u])=>{const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);const row=document.createElement("div");row.className="u-row";row.innerHTML=`<div class="u-av">${ini}</div><div style="flex:1"><div class="u-name">${u.name||"Inconnu"}</div><div class="u-bal">${fmt(u.balance||0)}</div></div><button class="sm-btn" data-uid="${uid}">+ Solde</button>`;row.querySelector(".sm-btn").onclick=()=>{const amt=parseFloat(prompt("Montant (€) :"));if(isNaN(amt)||amt<=0){toast("Invalide.");return;}db.ref("users/"+uid+"/balance").set(parseFloat(((u.balance||0)+amt).toFixed(2))).then(()=>toast(fmt(amt)+" crédités ✓"));};au.appendChild(row);});
+      const tgIds=ua.filter(([,u])=>u.tgId).map(([,u])=>u.tgId);const bc=document.createElement("div");bc.innerHTML=`<p class="sl-lbl" style="margin-top:16px">📢 Broadcast (${tgIds.length})</p><div class="a-card"><textarea class="field" id="bcMsg" rows="5" style="font-size:13px;line-height:1.7;resize:vertical" placeholder="🔥 <b>RESTOCK !</b>..."></textarea><button class="btn" id="bcBtn" style="width:100%;margin-top:8px" ${tgIds.length===0?"disabled":""}>Envoyer à ${tgIds.length} client${tgIds.length>1?"s":""}</button><div id="bcRes" style="margin-top:8px;font-size:12px;text-align:center;color:var(--sub)"></div></div>`;au.parentElement.appendChild(bc);
+      $("bcBtn").onclick=async()=>{const msg=$("bcMsg").value.trim();if(!msg){toast("Écris un message.");return;}if(!confirm("Envoyer à "+tgIds.length+" client(s) ?"))return;const btn=$("bcBtn");btn.disabled=true;btn.textContent="📤 Envoi…";try{const d=await fetch(VERCEL+"/api/broadcast",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chatIds:tgIds,text:msg})}).then(r=>r.json());$("bcRes").innerHTML=`<span style="color:var(--ok)">✅ ${d.sent} envoyé${d.sent>1?"s":""}</span>${d.failed?` · <span style="color:var(--err)">❌ ${d.failed}</span>`:""}`;toast("Broadcast envoyé ✓");}catch(e){toast("Erreur broadcast.");}btn.disabled=false;btn.textContent="Envoyer à "+tgIds.length+" client"+(tgIds.length>1?"s":"");};
+    }
+    else if(t==="bot"){
+      const def=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\nBonjour <b>{prenom}</b> ({handle})\n\n<pre>{acces}</pre>\nTotal : <b>{total}</b>\n\nPour toute question, réponds à ce message.`;
+      pane.innerHTML=`<div class="a-card"><div class="a-title">📱 Message de livraison</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6">Balises : <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">{prenom}</code> <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">{handle}</code> <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">{acces}</code> <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">{total}</code></p><textarea class="field" id="botMsg" rows="9" style="font-size:13px;line-height:1.7;resize:vertical"></textarea><button class="btn" id="saveBotMsg" style="width:100%;margin-top:8px">💾 Enregistrer</button><p class="sl-lbl" style="margin-top:14px">Aperçu</p><div id="botPrev" style="font-size:12px;color:var(--sub);line-height:1.8;white-space:pre-wrap;font-family:'IBM Plex Mono',monospace;background:var(--bg2);padding:12px;border-radius:9px;min-height:80px"></div></div>`;
+      const f=$("botMsg"),prev=$("botPrev");function up(){prev.textContent=f.value.replace("{prenom}","John").replace("{handle}","@johndosql").replace("{acces}","user@hotmail.com:pass123").replace("{total}","4,00€");}db.ref("settings/botMessage").once("value",s=>{f.value=s.val()||def;up();});f.addEventListener("input",up);$("saveBotMsg").onclick=()=>db.ref("settings/botMessage").set(f.value).then(()=>toast("Enregistré ✓"));
+    }
+  }
+  el.querySelectorAll(".atab").forEach(b=>b.onclick=()=>showTab(b.dataset.t));showTab("stock");
+}
+
+/* ══ BOOT ══════════════════════════════════════ */
+initSplash();
+initMe();
+loadProds();
+try{
+  const tg=window.Telegram&&window.Telegram.WebApp;
+  if(tg){tg.ready();tg.expand();tg.setBackgroundColor("#040810");tg.setHeaderColor("#040810");tg.setBottomBarColor("#070D18");}
+}catch(e){}
+</script>
+</body>
+</html>
