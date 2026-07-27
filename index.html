@@ -981,24 +981,36 @@ function renderChips(){
 
 /* ══ PAYS POPUP ═══════════════════════════════ */
 /* Bouton pays - pointerdown = réponse immédiate sans délai */
-$("statPaysBtn").addEventListener("click",()=>{
+function buildPaysGrid(){
   const codes=activeCodes();
-  const grid=$("paysGrid");grid.innerHTML="";
-  ALL_C.filter(c=>c.c!=="all"&&codes.has(c.c)).sort((a,b)=>{
-    const sa=prods.filter(p=>(p.countries||[]).includes(a.c)).reduce((s,p)=>s+Number(p.stock||0),0);
-    const sb=prods.filter(p=>(p.countries||[]).includes(b.c)).reduce((s,p)=>s+Number(p.stock||0),0);
-    return sb-sa;
-  }).forEach(cty=>{
-    const item=document.createElement("div");
-    const total=prods.filter(p=>(p.countries||[]).includes(cty.c)).reduce((s,p)=>s+Number(p.stock||0),0);
-    item.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s;";
-    item.innerHTML=`<div style="font-size:24px;margin-bottom:4px">${flag(cty.c)}</div><div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${cty.n}</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ac);margin-top:3px">${total} accès</div>`;
-    item.addEventListener("touchstart",()=>item.style.borderColor="rgba(0,200,160,.3)",{passive:true});
-    item.addEventListener("touchend",()=>{item.style.borderColor="var(--line)";activeC=cty.c;showAll=false;renderChips();renderCatalog();$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),290);},{passive:true});
-    grid.appendChild(item);
-  });
+  const grid=$("paysGrid");
+  grid.innerHTML="";
+  ALL_C.filter(c=>c.c!=="all"&&codes.has(c.c))
+    .map(cty=>{
+      const total=prods.filter(p=>(p.countries||[]).includes(cty.c))
+        .reduce((s,p)=>s+Number(p.stock||0),0);
+      return{...cty,total};
+    })
+    .sort((a,b)=>b.total-a.total)
+    .forEach(cty=>{
+      const item=document.createElement("div");
+      item.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:11px;padding:12px 8px;text-align:center;cursor:pointer;";
+      item.innerHTML="<div style='font-size:22px;margin-bottom:3px'>"+flag(cty.c)+"</div>"
+        +"<div style='font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>"+cty.n+"</div>"
+        +"<div style='font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--ac);margin-top:2px'>"+cty.total+" accès</div>";
+      item.onclick=function(){
+        activeC=cty.c;showAll=false;
+        renderChips();renderCatalog();
+        $("paysSheet").classList.remove("on");
+        setTimeout(function(){$("paysOverlay").classList.remove("on");},180);
+      };
+      grid.appendChild(item);
+    });
+}
+$("statPaysBtn").onclick=function(){
+  buildPaysGrid();
   $("paysOverlay").classList.add("on");
-  requestAnimationFrame(()=>$("paysSheet").classList.add("on"));
+  $("paysSheet").classList.add("on");
 };
 $("paysClose").onclick=()=>{$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),290);};
 $("paysOverlay").onclick=()=>{$("paysSheet").classList.remove("on");setTimeout(()=>$("paysOverlay").classList.remove("on"),290);};
@@ -1300,21 +1312,17 @@ async function deliverCreds(entries){
 }
 async function sendBot(chatId,creds,total){
   if(!chatId){console.warn("sendBot: no chatId");return;}
-  const def=`u2705 <b>ACCESMAIL u2014 Commande confirmu00e9e</b>
-
-Bonjour <b>{prenom}</b> ({handle})
-
-<pre>{acces}</pre>
-Total : <b>{total}</b>
-
-Pour toute question, ru00e9ponds u00e0 ce message.`;
-  let tpl=def;
-  try{const s=await db.ref("settings/botMessage").once("value");if(s.val())tpl=s.val();}catch(e){}
-  const acces=creds.length?creds.map(c=>c.email+(c.pass?":"+c.pass:"")).join("
-"):"(stock vide)";
-  const prenom=(me.name||"Client").split(" ")[0];
-  const msg=tpl.replace(/{prenom}/g,prenom).replace(/{handle}/g,me.handle||"").replace(/{acces}/g,acces).replace(/{total}/g,fmt(total));
-  try{const r=await apiPost("send-message",{chatId,text:msg});console.log("sendBot:",r);}catch(e){console.error("sendBot error:",e);}
+  var defMsg="\u2705 <b>ACCESMAIL \u2014 Commande confirm\u00e9e</b>\n\nBonjour <b>{prenom}</b> ({handle})\n\n<pre>{acces}</pre>\nTotal : <b>{total}</b>\n\nPour toute question, r\u00e9ponds \u00e0 ce message.";
+  var tpl=defMsg;
+  try{var snap=await db.ref("settings/botMessage").once("value");if(snap.val())tpl=snap.val();}catch(e){}
+  var acces=creds.length?creds.map(function(c){return c.email+(c.pass?":"+c.pass:"");}).join("\n"):"(stock vide)";
+  var prenom=(me.name||"Client").split(" ")[0];
+  var msg=tpl
+    .replace(/{prenom}/g,prenom)
+    .replace(/{handle}/g,me.handle||"")
+    .replace(/{acces}/g,acces)
+    .replace(/{total}/g,fmt(total));
+  try{await apiPost("send-message",{chatId:chatId,text:msg});}catch(e){console.error("sendBot:",e);}
 }
 function stopPoll(){if(pollInt){clearInterval(pollInt);pollInt=null;}}
 function startPoll(pid,oe){
@@ -1534,7 +1542,15 @@ initMe();
 loadProds();
 try{
   const tg=window.Telegram&&window.Telegram.WebApp;
-  if(tg){tg.ready();tg.expand();tg.setBackgroundColor("#040810");tg.setHeaderColor("#040810");tg.setBottomBarColor("#070D18");}
+  if(tg){
+    tg.ready();
+    tg.expand();
+    /* Forcer expand après un délai aussi - certaines versions de Telegram nécessitent ça */
+    setTimeout(function(){try{tg.expand();}catch(e){}},300);
+    try{tg.setBackgroundColor("#040810");}catch(e){}
+    try{tg.setHeaderColor("#040810");}catch(e){}
+    try{tg.setBottomBarColor("#070D18");}catch(e){}
+  }
 }catch(e){}
 </script>
 </body>
