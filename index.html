@@ -960,34 +960,10 @@ if(typeof firebase!=="undefined"){try{firebase.initializeApp(FB);db=firebase.dat
 const $=id=>document.getElementById(id);
 const fmt=n=>Number(n).toFixed(2).replace(".",",")+CURRENCY;
 
-/* fastClick — réponse immédiate, sans 300ms, sans bloquer le scroll */
+/* onclick simple — touch-action:manipulation + user-scalable=no = 0ms délai natif iOS */
 function fastClick(el,fn){
   if(!el)return;
-  var active=false,moved=false,sy=0,sx=0;
-  el.addEventListener("touchstart",function(e){
-    active=true;moved=false;
-    sy=e.touches[0].clientY;sx=e.touches[0].clientX;
-    el.style.opacity=".75";
-  },{passive:true});
-  el.addEventListener("touchmove",function(e){
-    if(Math.abs(e.touches[0].clientY-sy)>6||Math.abs(e.touches[0].clientX-sx)>6){
-      moved=true;el.style.opacity="";
-    }
-  },{passive:true});
-  el.addEventListener("touchend",function(e){
-    el.style.opacity="";
-    if(active&&!moved){
-      active=false;
-      e.preventDefault();
-      requestAnimationFrame(function(){fn(e);});
-    }
-    active=false;
-  },{passive:false});
-  el.addEventListener("touchcancel",function(){active=false;moved=false;el.style.opacity="";},{passive:true});
-  el.addEventListener("click",function(e){
-    /* Fallback desktop — éviter double-déclenchement sur mobile */
-    if(!("ontouchstart"in window))fn(e);
-  });
+  el.onclick=fn;
 }
 const flag=iso=>{if(!iso||iso==="all"||iso==="MIX")return"🌍";const c=(iso==="UK"?"GB":iso).toUpperCase();return c.split("").map(x=>String.fromCodePoint(x.charCodeAt(0)+127397)).join("");};
 const cName=c=>ALL_C.find(x=>x.c===c)?.n||c;
