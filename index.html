@@ -1413,33 +1413,7 @@ function getPaysGroups(items){
   return sections;
 }
 
-/* Ouvrir le détail d'un pays */
-function openPaysDetail(section){
-  var title=$("paysDetailTitle"),count=$("paysDetailCount"),body=$("paysDetailBody");
-  title.textContent=flag(section.code)+" "+cName(section.code);
-  count.textContent=section.total+" accès";
-  body.innerHTML="";
-  var sorted=section.prods.slice().sort(function(a,b){return Number(b.stock||0)-Number(a.stock||0);});
-  var maxSt=Math.max.apply(null,sorted.map(function(p){return Number(p.stock||0);}));
-  sorted.forEach(function(p){
-    var st=Number(p.stock||0);
-    var card=document.createElement("div");card.className="scard-compact";
-    var pct=maxSt>0?Math.max(4,Math.round(st/maxSt*100)):0;
-    var col=st<=0?"var(--err)":st<=5?"orange":"var(--ac)";
-    card.innerHTML="<div class='sc-info'>"
-      +"<div class='sc-dom'>@"+p.domain+"</div>"
-      +"<div class='sc-meta'><span class='sc-stock'>"+(st<=0?"Épuisé":st+" en stock")+"</span>"
-      +"<div class='sc-bar'><div class='sc-bar-fill' style='width:"+pct+"%;background:"+col+"'></div></div></div>"
-      +"</div>"
-      +"<div class='sc-price'>"+fmt(PRICE_BASE)+"</div>"
-      +"<button class='add-btn' style='width:34px;height:34px;font-size:18px'"+(st<=0?" disabled":"")+">+</button>";
-    card.querySelector(".add-btn").onclick=function(){addCart(p);};
-    body.appendChild(card);
-  });
-  $("paysDetail").classList.add("open");
-  haptic("light");
-}
-$("paysDetailBack").onclick=function(){$("paysDetail").classList.remove("open");};
+
 
 /* Grille pays = écran d'accueil du catalogue */
 function renderCatalogPays(el){
