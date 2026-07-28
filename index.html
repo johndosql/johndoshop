@@ -1733,13 +1733,21 @@ async function deliverCreds(entries){
   const out=[];
   for(const{item,qty}of entries){
     try{
-      /* Lire les N premiers credentials disponibles (on les supprime après → pas besoin de filtrer) */
       const snap=await db.ref("credentials/"+item.id).limitToFirst(qty).once("value");
       const cr=snap.val()||{};
       const keys=Object.keys(cr).slice(0,qty);
       for(const k of keys){
         await db.ref("credentials/"+item.id+"/"+k).remove();
-        if(cr[k]&&cr[k].email)out.push({domain:item.domain,email:cr[k].email,pass:cr[k].pass||""});
+        if(cr[k]&&cr[k].email){
+          out.push({domain:item.domain,email:cr[k].email,pass:cr[k].pass||""});
+          /* Sauvegarder dans la liste noire des emails déjà vendus */
+          const safeKey=cr[k].email.replace(/[.@]/g,"_");
+          db.ref("sold_emails/"+safeKey).set({
+            email:cr[k].email,
+            domain:item.domain,
+            soldAt:Date.now()
+          });
+        }
       }
       const newStock=Math.max(0,Number(item.stock||0)-keys.length);
       await db.ref("products/"+item.id+"/stock").set(newStock);
@@ -1780,11 +1788,25 @@ function startPoll(pid,oe){
       if(d.payment_status==="confirmed"||d.payment_status==="finished"){
         stopPoll();hapticN("success");
         const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
-        const creds=await deliverCreds(se);
-        /* Notif client */
-        if(me.tgId)sendBot(me.tgId,creds,stot).catch(e=>console.error("bot:",e));
+        /* Créer une tâche pour le checker Python */
+        if(fbOk){
+          db.ref("pending_checks/"+pid).set({
+            userId:me.id,
+            tgId:me.tgId||null,
+            name:me.name||"Client",
+            handle:me.handle||"",
+            amount:stot,
+            items:se.map(function(e){return{domain:e.item.domain,qty:e.qty};}),
+            createdAt:Date.now(),
+            status:"pending"
+          });
+        }else{
+          /* Fallback si Firebase pas dispo : livraison directe sans check */
+          const creds=await deliverCreds(se);
+          if(me.tgId)sendBot(me.tgId,creds,stot).catch(function(e){console.error("bot:",e);});
+        }
         /* Notif admin */
-        var adminTxt="\uD83D\uDED2 <b>Achat confirm\u00e9</b>\n\n"
+        var adminTxt="\uD83D\uDED2 <b>Achat confirm\u00e9 \u2014 en cours de v\u00e9rification</b>\n\n"
           +"Client\u00a0: <b>"+(me.name||"Inconnu")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\n"
           +"Montant\u00a0: <b>"+fmt(stot)+"</b>\n"
           +"Commande\u00a0: "+se.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ");
@@ -1792,10 +1814,8 @@ function startPoll(pid,oe){
         cart={};updateCartBadge();
         const ae=$("npActive"),seEl=$("npSuccess");if(ae)ae.style.display="none";
         if(seEl){
-          let h=`<div class="success-card"><div style="text-align:center;margin-bottom:16px"><div style="font-size:40px">✅</div><div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;margin-top:8px;color:var(--ac)">Paiement confirmé</div><div style="font-size:12px;color:var(--sub);margin-top:4px">Tes accès arrivent dans le bot</div></div>`;
-          if(creds.length){let all="";h+='<div style="display:flex;flex-direction:column;gap:7px">';creds.forEach(c=>{const line=c.email+(c.pass?":"+c.pass:"");all+=line+"\n";h+=`<div class="cred-row"><div class="cred-dom">@${c.domain}</div><div class="cred-val">${c.email}${c.pass?"<br>"+c.pass:""}</div></div>`;});const enc=encodeURIComponent(all.trim());h+=`</div><button class="btn" style="width:100%;margin-top:12px;padding:11px" onclick="navigator.clipboard.writeText(decodeURIComponent('${enc}')).then(()=>toast('Copié ✓'))">📋 Copier les accès</button>`;}
-          else{h+='<p style="text-align:center;font-size:13px;color:var(--sub)">Accès envoyés dans le bot.</p>';}
-          h+="</div>";seEl.innerHTML=h;seEl.style.display="block";
+          seEl.innerHTML='<div class="success-card"><div style="text-align:center;padding:16px 0"><div style="font-size:40px">✅</div><div style="font-family:\'Space Grotesk\',sans-serif;font-weight:800;font-size:18px;margin-top:8px;color:var(--ac)">Paiement confirmé</div><div style="font-size:13px;color:var(--sub);margin-top:8px;line-height:1.6">🔍 Vérification des accès en cours…<br>Tu recevras une notification dans le bot<br>dès que c\'est prêt.</div></div></div>';
+          seEl.style.display="block";
         }
       }
       if(d.payment_status==="failed"||d.payment_status==="expired"){stopPoll();toast("Paiement "+d.payment_status+".");}
@@ -2063,7 +2083,17 @@ function renderAdmin(){
       pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div id="parsePrev" style="margin-top:10px"></div></div>`;
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
       fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
-      function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=()=>{$("confirmImp").disabled=true;$("confirmImp").textContent="Import en cours…";const doImport=()=>importMP(groups).then(()=>{toast("✅ "+tot+" comptes importés !");$("parsePrev").innerHTML="";$("txtImp").value="";fb.textContent="📁 Choisir un fichier .txt";}).catch(e=>toast("Erreur: "+e.message));if(rm)db.ref("products").remove().then(()=>db.ref("credentials").remove()).then(doImport);else doImport();};}
+      function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=async()=>{
+        $("confirmImp").disabled=true;$("confirmImp").textContent="⏳ Vérification des doublons…";
+        let soldEmails={};
+        try{const s=await db.ref("sold_emails").once("value");soldEmails=s.val()||{};}catch(e){}
+        const soldKeys=new Set(Object.values(soldEmails).map(x=>x&&x.email?x.email.toLowerCase():"").filter(Boolean));
+        let skipped=0;
+        const filtered=groups.map(g=>({...g,accounts:g.accounts.filter(a=>{if(soldKeys.has((a.email||"").toLowerCase())){skipped++;return false;}return true;})})).filter(g=>g.accounts.length>0);
+        if(skipped>0)toast("⚠️ "+skipped+" email(s) déjà vendus ignorés",4000);
+        $("confirmImp").textContent="Import en cours…";
+        const doImport=()=>importMP(filtered).then(()=>{const kept=filtered.reduce((s,g)=>s+g.accounts.length,0);toast("✅ "+kept+" comptes importés !");$("parsePrev").innerHTML="";$("txtImp").value="";fb.textContent="📁 Choisir un fichier .txt";}).catch(e=>toast("Erreur: "+e.message));
+        if(rm)db.ref("products").remove().then(()=>db.ref("credentials").remove()).then(doImport);else doImport();};}
       $("parseBtn").onclick=()=>doAnalyse(false);$("replaceBtn").onclick=()=>{if(confirm("⚠️ Vider tout et remplacer ?"))doAnalyse(true);};
     }
     else if(t==="catalogue"){
