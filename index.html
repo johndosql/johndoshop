@@ -1822,11 +1822,9 @@ function startPoll(pid,oe){
         stopPoll();hapticN("success");
         const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
         const creds=await deliverCreds(se);
+        /* Envoyer le bot EN PARALLÈLE - ne pas bloquer l'affichage */
         if(me.tgId)sendBot(me.tgId,creds,stot).catch(e=>console.error("bot:",e));
         else console.warn("Pas de tgId, livraison bot impossible");
-        /* Notif admin */
-        var atxt="\uD83D\uDED2 <b>Achat confirm\u00e9</b>\n\nClient\u00a0: <b>"+(me.name||"?")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\nMontant\u00a0: <b>"+fmt(stot)+"</b>\nCommande\u00a0: "+se.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ");
-        apiPost("send-message",{chatId:1363470410,text:atxt}).catch(function(){});
         cart={};updateCartBadge();
         const ae=$("npActive"),seEl=$("npSuccess");if(ae)ae.style.display="none";
         if(seEl){
