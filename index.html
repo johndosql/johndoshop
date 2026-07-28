@@ -2112,9 +2112,12 @@ function renderAdmin(){
         if(rm){
           $("confirmImp").textContent="🗑 Suppression ancien stock…";
           try{
-            await new Promise((res,rej)=>db.ref("products").remove(e=>e?rej(e):res()));
-            await new Promise((res,rej)=>db.ref("credentials").remove(e=>e?rej(e):res()));
+            await db.ref("credentials").remove();
+            await db.ref("products").remove();
+            /* Petite pause pour laisser Firebase confirmer */
+            await new Promise(res=>setTimeout(res,800));
           }catch(e){toast("Erreur suppression: "+e.message);$("confirmImp").disabled=false;return;}
+          toast("🗑 Ancien stock supprimé",2000);
         }
         $("confirmImp").textContent="📥 Import en cours…";
         try{
