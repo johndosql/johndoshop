@@ -1671,9 +1671,10 @@ function renderCartPage(){
     btn.disabled=true;
     btn.textContent="⏳ Génération en cours…";
     try{
+      const oid="acm_"+Date.now();
       const p=await apiPost("create-payment",{
         amount:tot,
-        orderId:"acm_"+Date.now(),
+        orderId:oid,
         description:entries().map(function(e){return e.qty+"x @"+e.item.domain;}).join(", "),
         payCurrency:selCur
       });
@@ -1683,6 +1684,21 @@ function renderCartPage(){
         btn.disabled=false;
         btn.textContent="Générer le paiement →";
         return;
+      }
+      /* Sauvegarder dans Firebase pour le webhook */
+      if(fbOk&&p.payment_id){
+        db.ref("pending_payments/"+p.payment_id).set({
+          userId:me.id,
+          tgId:me.tgId||null,
+          name:me.name||"Client",
+          handle:me.handle||"",
+          amount:tot,
+          type:"cart",
+          items:entries().map(function(e){return e.qty+"x @"+e.item.domain;}).join(", "),
+          orderId:oid,
+          createdAt:Date.now(),
+          status:"waiting"
+        });
       }
       /* Cacher l'étape 1, afficher étape 2 */
       $("stepChoix").style.display="none";
