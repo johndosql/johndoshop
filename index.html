@@ -704,6 +704,160 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;padding:12px;}
 .pays-detail-body .scard-compact{margin:0 0 8px;}
+
+/* ══ V2 TIER SYSTEM ══════════════════════════════════ */
+:root{
+  --bronze:#CD7F32;--silver:#A8A9AD;--gold:#FFD700;
+  --bronze-bg:rgba(205,127,50,.12);--silver-bg:rgba(168,169,173,.1);--gold-bg:rgba(255,215,0,.12);
+}
+.tier-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:999px;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;}
+.tier-bronze{background:var(--bronze-bg);color:var(--bronze);border:1px solid rgba(205,127,50,.3);}
+.tier-silver{background:var(--silver-bg);color:var(--silver);border:1px solid rgba(168,169,173,.25);}
+.tier-gold{background:var(--gold-bg);color:var(--gold);border:1px solid rgba(255,215,0,.3);}
+
+/* ══ V2 TOPBAR ════════════════════════════════════════ */
+.topbar-v2{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px 10px;
+  background:var(--bg);position:sticky;top:0;z-index:10;
+  border-bottom:1px solid var(--line);}
+.topbar-v2-left{display:flex;align-items:center;gap:9px;flex:1;min-width:0;}
+.topbar-v2-av{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--sf);border:2px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;flex:0 0 auto;overflow:hidden;}
+.topbar-v2-info{flex:1;min-width:0;}
+.topbar-v2-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar-v2-right{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+.topbar-v2-bal{
+  font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:14px;
+  color:var(--ac);background:rgba(0,200,160,.08);
+  border:1px solid rgba(0,200,160,.2);border-radius:10px;
+  padding:5px 10px;cursor:pointer;transition:background .15s;}
+.topbar-v2-bal:active{background:rgba(0,200,160,.18);}
+.topbar-v2-cart{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--sf);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;position:relative;font-size:16px;}
+
+/* ══ V2 BADGES ════════════════════════════════════════ */
+.badge-low{
+  background:rgba(255,59,48,.15);color:#FF453A;
+  border:1px solid rgba(255,59,48,.25);border-radius:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;
+  padding:2px 6px;letter-spacing:.04em;}
+.badge-hot{
+  background:rgba(255,149,0,.15);color:#FF9500;
+  border:1px solid rgba(255,149,0,.25);border-radius:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;
+  padding:2px 6px;}
+.badge-new{
+  background:rgba(0,200,160,.15);color:var(--ac);
+  border:1px solid rgba(0,200,160,.25);border-radius:6px;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;
+  padding:2px 6px;}
+
+/* ══ V2 SHOP CARD ════════════════════════════════════ */
+.scard-v2{
+  background:var(--sf);border:1px solid var(--line);border-radius:14px;
+  padding:14px;margin:0 12px 10px;
+  display:flex;align-items:center;gap:12px;
+  transition:border-color .15s;}
+.scard-v2:active{border-color:rgba(0,200,160,.3);}
+.scard-v2-icon{
+  width:44px;height:44px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex:0 0 auto;border:1px solid var(--line);}
+.scard-v2-info{flex:1;min-width:0;}
+.scard-v2-domain{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.scard-v2-meta{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;}
+.scard-v2-stock{font-size:11px;color:var(--sub);}
+.scard-v2-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto;}
+.scard-v2-price{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:15px;color:var(--ac);}
+.add-btn-v2{
+  width:32px;height:32px;border-radius:10px;
+  background:var(--ac);color:#040810;font-size:18px;font-weight:700;
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+.add-btn-v2:active{transform:scale(.86);}
+.add-btn-v2:disabled{background:var(--sf2);color:var(--sub);cursor:default;}
+
+/* ══ V2 TIER PROGRESS BAR ════════════════════════════ */
+.tier-progress-wrap{
+  background:var(--sf);border:1px solid var(--line);border-radius:14px;
+  padding:14px 16px;margin:0 12px 10px;}
+.tier-progress-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.tier-progress-bar-bg{height:6px;border-radius:999px;background:var(--bg2);overflow:hidden;}
+.tier-progress-bar-fill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.22,1,.36,1);}
+.tier-progress-labels{display:flex;justify-content:space-between;margin-top:5px;
+  font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--sub);}
+
+/* ══ V2 SCREENS ══════════════════════════════════════ */
+.screen-v2{padding:0 0 80px;}
+.screen-v2-hdr{
+  padding:14px 16px 12px;font-family:'Space Grotesk',sans-serif;
+  font-weight:800;font-size:20px;}
+.screen-v2-hdr span{color:var(--ac);}
+
+/* ══ V2 ORDER CARD ════════════════════════════════════ */
+.order-card{
+  background:var(--sf);border:1px solid var(--line);border-radius:14px;
+  padding:14px 16px;margin:0 12px 10px;}
+.order-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.order-card-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);}
+.order-card-amount{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:15px;color:var(--ac);}
+.order-card-items{font-size:12px;color:var(--ink);line-height:1.7;}
+.order-card-status{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
+  border-radius:999px;font-size:10px;font-weight:600;}
+.status-done{background:rgba(0,200,160,.1);color:var(--ac);border:1px solid rgba(0,200,160,.2);}
+.status-pending{background:rgba(255,149,0,.1);color:#FF9500;border:1px solid rgba(255,149,0,.2);}
+
+/* ══ V2 NAV 4 ONGLETS ════════════════════════════════ */
+.bottom-nav-v2{
+  position:fixed;bottom:0;left:0;right:0;z-index:90;
+  background:rgba(4,8,16,.92);backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--line);
+  display:flex;align-items:stretch;
+  padding-bottom:env(safe-area-inset-bottom);
+  max-width:460px;margin:0 auto;}
+.nav-v2-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  gap:3px;padding:10px 0;cursor:pointer;
+  color:var(--sub);transition:color .1s;touch-action:manipulation;}
+.nav-v2-item.on{color:var(--ac);}
+.nav-v2-item svg{width:22px;height:22px;}
+.nav-v2-label{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;}
+.nav-v2-badge{
+  position:absolute;top:-2px;right:-4px;width:16px;height:16px;
+  background:var(--err);border-radius:50%;border:2px solid var(--bg);
+  font-size:9px;font-weight:700;color:#fff;
+  display:flex;align-items:center;justify-content:center;}
+
+/* ══ V2 PROFILE ══════════════════════════════════════ */
+.profile-hero{
+  background:linear-gradient(180deg,rgba(0,200,160,.08) 0%,transparent 100%);
+  border-bottom:1px solid var(--line);padding:20px 16px;text-align:center;}
+.profile-hero-av{
+  width:72px;height:72px;border-radius:50%;margin:0 auto 10px;
+  background:var(--sf);border:3px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:700;overflow:hidden;}
+.profile-hero-name{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;margin-bottom:4px;}
+.profile-hero-handle{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sub);margin-bottom:10px;}
+.profile-stat-row{display:flex;gap:8px;margin-top:14px;}
+.profile-stat{flex:1;background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center;}
+.profile-stat-val{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:16px;}
+.profile-stat-lbl{font-size:10px;color:var(--sub);margin-top:2px;text-transform:uppercase;letter-spacing:.04em;}
 </style>
 </head>
 <body>
@@ -741,42 +895,43 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 
   <!-- SHOP -->
   <div class="screen active" id="S_shop">
-    <div class="topbar">
-      <div class="tb-logo" id="tbLogo">ACCESMAIL</div>
-      <div class="stock-badge" id="stockBadge">0 disponibles</div>
-    </div>
-    <div class="profile-row" id="profileCard">
-      <div class="av" id="avEl">?</div>
-      <div class="pinfo">
-        <div class="pname" id="pName">Chargement…</div>
-        <div class="puid" id="pUid"></div>
+    <!-- TOPBAR V2 -->
+    <div class="topbar-v2">
+      <div class="topbar-v2-left" id="tbLogo">
+        <div class="topbar-v2-av" id="avEl">?</div>
+        <div class="topbar-v2-info">
+          <div class="topbar-v2-name" id="pName">Chargement…</div>
+          <div id="tierBadge" class="tier-badge tier-bronze" style="margin-top:3px">🥉 Bronze</div>
+        </div>
       </div>
-      <div class="pbal-area">
-        <div class="pbal-lbl">Solde</div>
-        <div class="pbal-val" id="pBal">0,00€</div>
+      <div class="topbar-v2-right">
+        <div class="topbar-v2-bal" id="pBal">0,00€</div>
+        <div class="topbar-v2-cart" id="cartNavBtn" style="position:relative">
+          🛒
+          <div class="nav-v2-badge" id="cartBadge" style="display:none">0</div>
+        </div>
       </div>
     </div>
-
-    <!-- Stats row -->
-    <div class="stats-row">
+    <!-- Stats compactes -->
+    <div class="stats-row" style="margin:6px 12px 0">
       <div class="stat-item">
         <div class="stat-val" id="statAcces">—</div>
-        <div class="stat-lbl">accès dispo</div>
+        <div class="stat-lbl">disponibles</div>
       </div>
       <div class="stat-sep"></div>
-      <div class="stat-item" id="statPaysBtn" style="cursor:pointer" title="Voir les pays">
+      <div class="stat-item" id="statPaysBtn" style="cursor:pointer">
         <div class="stat-val" id="statPays" style="text-decoration:underline dotted;text-underline-offset:3px">—</div>
         <div class="stat-lbl">pays 👆</div>
       </div>
       <div class="stat-sep"></div>
       <div class="stat-item">
         <div class="stat-val" style="color:var(--ok)">4€</div>
-        <div class="stat-lbl">prix unitaire</div>
+        <div class="stat-lbl">unitaire</div>
       </div>
       <div class="stat-sep"></div>
       <div class="stat-item">
         <div class="stat-val" style="color:var(--ac)">3€</div>
-        <div class="stat-lbl">dès 10 accès</div>
+        <div class="stat-lbl">dès 10</div>
       </div>
     </div>
     <div class="search-row" id="searchRow">
@@ -873,38 +1028,32 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 </div>
 
 <!-- BOTTOM NAV -->
-<div class="bottom-nav" id="bottomNav">
-  <div class="nav-item on" data-tab="shop" id="navShop">
-    <div class="nav-ico">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="4" width="20" height="16" rx="3"/>
-        <path d="M2 8l10 7 10-7"/>
-      </svg>
-    </div>
-    <div class="nav-lbl">Shop</div>
+<nav class="bottom-nav-v2" id="bottomNav">
+  <div class="nav-v2-item on" id="navShop" onclick="goTo('shop')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+    <span class="nav-v2-label">Shop</span>
   </div>
-  <div class="nav-item" data-tab="cart" id="navCart">
-    <div class="nav-ico" style="position:relative">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-        <line x1="3" y1="6" x2="21" y2="6"/>
-        <path d="M16 10a4 4 0 01-8 0"/>
-      </svg>
-      <div class="nav-badge" id="navBadge"></div>
-    </div>
-    <div class="nav-lbl">Panier</div>
+  <div class="nav-v2-item" id="navOrders" onclick="goTo('orders')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+    </svg>
+    <span class="nav-v2-label">Commandes</span>
   </div>
-  <div class="nav-item" id="navSolde">
-    <div class="nav-ico">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="1" y="6" width="22" height="14" rx="3"/>
-        <path d="M1 10h22"/>
-        <circle cx="16" cy="15" r="1.5" fill="currentColor" stroke="none"/>
-      </svg>
-    </div>
-    <div class="nav-lbl">Solde</div>
+  <div class="nav-v2-item" id="navSolde" onclick="goTo('solde')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>
+    </svg>
+    <span class="nav-v2-label">Solde</span>
   </div>
-</div>
+  <div class="nav-v2-item" id="navProfile" onclick="goTo('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+    <span class="nav-v2-label">Profil</span>
+  </div>
+</nav>
 
 
 <!-- CRYPTO PICKER SHEET -->
@@ -919,6 +1068,58 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
     <div class="crypto-list" id="cryptoPickList"></div>
   </div>
 </div>
+
+<!-- ÉCRAN COMMANDES V2 -->
+<div class="screen screen-v2" id="S_orders">
+  <div class="topbar-v2" style="position:sticky;top:0;z-index:10;background:var(--bg)">
+    <div class="topbar-v2-left">
+      <div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px">Mes <span style="color:var(--ac)">commandes</span></div>
+    </div>
+  </div>
+  <div id="ordersContent" style="padding:12px 0 80px"></div>
+</div>
+
+<!-- ÉCRAN PROFIL V2 -->
+<div class="screen screen-v2" id="S_profile">
+  <div class="profile-hero" id="profileHero">
+    <div class="profile-hero-av" id="profileAv">?</div>
+    <div class="profile-hero-name" id="profileName">—</div>
+    <div class="profile-hero-handle" id="profileHandle"></div>
+    <div id="profileTierBadge" class="tier-badge tier-bronze" style="margin:0 auto">🥉 Bronze</div>
+    <div class="profile-stat-row">
+      <div class="profile-stat">
+        <div class="profile-stat-val" id="profileBal" style="color:var(--ac)">0,00€</div>
+        <div class="profile-stat-lbl">Solde</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val" id="profileSpent">0,00€</div>
+        <div class="profile-stat-lbl">Total dépensé</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val" id="profileOrders">0</div>
+        <div class="profile-stat-lbl">Commandes</div>
+      </div>
+    </div>
+  </div>
+  <!-- Progression tier -->
+  <div style="padding:12px">
+    <div class="tier-progress-wrap">
+      <div class="tier-progress-hdr">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px">Progression tier</span>
+        <span id="tierNextLabel" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sub)"></span>
+      </div>
+      <div class="tier-progress-bar-bg">
+        <div class="tier-progress-bar-fill" id="tierProgressFill" style="width:0%;background:var(--bronze)"></div>
+      </div>
+      <div class="tier-progress-labels">
+        <span id="tierSpentLabel">0€ dépensés</span>
+        <span id="tierTargetLabel"></span>
+      </div>
+    </div>
+    <button class="btn" style="width:100%;margin-top:8px" onclick="goTo('solde')">💳 Recharger mon solde</button>
+  </div>
+</div>
+
 <!-- PAYS DISPO SHEET -->
 <div class="overlay" id="paysOverlay"></div>
 <div class="sheet" id="paysSheet">
@@ -1794,34 +1995,31 @@ function startPoll(pid,oe){
       if(d.payment_status==="confirmed"||d.payment_status==="finished"){
         stopPoll();hapticN("success");
         const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
-        /* Créer une tâche pour le checker Python */
-        if(fbOk){
-          db.ref("pending_checks/"+pid).set({
-            userId:me.id,
-            tgId:me.tgId||null,
-            name:me.name||"Client",
-            handle:me.handle||"",
-            amount:stot,
-            items:se.map(function(e){return{domain:e.item.domain,qty:e.qty};}),
-            createdAt:Date.now(),
-            status:"pending"
-          });
-        }else{
-          /* Fallback si Firebase pas dispo : livraison directe sans check */
-          const creds=await deliverCreds(se);
-          if(me.tgId)sendBot(me.tgId,creds,stot).catch(function(e){console.error("bot:",e);});
-        }
+        /* Livraison directe immédiate */
+        const creds=await deliverCreds(se);
+        /* Notif client */
+        if(me.tgId)sendBot(me.tgId,creds,stot).catch(e=>console.error("bot:",e));
         /* Notif admin */
-        var adminTxt="\uD83D\uDED2 <b>Achat confirm\u00e9 \u2014 en cours de v\u00e9rification</b>\n\n"
+        var adminTxt="\uD83D\uDED2 <b>Achat confirm\u00e9</b>\n\n"
           +"Client\u00a0: <b>"+(me.name||"Inconnu")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\n"
           +"Montant\u00a0: <b>"+fmt(stot)+"</b>\n"
           +"Commande\u00a0: "+se.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ");
         apiPost("send-message",{chatId:1363470410,text:adminTxt}).catch(function(e){console.error("admin notif:",e);});
+        /* Sauvegarder dans l'historique */
+        if(fbOk&&me.id){
+          db.ref("orders/"+me.id+"/"+pid).set({
+            amount:stot,
+            items:se.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", "),
+            createdAt:Date.now()
+          });
+        }
         cart={};updateCartBadge();
         const ae=$("npActive"),seEl=$("npSuccess");if(ae)ae.style.display="none";
         if(seEl){
-          seEl.innerHTML='<div class="success-card"><div style="text-align:center;padding:16px 0"><div style="font-size:40px">✅</div><div style="font-family:\'Space Grotesk\',sans-serif;font-weight:800;font-size:18px;margin-top:8px;color:var(--ac)">Paiement confirmé</div><div style="font-size:13px;color:var(--sub);margin-top:8px;line-height:1.6">🔍 Vérification des accès en cours…<br>Tu recevras une notification dans le bot<br>dès que c\'est prêt.</div></div></div>';
-          seEl.style.display="block";
+          var h2='<div class="success-card"><div style="text-align:center;margin-bottom:16px"><div style="font-size:40px">✅</div><div style="font-family:\'Space Grotesk\',sans-serif;font-weight:800;font-size:18px;margin-top:8px;color:var(--ac)">Paiement confirmé</div><div style="font-size:12px;color:var(--sub);margin-top:4px">Tes accès arrivent dans le bot</div></div>';
+          if(creds.length){var allc="";h2+='<div style="display:flex;flex-direction:column;gap:7px">';creds.forEach(function(c){var line=c.email+(c.pass?":"+c.pass:"");allc+=line+"\n";h2+='<div class="cred-row"><div class="cred-dom">@'+c.domain+'</div><div class="cred-val">'+c.email+(c.pass?"<br>"+c.pass:"")+'</div></div>';});var enc=encodeURIComponent(allc.trim());h2+='</div><button class="btn" style="width:100%;margin-top:12px;padding:11px" onclick="navigator.clipboard.writeText(decodeURIComponent(\''+enc+'\')).then(()=>toast(\'Copié ✓\'))">📋 Copier les accès</button>';}
+          else{h2+='<p style="text-align:center;font-size:13px;color:var(--sub)">Accès envoyés dans le bot.</p>';}
+          h2+="</div>";seEl.innerHTML=h2;seEl.style.display="block";
         }
       }
       if(d.payment_status==="failed"||d.payment_status==="expired"){stopPoll();toast("Paiement "+d.payment_status+".");}
@@ -1840,19 +2038,107 @@ function doOrder(method){
 }
 
 /* ══ NAV ═════════════════════════════════════ */
+/* ══ TIER SYSTEM ══════════════════════════════ */
+var TIERS=[
+  {id:"bronze",label:"🥉 Bronze",cls:"tier-bronze",min:0,max:50,color:"var(--bronze)"},
+  {id:"silver",label:"🥈 Silver",cls:"tier-silver",min:50,max:200,color:"var(--silver)"},
+  {id:"gold",  label:"🥇 Gold",  cls:"tier-gold",  min:200,max:Infinity,color:"var(--gold)"}
+];
+function getTier(spent){
+  return TIERS.find(function(t){return spent>=t.min&&spent<t.max;})||TIERS[0];
+}
+function updateTierUI(spent){
+  var tier=getTier(spent);
+  var next=TIERS[TIERS.indexOf(tier)+1];
+  /* Badge topbar */
+  var tb=$("tierBadge");
+  if(tb){tb.textContent=tier.label;tb.className="tier-badge "+tier.cls;}
+  /* Badge profil */
+  var pb=$("profileTierBadge");
+  if(pb){pb.textContent=tier.label;pb.className="tier-badge "+tier.cls;}
+  /* Progress */
+  var fill=$("tierProgressFill"),nextLbl=$("tierNextLabel"),spentLbl=$("tierSpentLabel"),tgtLbl=$("tierTargetLabel");
+  if(fill){
+    fill.style.background=tier.color;
+    if(next){
+      var pct=Math.min(100,Math.round((spent-tier.min)/(next.min-tier.min)*100));
+      fill.style.width=pct+"%";
+      if(nextLbl)nextLbl.textContent="→ "+next.label+" à "+next.min+"€";
+      if(spentLbl)spentLbl.textContent=fmt(spent)+" dépensés";
+      if(tgtLbl)tgtLbl.textContent=next.min+"€ requis";
+    }else{
+      fill.style.width="100%";
+      if(nextLbl)nextLbl.textContent="Tier maximum atteint 🏆";
+    }
+  }
+}
+
+/* ══ COMMANDES HISTORY ══════════════════════════ */
+function renderOrdersPage(){
+  var el=$("ordersContent");if(!el)return;
+  if(!fbOk||!me.id){el.innerHTML='<p style="text-align:center;color:var(--sub);padding:30px">Connexion requise</p>';return;}
+  el.innerHTML='<p style="text-align:center;color:var(--sub);padding:20px;font-family:IBM Plex Mono,monospace;font-size:12px">Chargement…</p>';
+  db.ref("orders/"+me.id).orderByChild("createdAt").limitToLast(30).once("value",function(s){
+    var orders=s.val();
+    el.innerHTML="";
+    if(!orders||!Object.keys(orders).length){
+      el.innerHTML='<div style="text-align:center;padding:40px 20px"><div style="font-size:36px;margin-bottom:12px">📋</div><div style="font-family:Space Grotesk,sans-serif;font-weight:700;font-size:16px;margin-bottom:6px">Aucune commande</div><div style="color:var(--sub);font-size:13px">Tes commandes apparaîtront ici</div></div>';
+      return;
+    }
+    var list=Object.values(orders).reverse();
+    var totalSpent=list.reduce(function(s,o){return s+parseFloat(o.amount||0);},0);
+    var totalOrders=list.length;
+    /* Stats */
+    var statsEl=document.createElement("div");
+    statsEl.style.cssText="display:flex;gap:8px;margin:0 12px 12px";
+    statsEl.innerHTML="<div style='flex:1;background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center'><div style='font-family:Space Grotesk,sans-serif;font-weight:800;font-size:20px;color:var(--ac)'>"+totalOrders+"</div><div style='font-size:10px;color:var(--sub);margin-top:2px;text-transform:uppercase;letter-spacing:.04em'>Commandes</div></div>"
+      +"<div style='flex:1;background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center'><div style='font-family:Space Grotesk,sans-serif;font-weight:800;font-size:20px;color:var(--ac)'>"+fmt(totalSpent)+"</div><div style='font-size:10px;color:var(--sub);margin-top:2px;text-transform:uppercase;letter-spacing:.04em'>Dépensé</div></div>";
+    el.appendChild(statsEl);
+    /* Liste commandes */
+    list.forEach(function(order){
+      var card=document.createElement("div");card.className="order-card";
+      var date=order.createdAt?new Date(order.createdAt).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"}):"—";
+      card.innerHTML="<div class='order-card-hdr'><span class='order-card-date'>"+date+"</span><span class='order-card-amount'>"+fmt(order.amount||0)+"</span></div>"
+        +"<div class='order-card-items'>"+( order.items||"—")+"</div>"
+        +"<div style='margin-top:8px'><span class='order-card-status status-done'>✅ Livré</span></div>";
+      el.appendChild(card);
+    });
+    /* Mettre à jour le profil */
+    if($("profileSpent"))$("profileSpent").textContent=fmt(totalSpent);
+    if($("profileOrders"))$("profileOrders").textContent=totalOrders;
+    updateTierUI(totalSpent);
+  });
+}
+
+/* ══ PROFIL PAGE ════════════════════════════════ */
+function renderProfilePage(){
+  var ini=(me.name||"?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2)||"?";
+  var pAv=$("profileAv");
+  if(pAv){
+    if(me.photo){var img=document.createElement("img");img.style.cssText="width:100%;height:100%;object-fit:cover;border-radius:50%";img.src=me.photo;pAv.innerHTML="";pAv.appendChild(img);}
+    else{pAv.textContent=ini;}
+  }
+  if($("profileName"))$("profileName").textContent=me.name||"Utilisateur";
+  if($("profileHandle"))$("profileHandle").textContent=me.handle||"";
+  if($("profileBal"))$("profileBal").textContent=fmt(myBal);
+  renderOrdersPage();
+}
+
 function goTo(page){
-  ["shop","cart","admin"].forEach(p=>$("S_"+p).classList.toggle("active",p===page));
-  document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("on"));
+  var allPages=["shop","cart","admin","orders","profile"];
+  allPages.forEach(function(p){
+    var el=$("S_"+p);if(el)el.classList.toggle("active",p===page);
+  });
+  /* Nav V2 */
+  document.querySelectorAll(".nav-v2-item").forEach(function(i){i.classList.remove("on");});
+  document.querySelectorAll(".nav-item").forEach(function(i){i.classList.remove("on");});
+  if(page==="shop")  {var n=$("navShop");if(n)n.classList.add("on");}
+  if(page==="orders"){var n=$("navOrders");if(n)n.classList.add("on");requestAnimationFrame(renderOrdersPage);}
+  if(page==="solde") {var n=$("navSolde");if(n)n.classList.add("on");}
+  if(page==="profile"){var n=$("navProfile");if(n)n.classList.add("on");renderProfilePage();}
+  if(page==="cart")  {var n=$("navCart");if(n)n.classList.add("on");requestAnimationFrame(function(){renderCartPage();});}
+  if(page==="admin") requestAnimationFrame(function(){renderAdmin();});
   window.scrollTo(0,0);
-  if(page==="shop"){$("navShop").classList.add("on");}
-  if(page==="cart"){
-    $("navCart").classList.add("on");
-    /* Différer le rendu du panier pour ne pas bloquer l'animation de transition */
-    requestAnimationFrame(function(){renderCartPage();});
-  }
-  if(page==="admin"){
-    requestAnimationFrame(function(){renderAdmin();});
-  }
 }
 /* fastClick sur tous les éléments nav — réponse immédiate sans bloquer le scroll */
 ["btnBack","btnAdminBack"].forEach(function(id){fastClick($(id),function(){goTo("shop");});});
