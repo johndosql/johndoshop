@@ -1485,10 +1485,10 @@ function openPaysDetail(section){
     card.querySelector(".add-btn").onclick=function(){addCart(p);};
     body.appendChild(card);
   });
-  $("paysDetail").classList.add("open");
+  var pd=$("paysDetail");if(pd)pd.classList.add("open");
   haptic("light");
 }
-$("paysDetailBack").onclick=function(){$("paysDetail").classList.remove("open");};
+/* paysDetailBack supprimé - élément absent du HTML */
 
 /* Grille pays = écran d'accueil du catalogue */
 function renderCatalogPays(el){
