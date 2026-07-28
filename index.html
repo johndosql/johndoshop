@@ -1507,8 +1507,15 @@ function renderCatalogPays(el){
 /* ══ CART ════════════════════════════════════ */
 function uPrice(item,qty){return qty>=PRICE_MIN?PRICE_PRO:PRICE_BASE;}
 function addCart(p){
-  if((cart[p.id]||0)>=Number(p.stock||0)){toast("Stock max atteint.");return;}
-  cart[p.id]=(cart[p.id]||0)+1;haptic("light");toast("@"+p.domain+" ajouté ✓");updateCartBadge();
+  /* Vérifier le stock en temps réel depuis prods (mis à jour par Firebase) */
+  const latest=prods.find(x=>x.id===p.id)||p;
+  const stock=Number(latest.stock||0);
+  if(stock<=0){toast("❌ Stock épuisé — produit indisponible");renderCatalog();return;}
+  if((cart[p.id]||0)>=stock){toast("Stock max atteint ("+stock+").");return;}
+  cart[p.id]=(cart[p.id]||0)+1;
+  haptic("light");
+  toast("@"+p.domain+" ajouté ✓");
+  updateCartBadge();
 }
 function chQty(id,d){
   const p=prods.find(x=>x.id===id);let n=(cart[id]||0)+d;
@@ -1527,6 +1534,17 @@ function updateCartBadge(){
 
 function renderCartPage(){
   const es=entries();
+  /* Vérifier que le stock est toujours dispo pour chaque item du panier */
+  es.forEach(function(e){
+    const latest=prods.find(x=>x.id===e.item.id);
+    const stock=Number(latest?latest.stock:0);
+    if(stock<=0&&cart[e.item.id]){
+      delete cart[e.item.id];
+      toast("❌ @"+e.item.domain+" épuisé — retiré du panier");
+    }else if(cart[e.item.id]>stock){
+      cart[e.item.id]=stock;
+    }
+  });
   const cl=$("cartList"),sb=$("sumBlock"),pb=$("payBlock");
   cl.innerHTML="";
   if(!es.length){cl.innerHTML='<p style="text-align:center;color:var(--sub);padding:50px 0;font-size:14px">Panier vide</p>';sb.innerHTML="";pb.innerHTML="";return;}
@@ -1864,10 +1882,23 @@ function renderDepContent(){
     var selCur=depSelBtn?depSelBtn.dataset.cur:"usdttrc20";
     const btn=$("depGenBtn");btn.disabled=true;btn.textContent="⏳ Génération…";
     try{
-      const p=await apiPost("create-payment",{amount:amt,orderId:"dep_"+me.id+"_"+Date.now(),description:"Dépôt ACCESMAIL",payCurrency:selCur});
+      const oid="dep_"+me.id+"_"+Date.now();
+      const p=await apiPost("create-payment",{amount:amt,orderId:oid,description:"Dépôt ACCESMAIL",payCurrency:selCur});
       if(!p||!p.pay_address){
         toast("❌ "+(p&&p.message?p.message:"Erreur — essaie USDT TRC20"),5000);
         btn.disabled=false;btn.textContent="💳 Générer l'adresse";return;
+      }
+      /* ✅ Sauvegarder dans Firebase pour que le webhook puisse créditer même si client ferme l'app */
+      if(fbOk&&p.payment_id){
+        db.ref("pending_payments/"+p.payment_id).set({
+          userId:me.id,
+          tgId:me.tgId||null,
+          name:me.name||"Client",
+          amount:amt,
+          orderId:oid,
+          createdAt:Date.now(),
+          status:"waiting"
+        });
       }
       const cr=CRYPTOS.find(function(c){return c.cur===selCur;});
       const symLabel=selCur.replace(/trc20|erc20|bsc/g,"").toUpperCase();
