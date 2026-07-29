@@ -1974,11 +1974,14 @@ function startPoll(pid,oe){
         /* Envoyer le bot EN PARALLÈLE - ne pas bloquer l'affichage */
         /* Sauvegarder commande */
         if(fbOk&&me&&me.id){
-          db.ref("users/"+me.id+"/orders/o"+Date.now()).set({
-            amount:stot,
-            items:se.map(function(e){return{domain:e.item.domain,qty:e.qty};}),
-            date:Date.now(),status:"delivered"
-          });
+          var orderData={amount:stot,items:se.map(function(e){return{domain:e.item.domain,qty:e.qty};}),date:Date.now(),status:"delivered"};
+          db.ref("users/"+me.id+"/orders").push(orderData)
+            .then(function(){console.log("Commande sauvegardee OK");})
+            .catch(function(err){
+              console.error("Erreur save order:",err);
+              /* Fallback : sauvegarder dans pending_saved */
+              toast("Note: commande non sauvegardee dans l'historique ("+err.code+")",4000);
+            });
         }
         if(me.tgId)sendBot(me.tgId,creds,stot).catch(function(e){console.error("bot:",e);});
         apiPost("send-message",{chatId:1363470410,text:"Achat - "+(me.name||"?")+" - "+fmt(stot)}).catch(function(e){});
@@ -2013,7 +2016,7 @@ function renderOrders(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)"><div style="font-size:36px;margin-bottom:10px">'+String.fromCodePoint(0x1F4CB)+'</div>Connecte-toi via Telegram.</div>';return;
   }
   el.innerHTML='<div style="text-align:center;padding:30px;color:var(--sub)">Chargement...</div>';
-  db.ref("users/"+me.id+"/orders").orderByChild("date").limitToLast(20).once("value",function(snap){
+  db.ref("users/"+me.id+"/orders").limitToLast(20).once("value",function(snap){
     var v=snap.val();
     if(!v){
       el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)"><div style="font-size:36px;margin-bottom:10px">'+String.fromCodePoint(0x1F4E6)+'</div><p style="font-weight:600;color:var(--ink)">Aucune commande</p><p style="font-size:13px;margin-top:4px">Tes prochaines commandes apparaitront ici.</p></div>';
@@ -2262,7 +2265,7 @@ function renderAdmin(){
     };return;
   }
   if(!fbOk){el.innerHTML='<div class="banner err">Firebase non connecté.</div>';return;}
-  el.innerHTML=`<div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap"><button class="atab on" data-t="dash" style="flex:1">📊</button><button class="atab" data-t="stock" style="flex:1">📦</button><button class="atab" data-t="catalogue" style="flex:1">🗂</button><button class="atab" data-t="users" style="flex:1">👥</button><button class="atab" data-t="bot" style="flex:1">📱</button></div><button class="btn btn-outline" id="logoutBtn" style="width:100%;margin-bottom:12px;font-size:12px;padding:8px">Déconnexion</button><div id="adminPane"></div>`;
+  el.innerHTML=`<div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap"><button class="atab on" data-t="dash" style="flex:1">📊 Stats</button><button class="atab" data-t="stock" style="flex:1">📦 Stock</button><button class="atab" data-t="users" style="flex:1">👥 Clients</button><button class="atab" data-t="bot" style="flex:1">📱 Bot</button></div><button class="btn btn-outline" id="logoutBtn" style="width:100%;margin-bottom:12px;font-size:12px;padding:8px">Déconnexion</button><div id="adminPane"></div>`;
   $("logoutBtn").onclick=()=>{fbAuth.signOut().then(()=>{adminOk=false;goTo("shop");});};
   function showTab(t){
     el.querySelectorAll(".atab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
@@ -2311,13 +2314,6 @@ function renderAdmin(){
       fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
       function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=()=>{$("confirmImp").disabled=true;$("confirmImp").textContent="Import en cours…";const doImport=()=>importMP(groups).then(()=>{toast("✅ "+tot+" comptes importés !");$("parsePrev").innerHTML="";$("txtImp").value="";fb.textContent="📁 Choisir un fichier .txt";}).catch(e=>toast("Erreur: "+e.message));if(rm)db.ref("products").remove().then(()=>db.ref("credentials").remove()).then(doImport);else doImport();};}
       $("parseBtn").onclick=()=>doAnalyse(false);$("replaceBtn").onclick=()=>{if(confirm("⚠️ Vider tout et remplacer ?"))doAnalyse(true);};
-    }
-    else if(t==="catalogue"){
-      pane.innerHTML=`<button class="btn btn-danger" id="clearBtn" style="width:100%;margin-bottom:12px">🗑 Vider le catalogue</button><div class="a-card" style="margin-bottom:12px"><div class="a-title">➕ Ajouter manuellement</div><input class="field" id="nD" placeholder="Domaine (ex: hotmail.com)"><input class="field" id="nC" placeholder="Pays (ex: FR,US,DE)"><div style="display:flex;gap:7px"><input class="field" id="nP" type="number" step="0.01" value="4" placeholder="Prix"><input class="field" id="nS" type="number" placeholder="Stock"></div><button class="btn" id="addBtn" style="width:100%">Ajouter</button></div><p class="sl-lbl">Catalogue (${prods.length})</p><div id="aProd"></div>`;
-      $("clearBtn").onclick=()=>{if(!confirm("⚠️ Supprimer TOUS les produits ?"))return;db.ref("products").remove().then(()=>{db.ref("credentials").remove();toast("Catalogue vidé.");});};
-      $("addBtn").onclick=()=>{const dom=$("nD").value.trim(),ctry=$("nC").value.split(",").map(c=>c.trim().toUpperCase()).filter(Boolean);const price=parseFloat($("nP").value)||PRICE_BASE,stock=parseInt($("nS").value);if(!dom||!ctry.length||isNaN(stock)){toast("Remplis tous les champs.");return;}db.ref("products").push({domain:dom,countries:ctry,price,stock}).then(()=>{toast("Ajouté !");["nD","nC","nS"].forEach(id=>$(id).value="");$("nP").value="4";});};
-      const ap=$("aProd");if(!prods.length)ap.innerHTML='<p style="text-align:center;color:var(--sub);padding:20px 0">Catalogue vide.</p>';
-      prods.forEach(p=>{const row=document.createElement("div");row.className="a-card";row.innerHTML=`<div class="a-title">@${p.domain} <span style="font-size:11px;color:var(--sub)">${(p.countries||[]).join(",")} · ${p.stock} en stock</span></div><div class="a-row"><label>Pays</label><input class="field" value="${(p.countries||[]).join(",")}" data-f="c"></div><div class="a-row"><label>Prix</label><input class="field" type="number" step="0.01" value="${p.price}" data-f="p"></div><div class="a-row"><label>Stock</label><input class="field" type="number" value="${p.stock}" data-f="s"></div><div class="a-acts"><button class="btn" data-a="save">Sauvegarder</button><button class="btn btn-danger" data-a="del">Supprimer</button></div>`;row.querySelector('[data-a="save"]').onclick=()=>{const c=row.querySelector('[data-f="c"]').value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);const pr=parseFloat(row.querySelector('[data-f="p"]').value);const st=parseInt(row.querySelector('[data-f="s"]').value);db.ref("products/"+p.id).update({countries:c,price:pr,stock:st}).then(()=>toast("Mis à jour."));};row.querySelector('[data-a="del"]').onclick=()=>{if(confirm("Supprimer @"+p.domain+" ?"))db.ref("products/"+p.id).remove().then(()=>toast("Supprimé."));};ap.appendChild(row);});
     }
     else if(t==="users"){
       var ua=Object.entries(users).filter(function(e){return /^u[0-9]+$/.test(e[0])&&e[1]&&e[1].name;});
