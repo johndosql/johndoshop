@@ -1174,16 +1174,23 @@ async function checkPayment(pid){const r=await fetch(VERCEL+"/api/check-payment?
 function initSplash(){
   const sp=$("splash");
 
-  /* === GARANTIE : la transition se fait toujours après 2s === */
+  /* === GARANTIE : splash disparaît toujours, sur tous les navigateurs === */
   let splashDone=false;
   function doTransition(){
     if(splashDone)return;splashDone=true;
-    sp.classList.add("out");
+    /* Transition directe via style — ne dépend pas du CSS */
+    sp.style.transition="opacity 0.5s ease";
+    sp.style.opacity="0";
+    sp.style.pointerEvents="none";
+    setTimeout(function(){
+      sp.style.display="none";
+      sp.style.visibility="hidden";
+    },550);
     try{initShopParticles();}catch(e){}
   }
-  /* CSS gère la transition automatiquement après 2.1s */
-  /* Le JS peut l'accélérer si besoin */
-  setTimeout(doTransition,2200);
+  /* 2s sur mobile, + un fallback à 2.5s pour PC */
+  setTimeout(doTransition,2000);
+  setTimeout(doTransition,2500);
 
   /* Particules dans try-catch — ne bloquent jamais la transition */
   try{
