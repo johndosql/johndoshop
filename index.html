@@ -1182,15 +1182,15 @@ function initSplash(){
   const sp=$("splash");
 
   /* === GARANTIE : la transition se fait toujours après 2s === */
-  let splashDone=false;
+  var splashDone=false;
   function doTransition(){
     if(splashDone)return;splashDone=true;
-    sp.classList.add("out");
+    sp.style.animation="none";sp.style.transition="opacity 0.5s ease";
+    sp.style.opacity="0";sp.style.pointerEvents="none";
+    setTimeout(function(){sp.style.display="none";},520);
     try{initShopParticles();}catch(e){}
   }
-  /* CSS gère la transition automatiquement après 2.1s */
-  /* Le JS peut l'accélérer si besoin */
-  setTimeout(doTransition,2200);
+  setTimeout(doTransition,2000);setTimeout(doTransition,2600);
 
   /* Particules dans try-catch — ne bloquent jamais la transition */
   try{
@@ -1891,20 +1891,38 @@ function swTab(t){$("tSolde").classList.toggle("on",t==="solde");$("tCrypto").cl
 /* ══ DELIVERY ═══════════════════════════════ */
 async function deliverCreds(entries){
   if(!fbOk)return[];
-  const out=[];
-  for(const{item,qty}of entries){
+  var out=[];
+  for(var i=0;i<entries.length;i++){
+    var item=entries[i].item,qty=entries[i].qty;
     try{
-      /* Lire les N premiers credentials disponibles (on les supprime après → pas besoin de filtrer) */
-      const snap=await db.ref("credentials/"+item.id).limitToFirst(qty).once("value");
-      const cr=snap.val()||{};
-      const keys=Object.keys(cr).slice(0,qty);
-      for(const k of keys){
-        await db.ref("credentials/"+item.id+"/"+k).remove();
-        if(cr[k]&&cr[k].email)out.push({domain:item.domain,email:cr[k].email,pass:cr[k].pass||""});
+      /* Récupérer TOUS les credentials disponibles */
+      var snap=await db.ref("credentials/"+item.id).once("value");
+      var cr=snap.val()||{};
+      var keys=Object.keys(cr);
+      var delivered=0;
+      for(var k=0;k<keys.length&&delivered<qty;k++){
+        var cred=cr[keys[k]];
+        /* Supprimer dans tous les cas (invalide ou non) pour garder le stock propre */
+        await db.ref("credentials/"+item.id+"/"+keys[k]).remove().catch(function(){});
+        if(cred&&cred.email&&cred.email.includes("@")){
+          out.push({domain:item.domain,email:cred.email,pass:cred.pass||""});
+          delivered++;
+        }
       }
-      const newStock=Math.max(0,Number(item.stock||0)-keys.length);
-      await db.ref("products/"+item.id+"/stock").set(newStock);
-    }catch(e){console.error("deliverCreds error:",e);}
+      /* Stock = nombre réel de credentials restants (toujours exact) */
+      var remainSnap=await db.ref("credentials/"+item.id).once("value");
+      var realStock=remainSnap.val()?Object.keys(remainSnap.val()).length:0;
+      await db.ref("products/"+item.id+"/stock").set(realStock);
+      /* Remboursement auto si stock insuffisant */
+      if(delivered<qty&&me&&me.id){
+        var manquants=qty-delivered;
+        var remb=parseFloat((manquants*uPrice(item,qty)).toFixed(2));
+        var bSnap=await db.ref("users/"+me.id+"/balance").once("value");
+        var newBal=parseFloat(((bSnap.val()||0)+remb).toFixed(2));
+        await db.ref("users/"+me.id+"/balance").set(newBal);
+        apiPost("send-message",{chatId:1363470410,text:"[STOCK INSUFFISANT] "+(me.name||"?")+" : "+delivered+"/"+qty+" @"+item.domain+" | "+remb+"eur rembourses"}).catch(function(){});
+      }
+    }catch(e){console.error("deliverCreds:",e);}
   }
   return out;
 }
@@ -2217,10 +2235,64 @@ function renderAdmin(){
       prods.forEach(p=>{const row=document.createElement("div");row.className="a-card";row.innerHTML=`<div class="a-title">@${p.domain} <span style="font-size:11px;color:var(--sub)">${(p.countries||[]).join(",")} · ${p.stock} en stock</span></div><div class="a-row"><label>Pays</label><input class="field" value="${(p.countries||[]).join(",")}" data-f="c"></div><div class="a-row"><label>Prix</label><input class="field" type="number" step="0.01" value="${p.price}" data-f="p"></div><div class="a-row"><label>Stock</label><input class="field" type="number" value="${p.stock}" data-f="s"></div><div class="a-acts"><button class="btn" data-a="save">Sauvegarder</button><button class="btn btn-danger" data-a="del">Supprimer</button></div>`;row.querySelector('[data-a="save"]').onclick=()=>{const c=row.querySelector('[data-f="c"]').value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);const pr=parseFloat(row.querySelector('[data-f="p"]').value);const st=parseInt(row.querySelector('[data-f="s"]').value);db.ref("products/"+p.id).update({countries:c,price:pr,stock:st}).then(()=>toast("Mis à jour."));};row.querySelector('[data-a="del"]').onclick=()=>{if(confirm("Supprimer @"+p.domain+" ?"))db.ref("products/"+p.id).remove().then(()=>toast("Supprimé."));};ap.appendChild(row);});
     }
     else if(t==="users"){
-      pane.innerHTML='<div id="aUsers"></div>';const au=$("aUsers");const ua=Object.entries(users).filter(([uid,u])=>/^u\d+$/.test(uid)&&u.name);if(!ua.length)au.innerHTML='<p style="text-align:center;color:var(--sub);padding:24px 0">Aucun client enregistré.</p>';
-      else ua.forEach(([uid,u])=>{const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);const row=document.createElement("div");row.className="u-row";row.innerHTML=`<div class="u-av">${ini}</div><div style="flex:1"><div class="u-name">${u.name||"Inconnu"}</div><div class="u-bal">${fmt(u.balance||0)}</div></div><button class="sm-btn" data-uid="${uid}">+ Solde</button>`;row.querySelector(".sm-btn").onclick=()=>{const amt=parseFloat(prompt("Montant (€) :"));if(isNaN(amt)||amt<=0){toast("Invalide.");return;}db.ref("users/"+uid+"/balance").set(parseFloat(((u.balance||0)+amt).toFixed(2))).then(()=>toast(fmt(amt)+" crédités ✓"));};au.appendChild(row);});
-      const tgIds=ua.filter(([,u])=>u.tgId).map(([,u])=>u.tgId);const bc=document.createElement("div");bc.innerHTML=`<p class="sl-lbl" style="margin-top:16px">📢 Broadcast (${tgIds.length})</p><div class="a-card"><textarea class="field" id="bcMsg" rows="5" style="font-size:13px;line-height:1.7;resize:vertical" placeholder="🔥 <b>RESTOCK !</b>..."></textarea><button class="btn" id="bcBtn" style="width:100%;margin-top:8px" ${tgIds.length===0?"disabled":""}>Envoyer à ${tgIds.length} client${tgIds.length>1?"s":""}</button><div id="bcRes" style="margin-top:8px;font-size:12px;text-align:center;color:var(--sub)"></div></div>`;au.parentElement.appendChild(bc);
-      $("bcBtn").onclick=async()=>{const msg=$("bcMsg").value.trim();if(!msg){toast("Écris un message.");return;}if(!confirm("Envoyer à "+tgIds.length+" client(s) ?"))return;const btn=$("bcBtn");btn.disabled=true;btn.textContent="📤 Envoi…";try{const d=await fetch(VERCEL+"/api/broadcast",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chatIds:tgIds,text:msg})}).then(r=>r.json());$("bcRes").innerHTML=`<span style="color:var(--ok)">✅ ${d.sent} envoyé${d.sent>1?"s":""}</span>${d.failed?` · <span style="color:var(--err)">❌ ${d.failed}</span>`:""}`;toast("Broadcast envoyé ✓");}catch(e){toast("Erreur broadcast.");}btn.disabled=false;btn.textContent="Envoyer à "+tgIds.length+" client"+(tgIds.length>1?"s":"");};
+      var ua=Object.entries(users).filter(function(e){return /^u[0-9]+$/.test(e[0])&&e[1]&&e[1].name;});
+      var buyers=ua.filter(function(e){return parseFloat(e[1].balance||0)>0;}).sort(function(a,b){return parseFloat(b[1].balance||0)-parseFloat(a[1].balance||0);});
+      var voyeurs=ua.filter(function(e){return !(parseFloat(e[1].balance||0)>0);});
+      var tgIds=ua.filter(function(e){return e[1].tgId;}).map(function(e){return e[1].tgId;});
+      var curTab="buyers";
+      pane.innerHTML='<input class="field" id="uSearch" placeholder="Rechercher nom ou @handle..." style="margin-bottom:10px">'
+        +'<div style="display:flex;gap:6px;margin-bottom:10px">'
+        +'<button class="atab on" id="tabB" style="flex:1">Acheteurs ('+buyers.length+')</button>'
+        +'<button class="atab" id="tabV" style="flex:1">Voyeurs ('+voyeurs.length+')</button></div>'
+        +'<div id="uList"></div>'
+        +'<p class="sl-lbl" style="margin-top:16px">Broadcast</p>'
+        +'<div class="a-card"><textarea class="field" id="bcMsg" rows="4" style="font-size:13px;resize:vertical" placeholder="Message..."></textarea>'
+        +'<div style="display:flex;gap:8px;margin-top:8px">'
+        +'<button class="btn" id="bcBtn" style="flex:1" '+(tgIds.length===0?"disabled":"")+'>Tous ('+tgIds.length+')</button>'
+        +'<button class="btn btn-outline" id="bcBBtn" style="flex:1" '+(buyers.length===0?"disabled":"")+'>Acheteurs</button>'
+        +'</div><div id="bcRes" style="margin-top:6px;font-size:12px;text-align:center;color:var(--sub)"></div></div>';
+      function renderUList(tab,q){
+        q=(q||"").toLowerCase();var list=tab==="buyers"?buyers:voyeurs;
+        var filtered=q?list.filter(function(e){return(e[1].name||"").toLowerCase().includes(q)||(e[1].handle||"").toLowerCase().includes(q);}):list;
+        var ul=$("uList");ul.innerHTML="";
+        if(!filtered.length){ul.innerHTML='<p style="text-align:center;color:var(--sub);padding:16px;font-size:13px">Aucun résultat.</p>';return;}
+        filtered.slice(0,30).forEach(function(entry){
+          var uid=entry[0],u=entry[1];
+          var ini=(u.name||"?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2)||"?";
+          var bal=parseFloat(u.balance||0);
+          var row=document.createElement("div");
+          row.style.cssText="display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:7px;";
+          row.innerHTML='<div style="width:36px;height:36px;border-radius:50%;background:'+(bal>0?"rgba(0,200,160,.15)":"var(--bg2)")+';border:1px solid '+(bal>0?"rgba(0,200,160,.3)":"var(--line)")+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:0 0 auto;color:'+(bal>0?"var(--ac)":"var(--sub)")+'">'+ini+'</div>'
+            +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(u.name||"Inconnu")+'</div>'
+            +'<div style="font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--sub)">'+(u.handle||"")+'</div></div>'
+            +'<div style="text-align:right;flex:0 0 auto"><div style="font-family:Space Grotesk,sans-serif;font-weight:800;font-size:14px;color:'+(bal>0?"var(--ac)":"var(--sub)")+'">'+fmt(bal)+'</div>'
+            +'<button style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(0,200,160,.1);border:1px solid rgba(0,200,160,.2);color:var(--ac);cursor:pointer;margin-top:3px" data-uid="'+uid+'">+ Solde</button></div>';
+          row.querySelector("button").onclick=function(){
+            var u2=users[this.dataset.uid]||{};
+            var amt=parseFloat(prompt("Montant a crediter (euro) :"));
+            if(isNaN(amt)||amt<=0){toast("Invalide.");return;}
+            var newBal=parseFloat(((parseFloat(u2.balance||0))+amt).toFixed(2));
+            db.ref("users/"+this.dataset.uid+"/balance").set(newBal).then(function(){u2.balance=newBal;toast(fmt(amt)+" credites");renderUList(curTab,$("uSearch").value);});
+          };
+          ul.appendChild(row);
+        });
+        if(filtered.length>30){var more=document.createElement("p");more.style.cssText="text-align:center;color:var(--sub);font-size:12px;padding:8px";more.textContent=(filtered.length-30)+" autres";ul.appendChild(more);}
+      }
+      renderUList("buyers","");
+      $("tabB").onclick=function(){curTab="buyers";$("tabB").classList.add("on");$("tabV").classList.remove("on");renderUList("buyers",$("uSearch").value);};
+      $("tabV").onclick=function(){curTab="voyeurs";$("tabV").classList.add("on");$("tabB").classList.remove("on");renderUList("voyeurs",$("uSearch").value);};
+      $("uSearch").addEventListener("input",function(){renderUList(curTab,this.value);});
+      async function doBroadcast(ids){
+        var msg=$("bcMsg").value.trim();if(!msg){toast("Ecris un message.");return;}
+        if(!confirm("Envoyer a "+ids.length+" client(s) ?"))return;
+        $("bcBtn").disabled=true;$("bcBBtn").disabled=true;
+        try{var d=await fetch(VERCEL+"/api/broadcast",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chatIds:ids,text:msg})}).then(function(r){return r.json();});
+        $("bcRes").innerHTML='<span style="color:var(--ok)">Envoye: '+d.sent+'</span>'+(d.failed?' - <span style="color:var(--err)">'+d.failed+'</span>':"");
+        toast("Broadcast envoye");}catch(e){toast("Erreur broadcast.");}
+        $("bcBtn").disabled=false;$("bcBBtn").disabled=false;
+      }
+      $("bcBtn").onclick=function(){doBroadcast(tgIds);};
+      $("bcBBtn").onclick=function(){doBroadcast(buyers.filter(function(e){return e[1].tgId;}).map(function(e){return e[1].tgId;}));};
     }
     else if(t==="bot"){
       const def=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\nBonjour <b>{prenom}</b> ({handle})\n\n<pre>{acces}</pre>\nTotal : <b>{total}</b>\n\nPour toute question, réponds à ce message.`;
