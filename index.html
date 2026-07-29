@@ -1686,11 +1686,14 @@ function renderCatalogPays(el){
   inp.addEventListener("focus",()=>{row.classList.add("on");clr.style.display="flex";});
   inp.addEventListener("blur",()=>{if(!inp.value){row.classList.remove("on");clr.style.display="none";}});
   inp.addEventListener("input",function(e){
-    query=e.target.value;showAll=!!query.trim();
-    /* Reset du cache pour forcer re-render */
+    query=e.target.value.trim();
+    showAll=!!query;
     _lastRenderKey="";_paysGroupCache=null;
+    /* Recherche intelligente : vue domaine dès qu'on tape */
+    if(query.length>=1){viewMode="dom";}
+    else{viewMode="pays";activeC="all";}
     clearTimeout(inp._t);
-    inp._t=setTimeout(function(){renderCatalog();},180);
+    inp._t=setTimeout(function(){renderCatalog();},150);
   });
   clr.onclick=()=>{inp.value="";query="";showAll=false;renderCatalog();inp.blur();row.classList.remove("on");clr.style.display="none";};
   /* Fermer le clavier si on touche en dehors ou si on scroll */
@@ -2219,12 +2222,40 @@ function renderAdmin(){
     };return;
   }
   if(!fbOk){el.innerHTML='<div class="banner err">Firebase non connecté.</div>';return;}
-  el.innerHTML=`<div style="display:flex;gap:6px;margin-bottom:12px"><button class="atab on" data-t="stock">📦 Stock</button><button class="atab" data-t="catalogue">🗂 Catalogue</button><button class="atab" data-t="users">👥 Clients</button><button class="atab" data-t="bot">📱 Bot</button></div><button class="btn btn-outline" id="logoutBtn" style="width:100%;margin-bottom:12px;font-size:12px;padding:8px">Déconnexion</button><div id="adminPane"></div>`;
+  el.innerHTML=`<div style="display:flex;gap:6px;margin-bottom:12px"><button class="atab on" data-t="dash">📊 Stats</button><button class="atab" data-t="stock">📦 Stock</button><button class="atab" data-t="catalogue">🗂 Catalogue</button><button class="atab" data-t="users">👥 Clients</button><button class="atab" data-t="bot">📱 Bot</button></div><button class="btn btn-outline" id="logoutBtn" style="width:100%;margin-bottom:12px;font-size:12px;padding:8px">Déconnexion</button><div id="adminPane"></div>`;
   $("logoutBtn").onclick=()=>{fbAuth.signOut().then(()=>{adminOk=false;goTo("shop");});};
   function showTab(t){
     el.querySelectorAll(".atab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
     const pane=$("adminPane");
-    if(t==="stock"){
+    if(t==="dash"){
+      pane.innerHTML='<div id="db"><p style="text-align:center;padding:20px;color:var(--sub)">Chargement...</p></div>';
+      Promise.all([db.ref("users").once("value"),db.ref("products").once("value")]).then(function(s){
+        var U=s[0].val()||{},P=s[1].val()||{};
+        var uList=Object.entries(U).filter(function(e){return /^u[0-9]+$/.test(e[0])&&e[1]&&e[1].name;});
+        var buyers=uList.filter(function(e){return parseFloat(e[1].balance||0)>0;});
+        var totalSoldes=uList.reduce(function(s,e){return s+parseFloat(e[1].balance||0);},0);
+        var totalStock=Object.values(P).reduce(function(s,p){return s+(p?parseInt(p.stock||0):0);},0);
+        var allOrders=[];
+        uList.forEach(function(e){var o=e[1].orders;if(o&&typeof o==="object")Object.values(o).forEach(function(x){if(x&&x.amount)allOrders.push(x);});});
+        var today=new Date();today.setHours(0,0,0,0);
+        var todayOrds=allOrders.filter(function(o){return(o.date||0)>=today.getTime();});
+        var revToday=todayOrds.reduce(function(s,o){return s+parseFloat(o.amount||0);},0);
+        var revTotal=allOrders.reduce(function(s,o){return s+parseFloat(o.amount||0);},0);
+        function sc(v,l,c){return'<div class="a-card" style="text-align:center;padding:12px"><div style="font-family:Space Grotesk,sans-serif;font-weight:800;font-size:18px;color:'+(c||"var(--ink)")+'">'+v+'</div><div style="font-size:10px;color:var(--sub);margin-top:2px;text-transform:uppercase;letter-spacing:.05em">'+l+'</div></div>';}
+        document.getElementById("db").innerHTML=
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+          +sc(fmt(revToday),"Revenus auj.","var(--ac)")
+          +sc(fmt(revTotal),"Total revenus","var(--ok)")
+          +sc(todayOrds.length,"Commandes auj.","var(--ink)")
+          +sc(allOrders.length,"Total commandes","var(--ink)")
+          +sc(buyers.length,"Acheteurs","var(--ac)")
+          +sc(uList.length,"Total clients","var(--sub)")
+          +sc(totalStock,"En stock","var(--ink)")
+          +sc(fmt(totalSoldes),"Soldes clients","var(--ok)")
+          +'</div>';
+      }).catch(function(e){var d=document.getElementById("db");if(d)d.innerHTML='<p style="color:var(--err);padding:12px">Erreur: '+e.message+'</p>';});
+    }
+    else if(t==="stock"){
       pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><button id="vidStockBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:13px;cursor:pointer;touch-action:manipulation">🗑 Vider tout le stock</button><div id="parsePrev" style="margin-top:10px"></div></div>`;
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
       fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
@@ -2312,7 +2343,7 @@ function renderAdmin(){
       const f=$("botMsg"),prev=$("botPrev");function up(){prev.textContent=f.value.replace("{prenom}","John").replace("{handle}","@johndosql").replace("{acces}","user@hotmail.com:pass123").replace("{total}","4,00€");}db.ref("settings/botMessage").once("value",s=>{f.value=s.val()||def;up();});f.addEventListener("input",up);$("saveBotMsg").onclick=()=>db.ref("settings/botMessage").set(f.value).then(()=>toast("Enregistré ✓"));
     }
   }
-  el.querySelectorAll(".atab").forEach(b=>b.onclick=()=>showTab(b.dataset.t));showTab("stock");
+  el.querySelectorAll(".atab").forEach(b=>b.onclick=()=>showTab(b.dataset.t));showTab("dash");
 }
 
 /* ══ CRYPTO PICKER ════════════════════════════ */
