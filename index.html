@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ACCESMAIL</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -700,6 +701,76 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;padding:12px;}
 .pays-detail-body .scard-compact{margin:0 0 8px;}
+
+/* ══ RESPONSIVE PC & TABLETTE ═══════════════ */
+@media(min-width:600px){
+  html,body{background:#02050d;}
+
+  /* Centrer l'app avec fond élégant */
+  .app{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    box-shadow:0 0 60px rgba(0,200,160,.08),0 0 0 1px rgba(0,200,160,.06);
+    border-radius:0;
+  }
+
+  /* Grille pays en 4 colonnes sur grand écran */
+  .pays-grid,[style*="grid-template-columns:repeat(3,1fr)"]{
+    grid-template-columns:repeat(4,1fr) !important;
+  }
+
+  /* Crypto grid en 4 colonnes */
+  .crypto-grid{
+    grid-template-columns:repeat(4,1fr) !important;
+  }
+
+  /* Sheets plus larges */
+  .sheet{
+    max-width:520px;
+    left:50% !important;
+    transform:translateX(-50%) translateY(100%) !important;
+    border-radius:20px 20px 0 0;
+  }
+  .sheet.on{
+    transform:translateX(-50%) translateY(0) !important;
+  }
+  .overlay{background:rgba(0,0,0,.6);}
+
+  /* Écran paiement centré */
+  .pay-screen{
+    max-width:520px;
+    left:50%;
+    transform:translateX(-50%) translateX(100%);
+  }
+  .pay-screen.open{
+    transform:translateX(-50%) translateX(0);
+  }
+
+  /* Stats row en ligne */
+  .stats-row{gap:0;}
+
+  /* Cards plus grandes */
+  .scard{padding:16px;}
+  .scard-compact{padding:13px 16px;}
+
+  /* Bottom nav fixe centré */
+  .bottom-nav{
+    max-width:520px;
+    left:50%;
+    transform:translateX(-50%);
+  }
+
+  /* Panel admin */
+  #S_admin .a-card{padding:16px;}
+}
+
+@media(min-width:900px){
+  .app{max-width:580px;}
+  .bottom-nav{max-width:580px;}
+  .sheet{max-width:580px;}
+  .pay-screen{max-width:580px;}
+}
 </style>
 </head>
 <body>
