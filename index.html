@@ -1974,17 +1974,13 @@ function startPoll(pid,oe){
         const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
         const creds=await deliverCreds(se);
         /* Envoyer le bot EN PARALLÈLE - ne pas bloquer l'affichage */
-        /* Sauvegarder commande */
-        if(fbOk&&me&&me.id){
-          var orderData={amount:stot,items:se.map(function(e){return{domain:e.item.domain,qty:e.qty};}),date:Date.now(),status:"delivered"};
-          db.ref("users/"+me.id+"/orders").push(orderData)
-            .then(function(){console.log("Commande sauvegardee OK");})
-            .catch(function(err){
-              console.error("Erreur save order:",err);
-              /* Fallback : sauvegarder dans pending_saved */
-              toast("Note: commande non sauvegardee dans l'historique ("+err.code+")",4000);
-            });
-        }
+        /* Sauvegarder commande dans localStorage (toujours disponible) */
+        saveOrder({
+          amount:stot,
+          items:se.map(function(e){return{domain:e.item.domain,qty:e.qty};}),
+          date:Date.now(),
+          status:"delivered"
+        });
         if(me.tgId)sendBot(me.tgId,creds,stot).catch(function(e){console.error("bot:",e);});
         apiPost("send-message",{chatId:1363470410,text:"Achat - "+(me.name||"?")+" - "+fmt(stot)}).catch(function(e){});
         cart={};updateCartBadge();
@@ -2012,45 +2008,56 @@ function doOrder(method){
 }
 
 /* ══ NAV ═════════════════════════════════════ */
+
+/* ══ ORDERS — localStorage (toujours disponible) ══ */
+function saveOrder(order){
+  try{
+    var key="acm_orders_"+me.id;
+    var existing=JSON.parse(localStorage.getItem(key)||"[]");
+    existing.unshift(order); /* ajouter en premier */
+    if(existing.length>50)existing=existing.slice(0,50); /* max 50 */
+    localStorage.setItem(key,JSON.stringify(existing));
+    /* Backup Firebase (best effort) */
+    if(fbOk&&me.id){
+      db.ref("users/"+me.id+"/orders").push(order).catch(function(){});
+    }
+  }catch(e){console.error("saveOrder:",e);}
+}
+function getOrders(){
+  try{
+    var key="acm_orders_"+me.id;
+    return JSON.parse(localStorage.getItem(key)||"[]");
+  }catch(e){return[];}
+}
 function renderOrders(){
   var el=document.getElementById("ordersList");if(!el)return;
-  if(!fbOk||!me||!me.id){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)">Connecte-toi via Telegram.</div>';
+  var orders=getOrders();
+  if(!orders||orders.length===0){
+    el.innerHTML='<div style="text-align:center;padding:50px 20px;color:var(--sub)">'
+      +'<div style="font-size:40px;margin-bottom:12px">&#128230;</div>'
+      +'<div style="font-family:Space Grotesk,sans-serif;font-weight:600;font-size:15px;color:var(--ink);margin-bottom:6px">Aucune commande</div>'
+      +'<div style="font-size:13px">Tes prochaines commandes apparaitront ici.</div></div>';
     return;
   }
-  el.innerHTML='<div style="text-align:center;padding:30px;color:var(--sub)">Chargement...</div>';
-  db.ref("users/"+me.id+"/orders").once("value",function(snap){
-    var v=snap.val();
-    console.log("Orders data:",v);
-    if(!v||Object.keys(v).length===0){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)">'
-        +'<div style="font-size:36px;margin-bottom:12px">&#128230;</div>'
-        +'<div style="font-weight:600;font-size:15px;color:var(--ink);margin-bottom:6px">Aucune commande</div>'
-        +'<div style="font-size:13px">Tes prochaines commandes apparaitront ici.</div></div>';
-      return;
-    }
-    el.innerHTML="";
-    Object.entries(v).sort(function(a,b){return(b[1].date||0)-(a[1].date||0);}).forEach(function(entry){
-      var o=entry[1];if(!o||!o.amount)return;
-      var d=new Date(o.date||0);
-      var ds=d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"})+" - "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
-      var card=document.createElement("div");
-      card.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:14px;margin:0 12px 10px;padding:14px 16px;";
-      var items=(o.items||[]).map(function(it){
-        return "<div style='display:flex;justify-content:space-between;background:var(--bg2);border-radius:9px;padding:8px 10px;margin-bottom:4px'>"
-          +"<span style='font-family:IBM Plex Mono,monospace;font-size:12px'>@"+it.domain+"</span>"
-          +"<span style='font-size:11px;color:var(--sub)'>x"+it.qty+"</span></div>";
-      }).join("");
-      card.innerHTML="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>"
-        +"<span style='font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--sub)'>"+ds+"</span>"
-        +"<span style='font-family:Space Grotesk,sans-serif;font-weight:800;font-size:16px;color:var(--ac)'>"+fmt(o.amount||0)+"</span></div>"
-        +items
-        +"<span style='font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(62,201,92,.12);color:var(--ok)'>&#10003; Livre</span>";
-      el.appendChild(card);
-    });
-  },function(err){
-    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--err)">Erreur: '+err.message+'<br><small>'+err.code+'</small></div>';
-    console.error("renderOrders error:",err);
+  el.innerHTML="";
+  orders.forEach(function(o){
+    if(!o||!o.amount)return;
+    var d=new Date(o.date||0);
+    var ds=d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"})+" &#183; "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+    var card=document.createElement("div");
+    card.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:14px;margin:0 12px 10px;padding:14px 16px;";
+    var items=(o.items||[]).map(function(it){
+      return "<div style='display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border-radius:9px;padding:8px 10px;margin-bottom:4px'>"
+        +"<span style='font-family:IBM Plex Mono,monospace;font-size:12px;color:var(--ink)'>@"+it.domain+"</span>"
+        +"<span style='font-size:11px;color:var(--sub)'>&#215;"+it.qty+"</span></div>";
+    }).join("");
+    card.innerHTML=
+      "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>"
+      +"<span style='font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--sub)'>"+ds+"</span>"
+      +"<span style='font-family:Space Grotesk,sans-serif;font-weight:800;font-size:17px;color:var(--ac)'>"+fmt(o.amount||0)+"</span></div>"
+      +items
+      +"<div style='margin-top:8px;display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(62,201,92,.12);color:var(--ok)'>&#10003; Livr&#233;</div>";
+    el.appendChild(card);
   });
 }
 
