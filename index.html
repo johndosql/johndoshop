@@ -1920,20 +1920,39 @@ function swTab(t){$("tSolde").classList.toggle("on",t==="solde");$("tCrypto").cl
 /* ══ DELIVERY ═══════════════════════════════ */
 async function deliverCreds(entries){
   if(!fbOk)return[];
-  const out=[];
-  for(const{item,qty}of entries){
+  /* Charger la liste noire des emails déjà vendus */
+  var soldSnap=await db.ref("sold_emails").once("value").catch(function(){return{val:function(){return{};}}});
+  var soldSet=new Set(Object.values(soldSnap.val()||{}).map(function(x){return x&&x.email?x.email.toLowerCase():"";}).filter(Boolean));
+  var out=[];
+  for(var i=0;i<entries.length;i++){
+    var item=entries[i].item,qty=entries[i].qty;
     try{
-      /* Lire les N premiers credentials disponibles (on les supprime après → pas besoin de filtrer) */
-      const snap=await db.ref("credentials/"+item.id).limitToFirst(qty).once("value");
-      const cr=snap.val()||{};
-      const keys=Object.keys(cr).slice(0,qty);
-      for(const k of keys){
-        await db.ref("credentials/"+item.id+"/"+k).remove();
-        if(cr[k]&&cr[k].email)var em=cr[k].email;var sk=em.replace(/[.@]/g,"_");
-          out.push({domain:item.domain,email:em,pass:cr[k].pass||""});
-          db.ref("sold_emails/"+sk).set({email:em,domain:item.domain,soldAt:Date.now()});
+      /* Prendre plus que nécessaire pour compenser les doublons éventuels */
+      var snap=await db.ref("credentials/"+item.id).limitToFirst(qty*3).once("value");
+      var cr=snap.val()||{};
+      var keys=Object.keys(cr);
+      for(var k=0;k<keys.length&&out.filter(function(x){return x.domain===item.domain;}).length<qty;k++){
+        var key=keys[k];
+        var cred=cr[key];
+        if(!cred||!cred.email)continue;
+        var email=cred.email.toLowerCase();
+        /* Vérifier que cet email n'a pas déjà été vendu */
+        if(soldSet.has(email)){
+          console.warn("Doublon ignoré:",email);
+          /* Supprimer quand même du stock pour nettoyer */
+          db.ref("credentials/"+item.id+"/"+key).remove().catch(function(){});
+          continue;
+        }
+        /* Livrer et marquer comme vendu */
+        await db.ref("credentials/"+item.id+"/"+key).remove();
+        var safeKey=email.replace(/[.@]/g,"_");
+        db.ref("sold_emails/"+safeKey).set({email:cred.email,domain:item.domain,soldAt:Date.now()});
+        soldSet.add(email); /* Éviter les doublons dans la même commande */
+        out.push({domain:item.domain,email:cred.email,pass:cred.pass||""});
       }
-      const newStock=Math.max(0,Number(item.stock||0)-keys.length);
+      /* Mettre à jour le stock */
+      var delivered=out.filter(function(x){return x.domain===item.domain;}).length;
+      var newStock=Math.max(0,Number(item.stock||0)-delivered);
       await db.ref("products/"+item.id+"/stock").set(newStock);
     }catch(e){console.error("deliverCreds error:",e);}
   }
