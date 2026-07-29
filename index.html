@@ -720,158 +720,105 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 
 /* ── PC 900px+ ── */
 @media(min-width:900px){
-  /* Fond sombre PC */
-  html,body{background:#010408;overflow-y:auto!important;}
+  html,body{
+    background:#010408;
+    overflow-y:auto;
+    display:flex;align-items:flex-start;
+    justify-content:center;
+    padding:24px 16px;gap:24px;
+    min-height:100vh;
+  }
 
-  /* Sidebar fixe à gauche - ne touche PAS au body layout */
+  /* SIDEBAR */
   .pc-sidebar{
     display:flex!important;flex-direction:column;gap:6px;
-    position:fixed;left:calc(50% - 560px);top:24px;
-    width:180px;
+    width:200px;flex:0 0 200px;
+    position:sticky;top:24px;
   }
   .pc-sidebar-logo{
-    font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;
+    font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:22px;
     background:linear-gradient(135deg,#00C8A0,#00FFCC);
     -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-    padding:4px 0 16px;
+    padding:4px 0 18px;
   }
   .pc-nav-btn{
     display:flex;align-items:center;gap:10px;
-    padding:10px 12px;border-radius:12px;cursor:pointer;
+    padding:11px 14px;border-radius:12px;cursor:pointer;
     background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
     color:var(--sub);font-family:'Space Grotesk',sans-serif;
-    font-weight:600;font-size:13px;transition:all .15s;
+    font-weight:600;font-size:14px;transition:all .15s;
   }
   .pc-nav-btn:hover{background:rgba(0,200,160,.07);border-color:rgba(0,200,160,.2);color:var(--ink);}
   .pc-nav-btn.on{background:rgba(0,200,160,.1);border-color:rgba(0,200,160,.3);color:var(--ac);}
-  .pc-nav-icon{font-size:15px;flex:0 0 auto;}
+  .pc-nav-icon{font-size:16px;flex:0 0 auto;}
   .pc-badge{margin-left:auto;background:var(--ac);color:#040810;font-size:10px;
-    font-weight:800;border-radius:999px;padding:2px 6px;display:none;}
+    font-weight:800;border-radius:999px;padding:2px 7px;display:none;}
   .pc-badge.show{display:block;}
   .pc-user-card{
-    margin-top:12px;padding:12px;
+    margin-top:12px;padding:14px;
     background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
     border-radius:12px;
   }
-  .pc-user-name{font-weight:700;font-size:12px;color:var(--ink);margin-bottom:2px;}
-  .pc-user-bal{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;color:var(--ac);}
+  .pc-user-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:var(--ink);margin-bottom:2px;}
+  .pc-user-bal{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--ac);}
   .pc-user-lbl{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+  .pc-support{margin-top:auto;padding-top:16px;font-size:11px;color:var(--sub);}
 
-  /* App centrée avec scrollbar visible */
+  /* APP colonne principale */
   .app{
-    max-width:520px;
-    margin:24px auto;
+    flex:1;max-width:520px;
+    position:sticky;top:24px;
+    max-height:calc(100vh - 48px);
+    overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
     border-radius:16px;
     box-shadow:0 8px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);
+    padding-bottom:12px!important;
   }
-  /* Scrollbar stylée sur PC */
-  html{
-    scrollbar-width:thin;
-    scrollbar-color:rgba(0,200,160,.3) transparent;
-  }
-  ::-webkit-scrollbar{width:6px;}
-  ::-webkit-scrollbar-track{background:transparent;}
-  ::-webkit-scrollbar-thumb{background:rgba(0,200,160,.3);border-radius:3px;}
-  ::-webkit-scrollbar-thumb:hover{background:rgba(0,200,160,.6);}
-
-  /* Bottom nav cachée - sidebar la remplace */
+  /* Cacher bottom nav — remplacée par sidebar */
   .bottom-nav{display:none!important;}
 
-  /* Splash couvre tout l'écran */
-  #splash{position:fixed!important;inset:0;z-index:9999;}
-
-  /* Sheets = modals centrés */
+  /* Sheets → modal centré */
   .overlay.on{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
   .sheet{
-    position:fixed!important;
-    left:50%!important;top:50%!important;
-    bottom:auto!important;right:auto!important;
+    position:fixed;left:50%!important;top:50%!important;bottom:auto!important;
+    right:auto!important;
     transform:translate(-50%,-45%)!important;
     max-width:500px;width:calc(100% - 40px);
-    border-radius:20px!important;max-height:82vh;
+    border-radius:20px!important;max-height:80vh;
     opacity:0;transition:transform .25s cubic-bezier(.22,1,.36,1),opacity .2s!important;
   }
   .sheet.on{transform:translate(-50%,-50%)!important;opacity:1!important;}
   .sh-handle{display:none;}
 
-  /* Pay screen = modal centré */
+  /* Pay screen → modal */
   .pay-screen{
     position:fixed!important;
     left:50%!important;top:50%!important;
-    transform:translateX(-50%) translateY(-45%)!important;
+    transform:translateX(-50%) translateY(-40%)!important;
     max-width:500px;width:calc(100% - 40px);
-    max-height:88vh;border-radius:20px!important;overflow-y:auto;
+    max-height:85vh;border-radius:20px!important;
+    overflow:hidden;
   }
   .pay-screen.open{transform:translateX(-50%) translateY(-50%)!important;}
 
   /* Grilles plus larges */
-  .crypto-grid{grid-template-columns:repeat(4,1fr)!important;}
+  .crypto-grid{grid-template-columns:repeat(4,1fr)!important;gap:8px!important;}
   .amt-grid{grid-template-columns:repeat(4,1fr)!important;}
+
+  /* Catalog scroll dans l'app */
+  #catalog{overflow-y:visible;height:auto;}
+
+  /* Screens pleine hauteur */
+  .screen.active{min-height:calc(100vh - 80px);}
 }
-
-/* ══ HISTORIQUE COMMANDES ══════════════════ */
-.orders-screen{display:none;padding:0 0 80px;}
-.orders-screen.active{display:block;}
-.order-card{
-  background:var(--sf);border:1px solid var(--line);border-radius:14px;
-  margin:0 12px 10px;padding:14px 16px;transition:border-color .15s;}
-.order-card:active{border-color:rgba(0,200,160,.3);}
-.order-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.order-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);}
-.order-total{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:16px;color:var(--ac);}
-.order-items{display:flex;flex-direction:column;gap:6px;}
-.order-item{
-  display:flex;align-items:center;justify-content:space-between;
-  background:var(--bg2);border-radius:9px;padding:8px 10px;}
-.order-domain{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink);}
-.order-qty{font-size:11px;color:var(--sub);}
-.order-status{
-  display:inline-flex;align-items:center;gap:5px;
-  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
-  padding:3px 9px;border-radius:999px;margin-top:8px;}
-.order-status.ok{background:rgba(62,201,92,.12);color:var(--ok);}
-.order-status.pending{background:rgba(240,165,0,.1);color:orange;}
-.order-empty{text-align:center;padding:50px 20px;color:var(--sub);}
-.order-empty-ico{font-size:40px;margin-bottom:12px;}
-
-/* ══ NAV 4 ITEMS ══ */
-.bottom-nav{grid-template-columns:repeat(4,1fr);}
-
-/* ══ SPLASH AMÉLIORÉ ════════════════════════ */
-.splash-logo{
-  position:relative;z-index:2;
-  font-family:'Space Grotesk',sans-serif;font-weight:900;
-  font-size:3.2rem;letter-spacing:-.04em;text-align:center;
-  background:linear-gradient(135deg,#00C8A0 0%,#7FFFD4 35%,#ffffff 55%,#00FFCC 75%,#00C8A0 100%);
-  background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;
-  filter:drop-shadow(0 0 30px rgba(0,200,160,.4));
-  animation:logoIn .8s cubic-bezier(.22,1,.36,1) .3s both,
-            logShine 3s linear 1.2s infinite;}
-@keyframes logoIn{from{opacity:0;transform:scale(.75) translateY(24px);}to{opacity:1;transform:none;}}
-@keyframes logShine{0%{background-position:100%;}100%{background-position:-100%;}}
-.splash-sub{
-  position:relative;z-index:2;margin-top:8px;
-  font-family:'IBM Plex Mono',monospace;font-size:11px;
-  letter-spacing:.25em;text-transform:uppercase;
-  color:rgba(0,200,160,.5);
-  animation:logoIn .6s cubic-bezier(.22,1,.36,1) .7s both;}
-.splash-glow{
-  position:absolute;width:320px;height:320px;border-radius:50%;
-  background:radial-gradient(circle,rgba(0,200,160,.18) 0%,rgba(0,255,204,.06) 40%,transparent 70%);
-  pointer-events:none;
-  animation:glowP 2.5s ease-in-out infinite;}
-/* Anneau orbital décoratif */
-.splash-ring{
-  position:absolute;width:300px;height:300px;border-radius:50%;
-  border:1px solid rgba(0,200,160,.12);pointer-events:none;
-  animation:ringRot 8s linear infinite;}
-.splash-ring2{
-  position:absolute;width:220px;height:220px;border-radius:50%;
-  border:1px solid rgba(0,200,160,.08);pointer-events:none;
-  animation:ringRot 5s linear infinite reverse;}
-@keyframes glowP{0%,100%{transform:scale(1);opacity:.6;}50%{transform:scale(1.3);opacity:1;}}
-@keyframes ringRot{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@media(min-width:600px){
+  html{scrollbar-width:thin;scrollbar-color:rgba(0,200,160,.3) transparent;}
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:rgba(0,200,160,.3);border-radius:3px;}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(0,200,160,.55);}
+}
 </style>
 </head>
 <body>
@@ -892,8 +839,6 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 </nav>
 
 <div id="splash">
-  <div class="splash-ring"></div>
-  <div class="splash-ring2"></div>
   <div class="splash-glow"></div>
   <!-- Particules CSS pures — fonctionnent sans JS -->
   <span class="spt" style="left:8%;top:18%;font-size:13px;--sd:0s;--ss:2.1s">@</span>
@@ -1056,14 +1001,11 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   </div>
 </div>
 
-<!-- SCREEN COMMANDES -->
-<div class="screen orders-screen" id="S_orders">
-  <div class="topbar">
-    <div class="topbar-inner">
-      <span style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;color:var(--ac)">Mes commandes</span>
-    </div>
+<div class="screen" id="S_orders">
+  <div style="padding:14px 16px 8px;border-bottom:1px solid var(--line)">
+    <span style="font-family:Space Grotesk,sans-serif;font-weight:800;font-size:18px;color:var(--ac)">Mes commandes</span>
   </div>
-  <div id="ordersList" style="padding-top:8px"></div>
+  <div id="ordersList" style="padding:8px 0"></div>
 </div>
 
 <!-- BOTTOM NAV -->
@@ -1264,22 +1206,19 @@ async function checkPayment(pid){const r=await fetch(VERCEL+"/api/check-payment?
 function initSplash(){
   const sp=$("splash");
 
-  /* === GARANTIE : splash disparaît toujours === */
-  let splashDone=false;
+  /* === GARANTIE : la transition se fait toujours après 2s === */
+  var splashDone=false;
   function doTransition(){
     if(splashDone)return;splashDone=true;
-    /* Stopper toute animation CSS qui pourrait interférer */
     sp.style.animation="none";
     sp.style.transition="opacity 0.5s ease";
     sp.style.opacity="0";
     sp.style.pointerEvents="none";
-    setTimeout(function(){
-      sp.style.display="none";
-    },520);
+    setTimeout(function(){sp.style.display="none";},520);
     try{initShopParticles();}catch(e){}
   }
   setTimeout(doTransition,2000);
-  setTimeout(doTransition,2600); /* fallback PC */
+  setTimeout(doTransition,2600);
 
   /* Particules dans try-catch — ne bloquent jamais la transition */
   try{
@@ -1409,21 +1348,54 @@ function loadProds(){
     updateStockBadge();renderChips();renderCatalog();
     return;
   }
-  db.ref("products").on("value",function(s){
-    var v=s.val()||{};
-    if(Object.keys(v).length>0){
-      prods=Object.entries(v).map(function(e){return{id:e[0],...e[1]};});
+
+  /* Charger Firebase — rendu différé pour ne pas bloquer les taps */
+  var renderPending=false;
+  function scheduleRender(){
+    if(renderPending)return;
+    renderPending=true;
+    /* Attendre 400ms après le dernier touch avant de re-render */
+    var delay=window._lastTouch&&(Date.now()-window._lastTouch)<600?600:0;
+    setTimeout(function(){
+      requestAnimationFrame(function(){
+        renderPending=false;
+        updateStockBadge();
+        renderChips();
+        renderCatalog();
+      });
+    },delay);
+  }
+
+  /* Chargement initial une seule fois */
+  db.ref("products").once("value").then(function(s){
+    var v=s.val();
+    if(v&&Object.keys(v).length>0){
+      prods=Object.entries(v).map(function(entry){
+        return{id:entry[0],...entry[1]};
+      });
     }else{
       prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
     }
-    updateStockBadge();renderChips();renderCatalog();
-  },function(err){
-    console.warn("Firebase:",err);
+    scheduleRender();
+    /* Après le chargement initial, écouter les changements en temps réel */
+    /* Throttle : max 1 re-render toutes les 5 secondes */
+    var lastRT=0;
+    db.ref("products").on("value",function(s){
+      var now=Date.now();
+      if(now-lastRT<5000)return;
+      lastRT=now;
+      var v=s.val();
+      if(v&&Object.keys(v).length>0){
+        prods=Object.entries(v).map(function(entry){return{id:entry[0],...entry[1]};});
+      }
+      scheduleRender();
+    });
+  }).catch(function(err){
+    console.warn("Firebase error:",err);
     prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
-    updateStockBadge();renderChips();renderCatalog();
+    scheduleRender();
   });
 }
-
 
 function updateStockBadge(){
   const total=prods.reduce((s,p)=>s+Number(p.stock||0),0);
@@ -1663,10 +1635,8 @@ function openPaysDetail(section){
     card.querySelector(".add-btn").onclick=function(){addCart(p);};
     body.appendChild(card);
   });
-  /* paysDetail supprimé */;
   haptic("light");
 }
-/* paysDetailBack supprimé */
 
 /* Grille pays = écran d'accueil du catalogue */
 function renderCatalogPays(el){
@@ -1744,22 +1714,13 @@ function renderCatalogPays(el){
   inp.addEventListener("focus",()=>{row.classList.add("on");clr.style.display="flex";});
   inp.addEventListener("blur",()=>{if(!inp.value){row.classList.remove("on");clr.style.display="none";}});
   inp.addEventListener("input",function(e){
-    query=e.target.value.trim();
-    showAll=!!query;
+    query=e.target.value.trim();showAll=!!query;
     _lastRenderKey="";_paysGroupCache=null;
-    /* Recherche intelligente : basculer en vue domaine dès qu'on tape */
-    if(query.length>=1){
-      viewMode="dom";
-    }else{
-      /* Effacé → revenir en vue pays */
-      viewMode="pays";
-      activeC="all";
-    }
+    if(query.length>=1){viewMode="dom";}
+    else{viewMode="pays";activeC="all";}
     clearTimeout(inp._t);
     inp._t=setTimeout(function(){renderCatalog();},150);
   });
-  /* Effacer → reset complet */
-  
   clr.onclick=()=>{inp.value="";query="";showAll=false;renderCatalog();inp.blur();row.classList.remove("on");clr.style.display="none";};
   /* Fermer le clavier si on touche en dehors ou si on scroll */
   document.addEventListener("touchstart",(e)=>{if(!row.contains(e.target))inp.blur();},{passive:true});
@@ -2011,8 +1972,16 @@ function startPoll(pid,oe){
         const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
         const creds=await deliverCreds(se);
         /* Envoyer le bot EN PARALLÈLE - ne pas bloquer l'affichage */
-        if(me.tgId)sendBot(me.tgId,creds,stot).catch(e=>console.error("bot:",e));
-        else console.warn("Pas de tgId, livraison bot impossible");
+        /* Sauvegarder commande */
+        if(fbOk&&me&&me.id){
+          db.ref("orders/"+me.id+"/o"+Date.now()).set({
+            amount:stot,
+            items:se.map(function(e){return{domain:e.item.domain,qty:e.qty};}),
+            date:Date.now(),status:"delivered"
+          });
+        }
+        if(me.tgId)sendBot(me.tgId,creds,stot).catch(function(e){console.error("bot:",e);});
+        apiPost("send-message",{chatId:1363470410,text:"Achat - "+(me.name||"?")+" - "+fmt(stot)}).catch(function(e){});
         cart={};updateCartBadge();
         const ae=$("npActive"),seEl=$("npSuccess");if(ae)ae.style.display="none";
         if(seEl){
@@ -2039,40 +2008,53 @@ function doOrder(method){
 
 /* ══ NAV ═════════════════════════════════════ */
 function renderOrders(){
-  var el=$("ordersList");if(!el)return;
-  if(!fbOk||!me.id){el.innerHTML='<div class="order-empty"><div class="order-empty-ico">📋</div><p>Connecte-toi via Telegram pour voir tes commandes.</p></div>';return;}
-  el.innerHTML='<div style="text-align:center;padding:30px;color:var(--sub)">Chargement…</div>';
-  db.ref("orders/"+me.id).orderByChild("date").limitToLast(20).once("value",function(s){
-    var v=s.val();
-    if(!v){el.innerHTML='<div class="order-empty"><div class="order-empty-ico">📦</div><p style="font-family:Space Grotesk,sans-serif;font-weight:600;font-size:15px;color:var(--ink);margin-bottom:6px">Aucune commande</p><p style="font-size:13px;color:var(--sub)">Tes prochaines commandes apparaîtront ici.</p></div>';return;}
+  var el=document.getElementById("ordersList");if(!el)return;
+  if(!fbOk||!me||!me.id){
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)"><div style="font-size:36px;margin-bottom:10px">'+String.fromCodePoint(0x1F4CB)+'</div>Connecte-toi via Telegram.</div>';return;
+  }
+  el.innerHTML='<div style="text-align:center;padding:30px;color:var(--sub)">Chargement...</div>';
+  db.ref("orders/"+me.id).orderByChild("date").limitToLast(20).once("value",function(snap){
+    var v=snap.val();
+    if(!v){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)"><div style="font-size:36px;margin-bottom:10px">'+String.fromCodePoint(0x1F4E6)+'</div><p style="font-weight:600;color:var(--ink)">Aucune commande</p><p style="font-size:13px;margin-top:4px">Tes prochaines commandes apparaitront ici.</p></div>';
+      return;
+    }
     el.innerHTML="";
     Object.entries(v).sort(function(a,b){return b[1].date-a[1].date;}).forEach(function(entry){
-      var o=entry[1];var card=document.createElement("div");card.className="order-card";
-      var d=new Date(o.date);
-      var ds=d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"})+" · "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
-      var items=(o.items||[]).map(function(it){return "<div class='order-item'><span class='order-domain'>@"+it.domain+"</span><span class='order-qty'>x"+it.qty+"</span></div>";}).join("");
-      card.innerHTML="<div class='order-hdr'><span class='order-date'>"+ds+"</span><span class='order-total'>"+fmt(o.amount||0)+"</span></div><div class='order-items'>"+items+"</div><div class='order-status ok'>✓ Livré</div>";
+      var o=entry[1];
+      var card=document.createElement("div");
+      card.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:14px;margin:0 12px 10px;padding:14px 16px;";
+      var d=new Date(o.date||0);
+      var ds=d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"})+" - "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+      var items=(o.items||[]).map(function(it){
+        return "<div style='display:flex;justify-content:space-between;background:var(--bg2);border-radius:9px;padding:8px 10px;margin-bottom:4px'><span style='font-family:IBM Plex Mono,monospace;font-size:12px'>@"+it.domain+"</span><span style='font-size:11px;color:var(--sub)'>x"+it.qty+"</span></div>";
+      }).join("");
+      card.innerHTML="<div style='display:flex;justify-content:space-between;margin-bottom:10px'>"
+        +"<span style='font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--sub)'>"+ds+"</span>"
+        +"<span style='font-family:Space Grotesk,sans-serif;font-weight:800;font-size:16px;color:var(--ac)'>"+fmt(o.amount||0)+"</span></div>"
+        +items
+        +"<div style='font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-block;margin-top:6px;background:rgba(62,201,92,.12);color:var(--ok)'>"+String.fromCodePoint(0x2713)+" Livre</div>";
       el.appendChild(card);
     });
   });
 }
 function goTo(page){
-  ["shop","cart","admin"].forEach(function(p){var s=$("S_"+p);if(s)s.classList.toggle("active",p===page);});
-  var os=$("S_orders");if(os)os.classList.toggle("active",page==="orders");
+  ["shop","cart","admin"].forEach(function(p){var s=document.getElementById("S_"+p);if(s)s.classList.toggle("active",p===page);});
+  var os=document.getElementById("S_orders");if(os)os.classList.toggle("active",page==="orders");
   document.querySelectorAll(".nav-item").forEach(function(i){i.classList.remove("on");});
   window.scrollTo(0,0);
-  if(page==="shop"){$("navShop").classList.add("on");}
-  if(page==="cart"){$("navCart").classList.add("on");requestAnimationFrame(function(){renderCartPage();});}
+  if(page==="shop"){document.getElementById("navShop").classList.add("on");}
+  if(page==="cart"){document.getElementById("navCart").classList.add("on");requestAnimationFrame(function(){renderCartPage();});}
   if(page==="admin"){requestAnimationFrame(function(){renderAdmin();});}
-  if(page==="orders"){var no=$("navOrders");if(no)no.classList.add("on");requestAnimationFrame(function(){renderOrders();});}
+  if(page==="orders"){var no=document.getElementById("navOrders");if(no)no.classList.add("on");requestAnimationFrame(function(){renderOrders();});}
 }
 /* fastClick sur tous les éléments nav — réponse immédiate sans bloquer le scroll */
 ["btnBack","btnAdminBack"].forEach(function(id){fastClick($(id),function(){goTo("shop");});});
 fastClick($("navShop"),function(){goTo("shop");});
 fastClick($("navCart"),function(){goTo("cart");});
 fastClick($("profileCard"),openDeposit);
-var no=$("navOrders");if(no)no.onclick=function(){goTo("orders");};
 fastClick($("navSolde"),openDeposit);
+var _no=document.getElementById("navOrders");if(_no)_no.onclick=function(){goTo("orders");};
 fastClick($("depClose"),function(){closeSheet();});
 $("depOverlay").onclick=function(){closeSheet();};
 
@@ -2311,7 +2293,7 @@ function renderAdmin(){
       const f=$("botMsg"),prev=$("botPrev");function up(){prev.textContent=f.value.replace("{prenom}","John").replace("{handle}","@johndosql").replace("{acces}","user@hotmail.com:pass123").replace("{total}","4,00€");}db.ref("settings/botMessage").once("value",s=>{f.value=s.val()||def;up();});f.addEventListener("input",up);$("saveBotMsg").onclick=()=>db.ref("settings/botMessage").set(f.value).then(()=>toast("Enregistré ✓"));
     }
   }
-  el.querySelectorAll(".atab").forEach(b=>b.onclick=()=>showTab(b.dataset.t));showTab("stock");
+  el.querySelectorAll(".atab").forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});showTab("stock");
 }
 
 /* ══ CRYPTO PICKER ════════════════════════════ */
