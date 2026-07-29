@@ -817,6 +817,23 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   /* Screens pleine hauteur */
   .screen.active{min-height:calc(100vh - 80px);}
 }
+
+/* ══ CHECKING SCREEN ═══════════════════════ */
+.checking-screen{
+  position:fixed;inset:0;z-index:90;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px;text-align:center;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.22,1,.36,1);
+}
+.checking-screen.open{transform:translateY(0);}
+.checking-dots{display:flex;gap:8px;margin:20px 0;}
+.checking-dot{width:10px;height:10px;border-radius:50%;background:var(--ac);
+  animation:dotBounce 1.2s ease-in-out infinite;}
+.checking-dot:nth-child(2){animation-delay:.2s;}
+.checking-dot:nth-child(3){animation-delay:.4s;}
+@keyframes dotBounce{0%,80%,100%{transform:scale(.6);opacity:.3;}40%{transform:scale(1);opacity:1;}}
+.checking-title{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--ink);margin-bottom:8px;}
+.checking-sub{font-size:13px;color:var(--sub);line-height:1.6;}
 </style>
 </head>
 <body>
@@ -999,6 +1016,18 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   </div>
 </div>
 
+
+<!-- ÉCRAN VÉRIFICATION -->
+<div class="checking-screen" id="checkingScreen">
+  <div style="font-size:48px;margin-bottom:16px">🔍</div>
+  <div class="checking-title">Vérification en cours</div>
+  <div class="checking-dots">
+    <div class="checking-dot"></div>
+    <div class="checking-dot"></div>
+    <div class="checking-dot"></div>
+  </div>
+  <div class="checking-sub">Nous vérifions la validité de tes accès...<br>Tu recevras ta commande dans quelques secondes.</div>
+</div>
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottomNav">
   <div class="nav-item on" data-tab="shop" id="navShop">
@@ -1946,14 +1975,22 @@ function startPoll(pid,oe){
       if(d.payment_status==="confirmed"||d.payment_status==="finished"){
         stopPoll();hapticN("success");
         const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
-        const creds=await deliverCreds(se);
-        /* Envoyer le bot EN PARALLÈLE - ne pas bloquer l'affichage */
-        if(me.tgId)sendBot(me.tgId,creds,stot).catch(e=>console.error("bot:",e));
-        else console.warn("Pas de tgId, livraison bot impossible");
-        /* Notif admin achat */
-        var achatMsg="<b>Achat confirme</b>\n\nClient : <b>"+(me.name||"Inconnu")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\nMontant : <b>"+fmt(stot)+"</b>\nCommande : "+entries().map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ");
-        apiPost("send-message",{chatId:1363470410,text:achatMsg}).catch(function(){});
         cart={};updateCartBadge();
+        /* Créer tâche pour le checker Python */
+        var checkId="chk_"+Date.now();
+        if(fbOk){
+          db.ref("pending_checks/"+checkId).set({
+            userId:me.id,tgId:me.tgId||null,
+            name:me.name||"Client",handle:me.handle||"",
+            amount:stot,
+            items:se.map(function(e){return{domain:e.item.domain,qty:e.qty,prodId:e.item.id};}),
+            createdAt:Date.now(),status:"waiting"
+          });
+        }
+        /* Notif admin */
+        apiPost("send-message",{chatId:1363470410,text:"<b>Achat - Verification IMAP en cours</b>\n\nClient : <b>"+(me.name||"?")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\nMontant : <b>"+fmt(stot)+"</b>\nCommande : "+se.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ")}).catch(function(){});
+        /* Afficher écran vérification */
+        showCheckingScreen(checkId,stot);
         const ae=$("npActive"),seEl=$("npSuccess");if(ae)ae.style.display="none";
         if(seEl){
           let h=`<div class="success-card"><div style="text-align:center;margin-bottom:16px"><div style="font-size:40px">✅</div><div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;margin-top:8px;color:var(--ac)">Paiement confirmé</div><div style="font-size:12px;color:var(--sub);margin-top:4px">Tes accès arrivent dans le bot</div></div>`;
@@ -2275,6 +2312,39 @@ $("cryptoPickOverlay").onclick=function(){$("cryptoPickSheet").classList.remove(
 document.addEventListener("touchstart",function(){window._lastTouch=Date.now();},{passive:true});
 
 /* Afficher le splash immédiatement */
+
+/* ══ CHECKING SCREEN ═══════════════════════ */
+var _checkingPoll=null;
+function showCheckingScreen(checkId,amount){
+  var sc=document.getElementById("checkingScreen");
+  if(sc)sc.classList.add("open");
+  /* Écouter le résultat du checker Python */
+  var attempts=0;
+  _checkingPoll=setInterval(function(){
+    attempts++;
+    if(!fbOk){clearInterval(_checkingPoll);hideCheckingScreen();return;}
+    db.ref("pending_checks/"+checkId).once("value",function(s){
+      var d=s.val();
+      if(!d)return;
+      if(d.status==="done"){
+        clearInterval(_checkingPoll);
+        hideCheckingScreen();
+        hapticN("success");
+        toast("✅ Commande confirmée ! Tu vas recevoir tes accès dans le bot.",5000);
+      }else if(attempts>60){
+        /* Timeout 5 min : fallback livraison directe */
+        clearInterval(_checkingPoll);
+        hideCheckingScreen();
+        toast("Commande en cours de traitement...",4000);
+      }
+    });
+  },5000);
+}
+function hideCheckingScreen(){
+  var sc=document.getElementById("checkingScreen");
+  if(sc)sc.classList.remove("open");
+}
+
 initSplash();
 
 /* initMe sans attendre Firebase */
