@@ -2323,11 +2323,36 @@ function renderAdmin(){
       }).catch(function(e){var db2=document.getElementById("db");if(db2)db2.innerHTML='<p style="color:var(--err);padding:12px">Erreur: '+e.message+'</p>';});
     }
     else if(t==="stock"){
-      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div id="parsePrev" style="margin-top:10px"></div></div>`;
+      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn" id="parseAddBtn" style="flex:1">➕ Ajouter</button></div><button id="vidStockBtn" style="width:100%;margin-top:8px;padding:12px;background:rgba(255,79,64,.1);border:1px solid rgba(255,79,64,.3);border-radius:10px;color:var(--err);font-weight:700;font-size:13px;cursor:pointer">🗑 Vider tout le stock</button><div id="parsePrev" style="margin-top:10px"></div></div>`;
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
       fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
-      function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=()=>{$("confirmImp").disabled=true;$("confirmImp").textContent="Import en cours…";const doImport=()=>importMP(groups).then(()=>{toast("✅ "+tot+" comptes importés !");$("parsePrev").innerHTML="";$("txtImp").value="";fb.textContent="📁 Choisir un fichier .txt";}).catch(e=>toast("Erreur: "+e.message));if(rm)db.ref("products").remove().then(()=>db.ref("credentials").remove()).then(doImport);else doImport();};}
-      $("parseBtn").onclick=()=>doAnalyse(false);$("replaceBtn").onclick=()=>{if(confirm("⚠️ Vider tout et remplacer ?"))doAnalyse(true);};
+      function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=async function(){
+        var btn=document.getElementById("confirmImp");btn.disabled=true;btn.textContent="Verification...";
+        var soldSnap=await db.ref("sold_emails").once("value").catch(function(){return{val:function(){return{};}}});
+        var soldSet=new Set(Object.values(soldSnap.val()||{}).map(function(x){return x&&x.email?x.email.toLowerCase():"";}).filter(Boolean));
+        var skipped=0;
+        var filtered=groups.map(function(g){return{...g,accounts:g.accounts.filter(function(a){if(soldSet.has((a.email||"").toLowerCase())){skipped++;return false;}return true;})};}).filter(function(g){return g.accounts.length>0;});
+        if(skipped>0)toast(skipped+" email(s) deja vendus ignores",3000);
+        btn.textContent="Import en cours...";
+        var doImport=function(){return importMP(filtered).then(function(){var k=filtered.reduce(function(s,g){return s+g.accounts.length;},0);toast(k+" comptes importes !"+(skipped?" ("+skipped+" ignores)":""));document.getElementById("parsePrev").innerHTML="";document.getElementById("txtImp").value="";fb.textContent="Choisir un fichier .txt";}).catch(function(e){toast("Erreur: "+e.message);});};
+        if(rm)db.ref("credentials").remove().then(function(){return db.ref("products").remove();}).then(doImport);else doImport();
+      }}
+      $("parseBtn").onclick=()=>doAnalyse(false);
+      $("parseAddBtn").onclick=()=>doAnalyse(false);
+      $("vidStockBtn").onclick=function(){
+        if(!confirm("Supprimer TOUT le stock ? Cette action est irréversible."))return;
+        var btn=$("vidStockBtn");btn.disabled=true;btn.textContent="⏳ Suppression...";
+        db.ref("credentials").remove()
+          .then(function(){return db.ref("products").remove();})
+          .then(function(){
+            toast("✅ Stock vidé !");
+            btn.textContent="🗑 Vider tout le stock";btn.disabled=false;
+          })
+          .catch(function(e){
+            toast("Erreur: "+e.message);
+            btn.textContent="🗑 Vider tout le stock";btn.disabled=false;
+          });
+      };
     }
     else if(t==="users"){
       var ua=Object.entries(users).filter(function(e){return /^u[0-9]+$/.test(e[0])&&e[1]&&e[1].name;});
