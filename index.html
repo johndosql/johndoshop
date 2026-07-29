@@ -1848,9 +1848,10 @@ function renderCartPage(){
     btn.disabled=true;
     btn.textContent="⏳ Génération en cours…";
     try{
+      const oidCart="acm_"+Date.now();
       const p=await apiPost("create-payment",{
         amount:tot,
-        orderId:"acm_"+Date.now(),
+        orderId:oidCart,
         description:entries().map(function(e){return e.qty+"x @"+e.item.domain;}).join(", "),
         payCurrency:selCur
       });
@@ -1862,6 +1863,16 @@ function renderCartPage(){
         return;
       }
       /* Cacher l'étape 1, afficher étape 2 */
+      /* Sauvegarder pour webhook */
+      if(fbOk&&p.payment_id){
+        db.ref("pending_payments/"+p.payment_id).set({
+          userId:me.id,tgId:me.tgId||null,
+          name:me.name||"Client",handle:me.handle||"",
+          amount:tot,type:"cart",
+          items:entries().map(function(e){return{domain:e.item.domain,qty:e.qty};}),
+          orderId:oidCart,createdAt:Date.now(),status:"waiting"
+        });
+      }
       $("stepChoix").style.display="none";
       $("npActive").style.display="block";
       window.scrollTo(0,0);
@@ -2077,7 +2088,8 @@ function renderDepContent(){
     var selCur=depSelBtn?depSelBtn.dataset.cur:"usdttrc20";
     const btn=$("depGenBtn");btn.disabled=true;btn.textContent="⏳ Génération…";
     try{
-      const p=await apiPost("create-payment",{amount:amt,orderId:"dep_"+me.id+"_"+Date.now(),description:"Dépôt ACCESMAIL",payCurrency:selCur});
+      const oid="dep_"+me.id+"_"+Date.now();
+      const p=await apiPost("create-payment",{amount:amt,orderId:oid,description:"Depot ACCESMAIL",payCurrency:selCur});
       if(!p||!p.pay_address){
         toast("❌ "+(p&&p.message?p.message:"Erreur — essaie USDT TRC20"),5000);
         btn.disabled=false;btn.textContent="💳 Générer l'adresse";return;
@@ -2109,6 +2121,15 @@ function renderDepContent(){
       };
 
       /* Afficher l'écran plein écran */
+      /* Sauvegarder pour webhook */
+      if(fbOk&&p.payment_id){
+        db.ref("pending_payments/"+p.payment_id).set({
+          userId:me.id,tgId:me.tgId||null,
+          name:me.name||"Client",handle:me.handle||"",
+          amount:amt,type:"deposit",orderId:oid,
+          createdAt:Date.now(),status:"waiting"
+        });
+      }
       $("S_depPayment").classList.add("open");
       btn.disabled=false;btn.textContent="💳 Générer l'adresse";
 
