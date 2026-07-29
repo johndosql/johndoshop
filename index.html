@@ -1929,7 +1929,9 @@ async function deliverCreds(entries){
       const keys=Object.keys(cr).slice(0,qty);
       for(const k of keys){
         await db.ref("credentials/"+item.id+"/"+k).remove();
-        if(cr[k]&&cr[k].email)out.push({domain:item.domain,email:cr[k].email,pass:cr[k].pass||""});
+        if(cr[k]&&cr[k].email)var em=cr[k].email;var sk=em.replace(/[.@]/g,"_");
+          out.push({domain:item.domain,email:em,pass:cr[k].pass||""});
+          db.ref("sold_emails/"+sk).set({email:em,domain:item.domain,soldAt:Date.now()});
       }
       const newStock=Math.max(0,Number(item.stock||0)-keys.length);
       await db.ref("products/"+item.id+"/stock").set(newStock);
@@ -2013,34 +2015,46 @@ function doOrder(method){
 function renderOrders(){
   var el=document.getElementById("ordersList");if(!el)return;
   if(!fbOk||!me||!me.id){
-    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)"><div style="font-size:36px;margin-bottom:10px">'+String.fromCodePoint(0x1F4CB)+'</div>Connecte-toi via Telegram.</div>';return;
+    el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)">Connecte-toi via Telegram.</div>';
+    return;
   }
   el.innerHTML='<div style="text-align:center;padding:30px;color:var(--sub)">Chargement...</div>';
-  db.ref("users/"+me.id+"/orders").limitToLast(20).once("value",function(snap){
+  db.ref("users/"+me.id+"/orders").once("value",function(snap){
     var v=snap.val();
-    if(!v){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)"><div style="font-size:36px;margin-bottom:10px">'+String.fromCodePoint(0x1F4E6)+'</div><p style="font-weight:600;color:var(--ink)">Aucune commande</p><p style="font-size:13px;margin-top:4px">Tes prochaines commandes apparaitront ici.</p></div>';
+    console.log("Orders data:",v);
+    if(!v||Object.keys(v).length===0){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)">'
+        +'<div style="font-size:36px;margin-bottom:12px">&#128230;</div>'
+        +'<div style="font-weight:600;font-size:15px;color:var(--ink);margin-bottom:6px">Aucune commande</div>'
+        +'<div style="font-size:13px">Tes prochaines commandes apparaitront ici.</div></div>';
       return;
     }
     el.innerHTML="";
-    Object.entries(v).sort(function(a,b){return b[1].date-a[1].date;}).forEach(function(entry){
-      var o=entry[1];
-      var card=document.createElement("div");
-      card.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:14px;margin:0 12px 10px;padding:14px 16px;";
+    Object.entries(v).sort(function(a,b){return(b[1].date||0)-(a[1].date||0);}).forEach(function(entry){
+      var o=entry[1];if(!o||!o.amount)return;
       var d=new Date(o.date||0);
       var ds=d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"})+" - "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+      var card=document.createElement("div");
+      card.style.cssText="background:var(--sf);border:1px solid var(--line);border-radius:14px;margin:0 12px 10px;padding:14px 16px;";
       var items=(o.items||[]).map(function(it){
-        return "<div style='display:flex;justify-content:space-between;background:var(--bg2);border-radius:9px;padding:8px 10px;margin-bottom:4px'><span style='font-family:IBM Plex Mono,monospace;font-size:12px'>@"+it.domain+"</span><span style='font-size:11px;color:var(--sub)'>x"+it.qty+"</span></div>";
+        return "<div style='display:flex;justify-content:space-between;background:var(--bg2);border-radius:9px;padding:8px 10px;margin-bottom:4px'>"
+          +"<span style='font-family:IBM Plex Mono,monospace;font-size:12px'>@"+it.domain+"</span>"
+          +"<span style='font-size:11px;color:var(--sub)'>x"+it.qty+"</span></div>";
       }).join("");
-      card.innerHTML="<div style='display:flex;justify-content:space-between;margin-bottom:10px'>"
+      card.innerHTML="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>"
         +"<span style='font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--sub)'>"+ds+"</span>"
         +"<span style='font-family:Space Grotesk,sans-serif;font-weight:800;font-size:16px;color:var(--ac)'>"+fmt(o.amount||0)+"</span></div>"
         +items
-        +"<div style='font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;display:inline-block;margin-top:6px;background:rgba(62,201,92,.12);color:var(--ok)'>"+String.fromCodePoint(0x2713)+" Livre</div>";
+        +"<span style='font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(62,201,92,.12);color:var(--ok)'>&#10003; Livre</span>";
       el.appendChild(card);
     });
+  },function(err){
+    el.innerHTML='<div style="text-align:center;padding:20px;color:var(--err)">Erreur: '+err.message+'<br><small>'+err.code+'</small></div>';
+    console.error("renderOrders error:",err);
   });
 }
+
+
 function goTo(page){
   ["shop","cart","admin"].forEach(function(p){var s=document.getElementById("S_"+p);if(s)s.classList.toggle("active",p===page);});
   var os=document.getElementById("S_orders");if(os)os.classList.toggle("active",page==="orders");
@@ -2384,7 +2398,21 @@ function renderAdmin(){
       const f=$("botMsg"),prev=$("botPrev");function up(){prev.textContent=f.value.replace("{prenom}","John").replace("{handle}","@johndosql").replace("{acces}","user@hotmail.com:pass123").replace("{total}","4,00€");}db.ref("settings/botMessage").once("value",s=>{f.value=s.val()||def;up();});f.addEventListener("input",up);$("saveBotMsg").onclick=()=>db.ref("settings/botMessage").set(f.value).then(()=>toast("Enregistré ✓"));
     }
   }
-  el.querySelectorAll(".atab").forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});showTab("dash");
+  el.querySelectorAll(".atab").forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});/* Bouton vider stock */
+  var vidBtn=document.createElement("button");
+  vidBtn.className="btn btn-danger";
+  vidBtn.style.cssText="width:calc(100% - 24px);margin:8px 12px;padding:12px;font-weight:700;";
+  vidBtn.textContent="🗑 Vider tout le stock";
+  vidBtn.onclick=function(){
+    if(!confirm("Supprimer TOUT le stock (credentials + produits) ?"))return;
+    vidBtn.disabled=true;vidBtn.textContent="Suppression...";
+    db.ref("credentials").remove()
+      .then(function(){return db.ref("products").remove();})
+      .then(function(){toast("✅ Stock complètement vidé !");vidBtn.textContent="🗑 Vider tout le stock";vidBtn.disabled=false;})
+      .catch(function(e){toast("Erreur: "+e.message);vidBtn.disabled=false;vidBtn.textContent="🗑 Vider tout le stock";});
+  };
+  el.insertBefore(vidBtn,el.firstChild);
+  showTab("dash");
 }
 
 /* ══ CRYPTO PICKER ════════════════════════════ */
