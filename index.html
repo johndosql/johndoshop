@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ACCESMAIL</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -33,9 +33,8 @@ button,a,input[type=button],input[type=submit],
   -webkit-user-select:none;
   user-select:none;
 }
-html{min-height:100%;background:#040810;overflow-y:auto;}
-body{min-height:100%;overscroll-behavior:none;background:#040810;color:var(--ink);
-  font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;overflow-y:auto;}
+html,body{min-height:100%;overscroll-behavior:none;background:#040810;}
+body{color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(ellipse at 50% 0%,rgba(0,200,160,.07) 0%,transparent 50%),radial-gradient(ellipse at 90% 90%,rgba(0,160,220,.04) 0%,transparent 45%);}
 input,button,textarea{font-family:'Inter',sans-serif;color:var(--ink);background:transparent;}
@@ -45,9 +44,13 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 #splash{
   position:fixed;inset:0;z-index:200;background:#040810;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  transition:opacity .5s ease;
-  opacity:1;pointer-events:auto;}
-#splash.out{opacity:0;pointer-events:none;}
+  animation:splashAuto .7s ease 2.5s forwards;}
+#splash.out{animation:splashAuto .4s ease forwards;}
+@keyframes splashAuto{
+  0%{opacity:1;pointer-events:auto;}
+  99%{opacity:0;pointer-events:none;}
+  100%{opacity:0;pointer-events:none;visibility:hidden;}
+}
 /* Particules flottantes */
 .spt{position:absolute;font-family:'IBM Plex Mono',monospace;font-weight:700;
   color:#00C8A0;pointer-events:none;
@@ -702,87 +705,137 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   overscroll-behavior:contain;padding:12px;}
 .pays-detail-body .scard-compact{margin:0 0 8px;}
 
-/* ══ RESPONSIVE PC & TABLETTE ═══════════════ */
-/* Retirer les restrictions mobile sur PC */
-@media(pointer:fine){
-  *{touch-action:auto !important;}
-  html,body{overflow-y:scroll !important;cursor:default;}
-  .app{overflow-y:visible !important;}
-  #catalog{overflow-y:visible !important;height:auto !important;}
-}
+/* ═══════════════════════════════════════
+   RESPONSIVE — PC / TABLETTE / MOBILE
+═══════════════════════════════════════ */
+
+/* ── TABLETTE 600px+ ── */
 @media(min-width:600px){
-  html,body{background:#02050d;}
-
-  /* Centrer l'app avec fond élégant */
-  .app{
-    max-width:520px;
-    margin:0 auto;
-    min-height:100vh;
-    box-shadow:0 0 60px rgba(0,200,160,.08),0 0 0 1px rgba(0,200,160,.06);
-    border-radius:0;
-  }
-
-  /* Grille pays en 4 colonnes sur grand écran */
-  .pays-grid,[style*="grid-template-columns:repeat(3,1fr)"]{
-    grid-template-columns:repeat(4,1fr) !important;
-  }
-
-  /* Crypto grid en 4 colonnes */
-  .crypto-grid{
-    grid-template-columns:repeat(4,1fr) !important;
-  }
-
-  /* Sheets plus larges */
-  .sheet{
-    max-width:520px;
-    left:50% !important;
-    transform:translateX(-50%) translateY(100%) !important;
-    border-radius:20px 20px 0 0;
-  }
-  .sheet.on{
-    transform:translateX(-50%) translateY(0) !important;
-  }
-  .overlay{background:rgba(0,0,0,.6);}
-
-  /* Écran paiement centré */
-  .pay-screen{
-    max-width:520px;
-    left:50%;
-    transform:translateX(-50%) translateX(100%);
-  }
-  .pay-screen.open{
-    transform:translateX(-50%) translateX(0);
-  }
-
-  /* Stats row en ligne */
-  .stats-row{gap:0;}
-
-  /* Cards plus grandes */
-  .scard{padding:16px;}
-  .scard-compact{padding:13px 16px;}
-
-  /* Bottom nav fixe centré */
-  .bottom-nav{
-    max-width:520px;
-    left:50%;
-    transform:translateX(-50%);
-  }
-
-  /* Panel admin */
-  #S_admin .a-card{padding:16px;}
+  html,body{background:#02060F;}
+  .app{max-width:540px;box-shadow:0 0 60px rgba(0,200,160,.07),0 0 0 1px rgba(255,255,255,.05);}
+  .bottom-nav,.sheet,.pay-screen{max-width:540px;}
+  .bottom-nav{left:50%;transform:translateX(-50%);}
+  .sheet{left:50%;right:auto;transform:translateX(-50%) translateY(101%);}
+  .sheet.on{transform:translateX(-50%) translateY(0);}
+  .crypto-grid{grid-template-columns:repeat(4,1fr)!important;}
+  .amt-grid{grid-template-columns:repeat(6,1fr)!important;}
+  .scard{padding:16px 18px;}
+  .scard-compact{padding:13px 18px;}
 }
 
+/* ── PC 900px+ ── */
 @media(min-width:900px){
-  .app{max-width:580px;}
-  .bottom-nav{max-width:580px;}
-  .sheet{max-width:580px;}
-  .pay-screen{max-width:580px;}
+  html,body{
+    background:#010408;
+    overflow-y:auto;
+    display:flex;align-items:flex-start;
+    justify-content:center;
+    padding:24px 16px;gap:24px;
+    min-height:100vh;
+  }
+
+  /* SIDEBAR */
+  .pc-sidebar{
+    display:flex!important;flex-direction:column;gap:6px;
+    width:200px;flex:0 0 200px;
+    position:sticky;top:24px;
+  }
+  .pc-sidebar-logo{
+    font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:22px;
+    background:linear-gradient(135deg,#00C8A0,#00FFCC);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    padding:4px 0 18px;
+  }
+  .pc-nav-btn{
+    display:flex;align-items:center;gap:10px;
+    padding:11px 14px;border-radius:12px;cursor:pointer;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+    color:var(--sub);font-family:'Space Grotesk',sans-serif;
+    font-weight:600;font-size:14px;transition:all .15s;
+  }
+  .pc-nav-btn:hover{background:rgba(0,200,160,.07);border-color:rgba(0,200,160,.2);color:var(--ink);}
+  .pc-nav-btn.on{background:rgba(0,200,160,.1);border-color:rgba(0,200,160,.3);color:var(--ac);}
+  .pc-nav-icon{font-size:16px;flex:0 0 auto;}
+  .pc-badge{margin-left:auto;background:var(--ac);color:#040810;font-size:10px;
+    font-weight:800;border-radius:999px;padding:2px 7px;display:none;}
+  .pc-badge.show{display:block;}
+  .pc-user-card{
+    margin-top:12px;padding:14px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+    border-radius:12px;
+  }
+  .pc-user-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:var(--ink);margin-bottom:2px;}
+  .pc-user-bal{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--ac);}
+  .pc-user-lbl{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+  .pc-support{margin-top:auto;padding-top:16px;font-size:11px;color:var(--sub);}
+
+  /* APP colonne principale */
+  .app{
+    flex:1;max-width:520px;
+    position:sticky;top:24px;
+    max-height:calc(100vh - 48px);
+    overflow-y:auto;overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    border-radius:16px;
+    box-shadow:0 8px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);
+    padding-bottom:12px!important;
+  }
+  /* Cacher bottom nav — remplacée par sidebar */
+  .bottom-nav{display:none!important;}
+
+  /* Sheets → modal centré */
+  .overlay.on{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+  .sheet{
+    position:fixed;left:50%!important;top:50%!important;bottom:auto!important;
+    right:auto!important;
+    transform:translate(-50%,-45%)!important;
+    max-width:500px;width:calc(100% - 40px);
+    border-radius:20px!important;max-height:80vh;
+    opacity:0;transition:transform .25s cubic-bezier(.22,1,.36,1),opacity .2s!important;
+  }
+  .sheet.on{transform:translate(-50%,-50%)!important;opacity:1!important;}
+  .sh-handle{display:none;}
+
+  /* Pay screen → modal */
+  .pay-screen{
+    position:fixed!important;
+    left:50%!important;top:50%!important;
+    transform:translateX(-50%) translateY(-40%)!important;
+    max-width:500px;width:calc(100% - 40px);
+    max-height:85vh;border-radius:20px!important;
+    overflow:hidden;
+  }
+  .pay-screen.open{transform:translateX(-50%) translateY(-50%)!important;}
+
+  /* Grilles plus larges */
+  .crypto-grid{grid-template-columns:repeat(4,1fr)!important;gap:8px!important;}
+  .amt-grid{grid-template-columns:repeat(4,1fr)!important;}
+
+  /* Catalog scroll dans l'app */
+  #catalog{overflow-y:visible;height:auto;}
+
+  /* Screens pleine hauteur */
+  .screen.active{min-height:calc(100vh - 80px);}
 }
 </style>
 </head>
 <body>
 
 <!-- ══ SPLASH ══════════════════════════════ -->
+<!-- SIDEBAR PC -->
+<nav class="pc-sidebar" id="pcSidebar" style="display:none">
+  <div class="pc-sidebar-logo">ACCESMAIL</div>
+  <div class="pc-nav-btn on" id="pcNavShop"><span class="pc-nav-icon">✉</span> Boutique</div>
+  <div class="pc-nav-btn" id="pcNavCart"><span class="pc-nav-icon">🛒</span> Panier <span class="pc-badge" id="pcBadge"></span></div>
+  <div class="pc-nav-btn" id="pcNavSolde"><span class="pc-nav-icon">💳</span> Mon solde</div>
+  <div class="pc-user-card" id="pcUserCard">
+    <div class="pc-user-name" id="pcUName">—</div>
+    <div class="pc-user-bal" id="pcUBal">0,00€</div>
+    <div class="pc-user-lbl">Solde disponible</div>
+  </div>
+  <div class="pc-support">Support : @johndosql</div>
+</nav>
+
 <div id="splash">
   <div class="splash-glow"></div>
   <!-- Particules CSS pures — fonctionnent sans JS -->
@@ -1121,12 +1174,7 @@ function fastClick(el,fn){
   if(!el)return;
   el.onclick=fn;
 }
-const flag=function(iso,size){
-  var s=size||22;
-  if(!iso||iso==="all"||iso==="MIX")return'<img src="https://flagcdn.com/w40/un.png" style="width:'+s+'px;height:auto;vertical-align:middle;border-radius:2px;display:inline-block" alt="🌍">';
-  var code=(iso==="UK"?"GB":iso).toLowerCase();
-  return'<img src="https://flagcdn.com/w40/'+code+'.png" style="width:'+s+'px;height:auto;vertical-align:middle;border-radius:2px;display:inline-block" alt="'+code+'">';
-};
+const flag=function(iso,sz){var s=sz||22;if(!iso||iso==="all"||iso==="MIX")return'<img src="https://flagcdn.com/w40/un.png" style="width:'+s+'px;height:auto;vertical-align:middle;border-radius:2px" alt="">';var c=(iso==="UK"?"GB":iso).toLowerCase();return'<img src="https://flagcdn.com/w40/'+c+'.png" style="width:'+s+'px;height:auto;vertical-align:middle;border-radius:2px" alt="'+c+'">';};
 const cName=c=>ALL_C.find(x=>x.c===c)?.n||c;
 function toast(msg,dur=3000){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),dur);}
 function haptic(s){try{window.Telegram.WebApp.HapticFeedback.impactOccurred(s||"light");}catch(e){}}
@@ -1139,21 +1187,15 @@ function initSplash(){
   const sp=$("splash");
 
   /* === GARANTIE : la transition se fait toujours après 2s === */
-  var splashDone=false;
+  let splashDone=false;
   function doTransition(){
     if(splashDone)return;splashDone=true;
     sp.classList.add("out");
-    /* Supprimer complètement après la transition */
-    setTimeout(function(){
-      sp.style.display="none";
-      sp.style.pointerEvents="none";
-    },600);
     try{initShopParticles();}catch(e){}
   }
-  /* Transition après 2s - JS pur, pas de dépendance CSS */
-  setTimeout(doTransition,2000);
-  /* Fallback ultra-court pour PC Telegram (3s max) */
-  setTimeout(doTransition,3000);
+  /* CSS gère la transition automatiquement après 2.1s */
+  /* Le JS peut l'accélérer si besoin */
+  setTimeout(doTransition,2200);
 
   /* Particules dans try-catch — ne bloquent jamais la transition */
   try{
@@ -1354,7 +1396,7 @@ function activeCodes(){
 }
 function renderChips(){
   const el=$("chips"),codes=activeCodes();el.innerHTML="";
-  [{c:"all",n:"🌍 TOUS"},...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c,16)+"&nbsp;"+cty.n}))].forEach(cty=>{
+  [{ c:"all",n:"🌍 TOUS" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c,16)+"&nbsp;"+cty.n}))].forEach(cty=>{
     const chip=document.createElement("div");chip.className="chip"+(activeC===cty.c?" on":"");chip.innerHTML=cty.n;
     fastClick(chip,function(){
       activeC=cty.c;showAll=false;
@@ -1550,7 +1592,7 @@ function getPaysGroups(items){
 /* Ouvrir le détail d'un pays */
 function openPaysDetail(section){
   var title=$("paysDetailTitle"),count=$("paysDetailCount"),body=$("paysDetailBody");
-  title.innerHTML=flag(section.code,18)+" "+cName(section.code);
+  title.textContent=flag(section.code)+" "+cName(section.code);
   count.textContent=section.total+" accès";
   body.innerHTML="";
   var sorted=section.prods.slice().sort(function(a,b){return Number(b.stock||0)-Number(a.stock||0);});
@@ -1570,10 +1612,10 @@ function openPaysDetail(section){
     card.querySelector(".add-btn").onclick=function(){addCart(p);};
     body.appendChild(card);
   });
-  var pd=$("paysDetail");if(pd)pd.classList.add("open");
+  $("paysDetail").classList.add("open");
   haptic("light");
 }
-/* paysDetailBack supprimé - élément absent du HTML */
+$("paysDetailBack").onclick=function(){$("paysDetail").classList.remove("open");};
 
 /* Grille pays = écran d'accueil du catalogue */
 function renderCatalogPays(el){
@@ -1651,23 +1693,9 @@ function renderCatalogPays(el){
   inp.addEventListener("focus",()=>{row.classList.add("on");clr.style.display="flex";});
   inp.addEventListener("blur",()=>{if(!inp.value){row.classList.remove("on");clr.style.display="none";}});
   inp.addEventListener("input",function(e){
-    query=e.target.value.trim();
-    showAll=!!query;
+    query=e.target.value;showAll=!!query.trim();
+    /* Reset du cache pour forcer re-render */
     _lastRenderKey="";_paysGroupCache=null;
-    /* Auto-switch vers vue domaine si l'utilisateur tape un domaine */
-    if(query.length>=2){
-      /* Si ça ressemble à un domaine (contient . ou @) ou si on est en vue pays → basculer */
-      const looksLikeDomain=query.includes(".")||query.includes("@");
-      if(looksLikeDomain||viewMode==="pays"){
-        viewMode="dom";
-        activeC="all"; /* reset filtre pays pour voir tous les résultats */
-        renderChips();
-      }
-    }else if(!query){
-      /* Quand on efface → revenir en vue pays */
-      viewMode="pays";
-      _lastRenderKey="";
-    }
     clearTimeout(inp._t);
     inp._t=setTimeout(function(){renderCatalog();},180);
   });
@@ -2182,50 +2210,11 @@ function renderAdmin(){
     el.querySelectorAll(".atab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
     const pane=$("adminPane");
     if(t==="stock"){
-      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn" id="parseAddBtn" style="flex:1">➕ Ajouter</button></div>
-<button class="btn btn-danger" id="vidBtn" style="width:100%;margin-top:8px;padding:12px;font-weight:700">🗑 VIDER LE STOCK COMPLET</button><div id="parsePrev" style="margin-top:10px"></div></div>`;
+      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div id="parsePrev" style="margin-top:10px"></div></div>`;
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
       fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
-      function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=async()=>{
-        $("confirmImp").disabled=true;
-        $("confirmImp").textContent="⏳ Vérif doublons vendus…";
-        let soldEmails={};
-        try{const s=await db.ref("sold_emails").once("value");soldEmails=s.val()||{};}catch(e){}
-        const soldKeys=new Set(Object.values(soldEmails).map(x=>x&&x.email?x.email.toLowerCase():"").filter(Boolean));
-        let skipped=0;
-        const filtered=groups.map(g=>({...g,accounts:g.accounts.filter(a=>{if(soldKeys.has((a.email||"").toLowerCase())){skipped++;return false;}return true;})})).filter(g=>g.accounts.length>0);
-        if(skipped>0)toast("⚠️ "+skipped+" déjà vendus ignorés",4000);
-        if(rm){
-          $("confirmImp").textContent="🗑 Suppression ancien stock…";
-          try{
-            await db.ref("credentials").remove();
-            await db.ref("products").remove();
-            /* Petite pause pour laisser Firebase confirmer */
-            await new Promise(res=>setTimeout(res,800));
-          }catch(e){toast("Erreur suppression: "+e.message);$("confirmImp").disabled=false;return;}
-          toast("🗑 Ancien stock supprimé",2000);
-        }
-        $("confirmImp").textContent="📥 Import en cours…";
-        try{
-          await importMP(filtered);
-          const kept=filtered.reduce((s,g)=>s+g.accounts.length,0);
-          toast("✅ "+kept+" comptes importés !"+(skipped?" ("+skipped+" ignorés)":""));
-          $("parsePrev").innerHTML="";$("txtImp").value="";fb.textContent="📁 Choisir un fichier .txt";
-        }catch(e){toast("Erreur import: "+e.message);}
-      };}
-      $("parseBtn").onclick=()=>doAnalyse(false);
-      $("parseAddBtn").onclick=()=>doAnalyse(false);
-      $("vidBtn").onclick=async()=>{
-        if(!confirm("⚠️ Supprimer TOUT le stock (credentials + produits) ?"))return;
-        $("vidBtn").disabled=true;$("vidBtn").textContent="⏳ Suppression…";
-        try{
-          await db.ref("credentials").remove();
-          await db.ref("products").remove();
-          toast("✅ Stock complètement vidé !",4000);
-          $("vidBtn").textContent="✅ Vidé !";
-          setTimeout(()=>{$("vidBtn").disabled=false;$("vidBtn").textContent="🗑 VIDER LE STOCK COMPLET";},3000);
-        }catch(e){toast("Erreur: "+e.message);$("vidBtn").disabled=false;$("vidBtn").textContent="🗑 VIDER LE STOCK COMPLET";}
-      };
+      function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=()=>{$("confirmImp").disabled=true;$("confirmImp").textContent="Import en cours…";const doImport=()=>importMP(groups).then(()=>{toast("✅ "+tot+" comptes importés !");$("parsePrev").innerHTML="";$("txtImp").value="";fb.textContent="📁 Choisir un fichier .txt";}).catch(e=>toast("Erreur: "+e.message));if(rm)db.ref("products").remove().then(()=>db.ref("credentials").remove()).then(doImport);else doImport();};}
+      $("parseBtn").onclick=()=>doAnalyse(false);$("replaceBtn").onclick=()=>{if(confirm("⚠️ Vider tout et remplacer ?"))doAnalyse(true);};
     }
     else if(t==="catalogue"){
       pane.innerHTML=`<button class="btn btn-danger" id="clearBtn" style="width:100%;margin-bottom:12px">🗑 Vider le catalogue</button><div class="a-card" style="margin-bottom:12px"><div class="a-title">➕ Ajouter manuellement</div><input class="field" id="nD" placeholder="Domaine (ex: hotmail.com)"><input class="field" id="nC" placeholder="Pays (ex: FR,US,DE)"><div style="display:flex;gap:7px"><input class="field" id="nP" type="number" step="0.01" value="4" placeholder="Prix"><input class="field" id="nS" type="number" placeholder="Stock"></div><button class="btn" id="addBtn" style="width:100%">Ajouter</button></div><p class="sl-lbl">Catalogue (${prods.length})</p><div id="aProd"></div>`;
@@ -2235,102 +2224,10 @@ function renderAdmin(){
       prods.forEach(p=>{const row=document.createElement("div");row.className="a-card";row.innerHTML=`<div class="a-title">@${p.domain} <span style="font-size:11px;color:var(--sub)">${(p.countries||[]).join(",")} · ${p.stock} en stock</span></div><div class="a-row"><label>Pays</label><input class="field" value="${(p.countries||[]).join(",")}" data-f="c"></div><div class="a-row"><label>Prix</label><input class="field" type="number" step="0.01" value="${p.price}" data-f="p"></div><div class="a-row"><label>Stock</label><input class="field" type="number" value="${p.stock}" data-f="s"></div><div class="a-acts"><button class="btn" data-a="save">Sauvegarder</button><button class="btn btn-danger" data-a="del">Supprimer</button></div>`;row.querySelector('[data-a="save"]').onclick=()=>{const c=row.querySelector('[data-f="c"]').value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);const pr=parseFloat(row.querySelector('[data-f="p"]').value);const st=parseInt(row.querySelector('[data-f="s"]').value);db.ref("products/"+p.id).update({countries:c,price:pr,stock:st}).then(()=>toast("Mis à jour."));};row.querySelector('[data-a="del"]').onclick=()=>{if(confirm("Supprimer @"+p.domain+" ?"))db.ref("products/"+p.id).remove().then(()=>toast("Supprimé."));};ap.appendChild(row);});
     }
     else if(t==="users"){
-      const ua=Object.entries(users).filter(([uid,u])=>/^u\d+$/.test(uid)&&u.name);
-      const buyers=ua.filter(([,u])=>parseFloat(u.balance||0)>0).sort((a,b)=>parseFloat(b[1].balance||0)-parseFloat(a[1].balance||0));
-      const voyeurs=ua.filter(([,u])=>!(parseFloat(u.balance||0)>0));
-      const tgIds=ua.filter(([,u])=>u.tgId).map(([,u])=>u.tgId);
-      const totalSoldes=buyers.reduce((s,[,u])=>s+parseFloat(u.balance||0),0);
-
-      pane.innerHTML=`
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
-          <div class="a-stat-card"><div class="a-stat-val" style="color:var(--ac)">${buyers.length}</div><div class="a-stat-lbl">Acheteurs 💰</div></div>
-          <div class="a-stat-card"><div class="a-stat-val" style="color:var(--sub)">${voyeurs.length}</div><div class="a-stat-lbl">Voyeurs 👀</div></div>
-          <div class="a-stat-card"><div class="a-stat-val" style="color:var(--ok);font-size:14px">${fmt(totalSoldes)}</div><div class="a-stat-lbl">Total soldes</div></div>
-        </div>
-        <input class="field" id="userSearch" placeholder="🔍 Nom ou @handle…" style="margin-bottom:10px">
-        <div style="display:flex;gap:6px;margin-bottom:12px">
-          <button class="atab on" id="tabBuyers" style="flex:1;padding:10px">💰 Acheteurs (${buyers.length})</button>
-          <button class="atab" id="tabVoyeurs" style="flex:1;padding:10px">👀 Voyeurs (${voyeurs.length})</button>
-        </div>
-        <div id="userList"></div>
-        <div style="margin-top:16px">
-          <p class="sl-lbl">📢 Broadcast (${tgIds.length} clients)</p>
-          <div class="a-card">
-            <textarea class="field" id="bcMsg" rows="4" style="font-size:13px;resize:vertical" placeholder="🔥 RESTOCK disponible !"></textarea>
-            <div style="display:flex;gap:8px;margin-top:8px">
-              <button class="btn" id="bcBtn" style="flex:1" ${tgIds.length===0?"disabled":""}>📤 Envoyer à tous (${tgIds.length})</button>
-              <button class="btn btn-outline" id="bcBuyersBtn" style="flex:1" ${buyers.length===0?"disabled":""}>💰 Acheteurs (${buyers.filter(([,u])=>u.tgId).length})</button>
-            </div>
-            <div id="bcRes" style="margin-top:6px;font-size:12px;text-align:center;color:var(--sub)"></div>
-          </div>
-        </div>`;
-
-      /* CSS cartes stats */
-      if(!document.getElementById("adminUserCSS")){
-        const s=document.createElement("style");s.id="adminUserCSS";
-        s.textContent=`.a-stat-card{background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center}.a-stat-val{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px}.a-stat-lbl{font-size:10px;color:var(--sub);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}.u-card{background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px}.u-av2{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:0 0 auto}`;
-        document.head.appendChild(s);
-      }
-
-      function renderUserCard(uid,u){
-        const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2)||"?";
-        const bal=parseFloat(u.balance||0);
-        const isBuyer=bal>0;
-        const div=document.createElement("div");div.className="u-card";
-        div.innerHTML=`<div class="u-av2" style="background:${isBuyer?"rgba(0,200,160,.15)":"var(--bg2)"};border:1px solid ${isBuyer?"rgba(0,200,160,.3)":"var(--line)"};color:${isBuyer?"var(--ac)":"var(--sub)"}">${ini}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name||"Inconnu"}</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub)">${u.handle||""} ${u.tgId?"· ID "+u.tgId:""}</div>
-          </div>
-          <div style="text-align:right;flex:0 0 auto">
-            <div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:15px;color:${isBuyer?"var(--ac)":"var(--sub)"}">${fmt(bal)}</div>
-            <button style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(0,200,160,.1);border:1px solid rgba(0,200,160,.2);color:var(--ac);cursor:pointer;margin-top:4px;font-weight:600;touch-action:manipulation" data-uid="${uid}">+ Solde</button>
-          </div>`;
-        div.querySelector("button").onclick=function(){
-          const amt=parseFloat(prompt("Montant à créditer à "+u.name+" (€) :"));
-          if(isNaN(amt)||amt<=0){toast("Montant invalide.");return;}
-          const newBal=parseFloat(((parseFloat(u.balance||0))+amt).toFixed(2));
-          db.ref("users/"+uid+"/balance").set(newBal).then(function(){
-            u.balance=newBal;toast(fmt(amt)+" crédités à "+u.name+" ✓");renderList(currentTab);
-          });
-        };
-        return div;
-      }
-
-      var currentTab="buyers";
-      function renderList(tab){
-        currentTab=tab;
-        const q=(($("userSearch")||{}).value||"").toLowerCase().trim();
-        const list=tab==="buyers"?buyers:voyeurs;
-        const filtered=q?list.filter(([,u])=>(u.name||"").toLowerCase().includes(q)||(u.handle||"").toLowerCase().includes(q)):list;
-        const ul=$("userList");if(!ul)return;ul.innerHTML="";
-        if(!filtered.length){
-          ul.innerHTML='<p style="text-align:center;color:var(--sub);padding:20px 0;font-size:13px">'+(q?"Aucun résultat.":(tab==="buyers"?"Aucun acheteur encore.":"Aucun voyeur."))+'</p>';
-          return;
-        }
-        filtered.forEach(([uid,u])=>ul.appendChild(renderUserCard(uid,u)));
-      }
-
-      $("tabBuyers").onclick=function(){$("tabBuyers").classList.add("on");$("tabVoyeurs").classList.remove("on");renderList("buyers");};
-      $("tabVoyeurs").onclick=function(){$("tabVoyeurs").classList.add("on");$("tabBuyers").classList.remove("on");renderList("voyeurs");};
-      $("userSearch").addEventListener("input",function(){renderList(currentTab);});
-      renderList("buyers");
-
-      async function sendBroadcast(ids){
-        const msg=$("bcMsg").value.trim();
-        if(!msg){toast("Écris un message.");return;}
-        if(!confirm("Envoyer à "+ids.length+" client(s) ?"))return;
-        $("bcBtn").disabled=true;$("bcBuyersBtn").disabled=true;$("bcBtn").textContent="📤 Envoi…";
-        try{
-          const d=await fetch(VERCEL+"/api/broadcast",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chatIds:ids,text:msg})}).then(r=>r.json());
-          $("bcRes").innerHTML=`<span style="color:var(--ok)">✅ ${d.sent} envoyé${d.sent>1?"s":""}</span>${d.failed?` · <span style="color:var(--err)">❌ ${d.failed}</span>`:""}`;
-          toast("Broadcast envoyé ✓");
-        }catch(e){toast("Erreur broadcast.");}
-        $("bcBtn").disabled=false;$("bcBuyersBtn").disabled=false;
-        $("bcBtn").textContent="📤 Envoyer à tous ("+tgIds.length+")";
-      }
-      $("bcBtn").onclick=function(){sendBroadcast(tgIds);};
-      $("bcBuyersBtn").onclick=function(){sendBroadcast(buyers.filter(([,u])=>u.tgId).map(([,u])=>u.tgId));};
+      pane.innerHTML='<div id="aUsers"></div>';const au=$("aUsers");const ua=Object.entries(users).filter(([uid,u])=>/^u\d+$/.test(uid)&&u.name);if(!ua.length)au.innerHTML='<p style="text-align:center;color:var(--sub);padding:24px 0">Aucun client enregistré.</p>';
+      else ua.forEach(([uid,u])=>{const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);const row=document.createElement("div");row.className="u-row";row.innerHTML=`<div class="u-av">${ini}</div><div style="flex:1"><div class="u-name">${u.name||"Inconnu"}</div><div class="u-bal">${fmt(u.balance||0)}</div></div><button class="sm-btn" data-uid="${uid}">+ Solde</button>`;row.querySelector(".sm-btn").onclick=()=>{const amt=parseFloat(prompt("Montant (€) :"));if(isNaN(amt)||amt<=0){toast("Invalide.");return;}db.ref("users/"+uid+"/balance").set(parseFloat(((u.balance||0)+amt).toFixed(2))).then(()=>toast(fmt(amt)+" crédités ✓"));};au.appendChild(row);});
+      const tgIds=ua.filter(([,u])=>u.tgId).map(([,u])=>u.tgId);const bc=document.createElement("div");bc.innerHTML=`<p class="sl-lbl" style="margin-top:16px">📢 Broadcast (${tgIds.length})</p><div class="a-card"><textarea class="field" id="bcMsg" rows="5" style="font-size:13px;line-height:1.7;resize:vertical" placeholder="🔥 <b>RESTOCK !</b>..."></textarea><button class="btn" id="bcBtn" style="width:100%;margin-top:8px" ${tgIds.length===0?"disabled":""}>Envoyer à ${tgIds.length} client${tgIds.length>1?"s":""}</button><div id="bcRes" style="margin-top:8px;font-size:12px;text-align:center;color:var(--sub)"></div></div>`;au.parentElement.appendChild(bc);
+      $("bcBtn").onclick=async()=>{const msg=$("bcMsg").value.trim();if(!msg){toast("Écris un message.");return;}if(!confirm("Envoyer à "+tgIds.length+" client(s) ?"))return;const btn=$("bcBtn");btn.disabled=true;btn.textContent="📤 Envoi…";try{const d=await fetch(VERCEL+"/api/broadcast",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chatIds:tgIds,text:msg})}).then(r=>r.json());$("bcRes").innerHTML=`<span style="color:var(--ok)">✅ ${d.sent} envoyé${d.sent>1?"s":""}</span>${d.failed?` · <span style="color:var(--err)">❌ ${d.failed}</span>`:""}`;toast("Broadcast envoyé ✓");}catch(e){toast("Erreur broadcast.");}btn.disabled=false;btn.textContent="Envoyer à "+tgIds.length+" client"+(tgIds.length>1?"s":"");};
     }
     else if(t==="bot"){
       const def=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\nBonjour <b>{prenom}</b> ({handle})\n\n<pre>{acces}</pre>\nTotal : <b>{total}</b>\n\nPour toute question, réponds à ce message.`;
@@ -2382,9 +2279,33 @@ initSplash();
 /* initMe sans attendre Firebase */
 initMe();
 
-/* Charger les produits APRÈS que le splash soit terminé et l'UI prête */
-/* setTimeout 0 = prochain tick du navigateur = UI déjà réactive */
 setTimeout(function(){loadProds();},100);
+
+/* ══ SIDEBAR PC — s'active automatiquement sur grand écran ══ */
+(function(){
+  function isPC(){return window.innerWidth>=900;}
+  function syncSidebar(){
+    var n=document.getElementById("pcUName"),b=document.getElementById("pcUBal");
+    if(n)n.textContent=me.name||"Invité";
+    if(b)b.textContent=fmt(myBal);
+    var badge=document.getElementById("pcBadge");
+    if(badge){var tot=Object.values(cart).reduce(function(s,v){return s+v;},0);badge.textContent=tot||"";badge.className="pc-badge"+(tot>0?" show":"");}
+  }
+  function setupSidebar(){
+    var s=document.getElementById("pcSidebar");if(!s)return;
+    s.style.display=isPC()?"flex":"none";
+    function setOn(id){["pcNavShop","pcNavCart","pcNavSolde"].forEach(function(k){var el=document.getElementById(k);if(el)el.classList.toggle("on",k===id);});}
+    var pns=document.getElementById("pcNavShop");
+    var pnc=document.getElementById("pcNavCart");
+    var pno=document.getElementById("pcNavSolde");
+    if(pns)pns.onclick=function(){goTo("shop");setOn("pcNavShop");};
+    if(pnc)pnc.onclick=function(){goTo("cart");setOn("pcNavCart");};
+    if(pno)pno.onclick=function(){openDeposit();};
+    setInterval(syncSidebar,800);setTimeout(syncSidebar,500);
+  }
+  setTimeout(setupSidebar,400);
+  window.addEventListener("resize",function(){var s=document.getElementById("pcSidebar");if(s)s.style.display=isPC()?"flex":"none";});
+})();
 try{
   const tg=window.Telegram&&window.Telegram.WebApp;
   if(tg){
