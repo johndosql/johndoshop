@@ -1974,7 +1974,7 @@ function startPoll(pid,oe){
         /* Envoyer le bot EN PARALLÈLE - ne pas bloquer l'affichage */
         /* Sauvegarder commande */
         if(fbOk&&me&&me.id){
-          db.ref("orders/"+me.id+"/o"+Date.now()).set({
+          db.ref("users/"+me.id+"/orders/o"+Date.now()).set({
             amount:stot,
             items:se.map(function(e){return{domain:e.item.domain,qty:e.qty};}),
             date:Date.now(),status:"delivered"
@@ -2013,7 +2013,7 @@ function renderOrders(){
     el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)"><div style="font-size:36px;margin-bottom:10px">'+String.fromCodePoint(0x1F4CB)+'</div>Connecte-toi via Telegram.</div>';return;
   }
   el.innerHTML='<div style="text-align:center;padding:30px;color:var(--sub)">Chargement...</div>';
-  db.ref("orders/"+me.id).orderByChild("date").limitToLast(20).once("value",function(snap){
+  db.ref("users/"+me.id+"/orders").orderByChild("date").limitToLast(20).once("value",function(snap){
     var v=snap.val();
     if(!v){
       el.innerHTML='<div style="text-align:center;padding:40px;color:var(--sub)"><div style="font-size:36px;margin-bottom:10px">'+String.fromCodePoint(0x1F4E6)+'</div><p style="font-weight:600;color:var(--ink)">Aucune commande</p><p style="font-size:13px;margin-top:4px">Tes prochaines commandes apparaitront ici.</p></div>';
@@ -2262,12 +2262,50 @@ function renderAdmin(){
     };return;
   }
   if(!fbOk){el.innerHTML='<div class="banner err">Firebase non connecté.</div>';return;}
-  el.innerHTML=`<div style="display:flex;gap:6px;margin-bottom:12px"><button class="atab on" data-t="stock">📦 Stock</button><button class="atab" data-t="catalogue">🗂 Catalogue</button><button class="atab" data-t="users">👥 Clients</button><button class="atab" data-t="bot">📱 Bot</button></div><button class="btn btn-outline" id="logoutBtn" style="width:100%;margin-bottom:12px;font-size:12px;padding:8px">Déconnexion</button><div id="adminPane"></div>`;
+  el.innerHTML=`<div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap"><button class="atab on" data-t="dash" style="flex:1">📊</button><button class="atab" data-t="stock" style="flex:1">📦</button><button class="atab" data-t="catalogue" style="flex:1">🗂</button><button class="atab" data-t="users" style="flex:1">👥</button><button class="atab" data-t="bot" style="flex:1">📱</button></div><button class="btn btn-outline" id="logoutBtn" style="width:100%;margin-bottom:12px;font-size:12px;padding:8px">Déconnexion</button><div id="adminPane"></div>`;
   $("logoutBtn").onclick=()=>{fbAuth.signOut().then(()=>{adminOk=false;goTo("shop");});};
   function showTab(t){
     el.querySelectorAll(".atab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
     const pane=$("adminPane");
-    if(t==="stock"){
+    if(t==="dash"){
+      pane.innerHTML='<div id="db"><div style="text-align:center;padding:24px;color:var(--sub)">Chargement...</div></div>';
+      Promise.all([db.ref("users").once("value"),db.ref("products").once("value")]).then(function(snaps){
+        var U=snaps[0].val()||{},P=snaps[1].val()||{};
+        var uList=Object.entries(U).filter(function(e){return /^u[0-9]+$/.test(e[0])&&e[1]&&e[1].name;});
+        var buyers=uList.filter(function(e){return parseFloat(e[1].balance||0)>0;});
+        var totalSoldes=uList.reduce(function(s,e){return s+parseFloat(e[1].balance||0);},0);
+        var totalStock=Object.values(P).reduce(function(s,p){return s+(p?parseInt(p.stock||0):0);},0);
+        var allOrders=[];
+        uList.forEach(function(e){var o=e[1].orders;if(o&&typeof o==="object")Object.values(o).forEach(function(x){if(x&&x.amount)allOrders.push(x);});});
+        var today=new Date();today.setHours(0,0,0,0);
+        var todayOrds=allOrders.filter(function(o){return(o.date||0)>=today.getTime();});
+        var revToday=todayOrds.reduce(function(s,o){return s+parseFloat(o.amount||0);},0);
+        var revTotal=allOrders.reduce(function(s,o){return s+parseFloat(o.amount||0);},0);
+        function statCard(val,lbl,col){return '<div class="a-card" style="text-align:center;padding:14px"><div style="font-family:Space Grotesk,sans-serif;font-weight:800;font-size:20px;color:'+(col||"var(--ink)")+'">'+val+'</div><div style="font-size:10px;color:var(--sub);margin-top:3px;text-transform:uppercase;letter-spacing:.05em">'+lbl+'</div></div>';}
+        document.getElementById("db").innerHTML=
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+          +statCard(fmt(revToday),"Revenus auj.","var(--ac)")
+          +statCard(fmt(revTotal),"Total revenus","var(--ok)")
+          +statCard(todayOrds.length,"Commandes auj.","var(--ink)")
+          +statCard(allOrders.length,"Total commandes","var(--ink)")
+          +statCard(buyers.length,"Acheteurs","var(--ac)")
+          +statCard(uList.length,"Total clients","var(--sub)")
+          +statCard(totalStock,"En stock","var(--ink)")
+          +statCard(fmt(totalSoldes),"Soldes clients","var(--ok)")
+          +'</div>'
+          +'<p class="sl-lbl">8 dernières commandes</p>'
+          +(allOrders.length===0?'<p style="text-align:center;color:var(--sub);padding:12px;font-size:13px">Aucune commande</p>'
+            :allOrders.sort(function(a,b){return(b.date||0)-(a.date||0);}).slice(0,8).map(function(o){
+              var d=new Date(o.date||0);
+              var ds=d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short"})+" "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+              return '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px">'
+                +'<div><div style="font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--sub)">'+ds+'</div>'
+                +'<div style="font-size:12px;color:var(--ink);margin-top:2px">'+((o.items||[]).map(function(it){return it.qty+"x @"+it.domain;}).join(", ")||"-")+'</div></div>'
+                +'<div style="font-family:Space Grotesk,sans-serif;font-weight:800;font-size:14px;color:var(--ac)">'+fmt(o.amount||0)+'</div></div>';
+            }).join(""));
+      }).catch(function(e){var db2=document.getElementById("db");if(db2)db2.innerHTML='<p style="color:var(--err);padding:12px">Erreur: '+e.message+'</p>';});
+    }
+    else if(t==="stock"){
       pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div id="parsePrev" style="margin-top:10px"></div></div>`;
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
       fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
@@ -2282,10 +2320,67 @@ function renderAdmin(){
       prods.forEach(p=>{const row=document.createElement("div");row.className="a-card";row.innerHTML=`<div class="a-title">@${p.domain} <span style="font-size:11px;color:var(--sub)">${(p.countries||[]).join(",")} · ${p.stock} en stock</span></div><div class="a-row"><label>Pays</label><input class="field" value="${(p.countries||[]).join(",")}" data-f="c"></div><div class="a-row"><label>Prix</label><input class="field" type="number" step="0.01" value="${p.price}" data-f="p"></div><div class="a-row"><label>Stock</label><input class="field" type="number" value="${p.stock}" data-f="s"></div><div class="a-acts"><button class="btn" data-a="save">Sauvegarder</button><button class="btn btn-danger" data-a="del">Supprimer</button></div>`;row.querySelector('[data-a="save"]').onclick=()=>{const c=row.querySelector('[data-f="c"]').value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);const pr=parseFloat(row.querySelector('[data-f="p"]').value);const st=parseInt(row.querySelector('[data-f="s"]').value);db.ref("products/"+p.id).update({countries:c,price:pr,stock:st}).then(()=>toast("Mis à jour."));};row.querySelector('[data-a="del"]').onclick=()=>{if(confirm("Supprimer @"+p.domain+" ?"))db.ref("products/"+p.id).remove().then(()=>toast("Supprimé."));};ap.appendChild(row);});
     }
     else if(t==="users"){
-      pane.innerHTML='<div id="aUsers"></div>';const au=$("aUsers");const ua=Object.entries(users).filter(([uid,u])=>/^u\d+$/.test(uid)&&u.name);if(!ua.length)au.innerHTML='<p style="text-align:center;color:var(--sub);padding:24px 0">Aucun client enregistré.</p>';
-      else ua.forEach(([uid,u])=>{const ini=(u.name||"?").split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2);const row=document.createElement("div");row.className="u-row";row.innerHTML=`<div class="u-av">${ini}</div><div style="flex:1"><div class="u-name">${u.name||"Inconnu"}</div><div class="u-bal">${fmt(u.balance||0)}</div></div><button class="sm-btn" data-uid="${uid}">+ Solde</button>`;row.querySelector(".sm-btn").onclick=()=>{const amt=parseFloat(prompt("Montant (€) :"));if(isNaN(amt)||amt<=0){toast("Invalide.");return;}db.ref("users/"+uid+"/balance").set(parseFloat(((u.balance||0)+amt).toFixed(2))).then(()=>toast(fmt(amt)+" crédités ✓"));};au.appendChild(row);});
-      const tgIds=ua.filter(([,u])=>u.tgId).map(([,u])=>u.tgId);const bc=document.createElement("div");bc.innerHTML=`<p class="sl-lbl" style="margin-top:16px">📢 Broadcast (${tgIds.length})</p><div class="a-card"><textarea class="field" id="bcMsg" rows="5" style="font-size:13px;line-height:1.7;resize:vertical" placeholder="🔥 <b>RESTOCK !</b>..."></textarea><button class="btn" id="bcBtn" style="width:100%;margin-top:8px" ${tgIds.length===0?"disabled":""}>Envoyer à ${tgIds.length} client${tgIds.length>1?"s":""}</button><div id="bcRes" style="margin-top:8px;font-size:12px;text-align:center;color:var(--sub)"></div></div>`;au.parentElement.appendChild(bc);
-      $("bcBtn").onclick=async()=>{const msg=$("bcMsg").value.trim();if(!msg){toast("Écris un message.");return;}if(!confirm("Envoyer à "+tgIds.length+" client(s) ?"))return;const btn=$("bcBtn");btn.disabled=true;btn.textContent="📤 Envoi…";try{const d=await fetch(VERCEL+"/api/broadcast",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chatIds:tgIds,text:msg})}).then(r=>r.json());$("bcRes").innerHTML=`<span style="color:var(--ok)">✅ ${d.sent} envoyé${d.sent>1?"s":""}</span>${d.failed?` · <span style="color:var(--err)">❌ ${d.failed}</span>`:""}`;toast("Broadcast envoyé ✓");}catch(e){toast("Erreur broadcast.");}btn.disabled=false;btn.textContent="Envoyer à "+tgIds.length+" client"+(tgIds.length>1?"s":"");};
+      var ua=Object.entries(users).filter(function(e){return /^u[0-9]+$/.test(e[0])&&e[1]&&e[1].name;});
+      var buyers=ua.filter(function(e){return parseFloat(e[1].balance||0)>0;}).sort(function(a,b){return parseFloat(b[1].balance||0)-parseFloat(a[1].balance||0);});
+      var voyeurs=ua.filter(function(e){return !(parseFloat(e[1].balance||0)>0);});
+      var tgIds=ua.filter(function(e){return e[1].tgId;}).map(function(e){return e[1].tgId;});
+      var curTab="buyers";
+      pane.innerHTML='<input class="field" id="uSearch" placeholder="Rechercher nom ou @handle..." style="margin-bottom:10px">'
+        +'<div style="display:flex;gap:6px;margin-bottom:10px">'
+        +'<button class="atab on" id="tabB" style="flex:1">Acheteurs ('+buyers.length+')</button>'
+        +'<button class="atab" id="tabV" style="flex:1">Voyeurs ('+voyeurs.length+')</button></div>'
+        +'<div id="uList"></div>'
+        +'<p class="sl-lbl" style="margin-top:16px">Broadcast</p>'
+        +'<div class="a-card"><textarea class="field" id="bcMsg" rows="4" style="font-size:13px;resize:vertical" placeholder="Message..."></textarea>'
+        +'<div style="display:flex;gap:8px;margin-top:8px">'
+        +'<button class="btn" id="bcBtn" style="flex:1" '+(tgIds.length===0?"disabled":"")+'>Tous ('+tgIds.length+')</button>'
+        +'<button class="btn btn-outline" id="bcBBtn" style="flex:1" '+(buyers.length===0?"disabled":"")+'>Acheteurs</button>'
+        +'</div><div id="bcRes" style="margin-top:6px;font-size:12px;text-align:center;color:var(--sub)"></div></div>';
+      function renderUList(tab,q){
+        q=(q||"").toLowerCase();
+        var list=tab==="buyers"?buyers:voyeurs;
+        var filtered=q?list.filter(function(e){return(e[1].name||"").toLowerCase().includes(q)||(e[1].handle||"").toLowerCase().includes(q);}):list;
+        var ul=$("uList");ul.innerHTML="";
+        if(!filtered.length){ul.innerHTML='<p style="text-align:center;color:var(--sub);padding:16px;font-size:13px">Aucun résultat.</p>';return;}
+        filtered.slice(0,30).forEach(function(entry){
+          var uid=entry[0],u=entry[1];
+          var ini=(u.name||"?").split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2)||"?";
+          var bal=parseFloat(u.balance||0);
+          var row=document.createElement("div");
+          row.style.cssText="display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:7px;";
+          row.innerHTML='<div style="width:36px;height:36px;border-radius:50%;background:'+(bal>0?"rgba(0,200,160,.15)":"var(--bg2)")+';border:1px solid '+(bal>0?"rgba(0,200,160,.3)":"var(--line)")+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex:0 0 auto;color:'+(bal>0?"var(--ac)":"var(--sub)")+'">'+ini+'</div>'
+            +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(u.name||"Inconnu")+'</div>'
+            +'<div style="font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--sub)">'+(u.handle||"")+'</div></div>'
+            +'<div style="text-align:right;flex:0 0 auto"><div style="font-family:Space Grotesk,sans-serif;font-weight:800;font-size:14px;color:'+(bal>0?"var(--ac)":"var(--sub)")+'">'+fmt(bal)+'</div>'
+            +'<button style="font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(0,200,160,.1);border:1px solid rgba(0,200,160,.2);color:var(--ac);cursor:pointer;margin-top:3px" data-uid="'+uid+'">+ Solde</button></div>';
+          row.querySelector("button").onclick=function(){
+            var uid2=this.dataset.uid;
+            var amt=parseFloat(prompt("Montant a crediter a "+(u.name||"?")+" (euro) :"));
+            if(isNaN(amt)||amt<=0){toast("Invalide.");return;}
+            var newBal=parseFloat(((parseFloat(u.balance||0))+amt).toFixed(2));
+            db.ref("users/"+uid2+"/balance").set(newBal).then(function(){
+              u.balance=newBal;toast(fmt(amt)+" credites ✓");renderUList(curTab,$("uSearch").value);
+            });
+          };
+          ul.appendChild(row);
+        });
+        if(filtered.length>30){var more=document.createElement("p");more.style.cssText="text-align:center;color:var(--sub);font-size:12px;padding:8px";more.textContent=(filtered.length-30)+" autres — affinez la recherche";ul.appendChild(more);}
+      }
+      renderUList("buyers","");
+      $("tabB").onclick=function(){curTab="buyers";$("tabB").classList.add("on");$("tabV").classList.remove("on");renderUList("buyers",$("uSearch").value);};
+      $("tabV").onclick=function(){curTab="voyeurs";$("tabV").classList.add("on");$("tabB").classList.remove("on");renderUList("voyeurs",$("uSearch").value);};
+      $("uSearch").addEventListener("input",function(){renderUList(curTab,this.value);});
+      async function doBroadcast(ids){
+        var msg=$("bcMsg").value.trim();if(!msg){toast("Ecris un message.");return;}
+        if(!confirm("Envoyer a "+ids.length+" client(s) ?"))return;
+        $("bcBtn").disabled=true;$("bcBBtn").disabled=true;
+        try{var d=await fetch(VERCEL+"/api/broadcast",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({chatIds:ids,text:msg})}).then(function(r){return r.json();});
+        $("bcRes").innerHTML='<span style="color:var(--ok)">Envoye: '+d.sent+'</span>'+(d.failed?' - <span style="color:var(--err)">Echec: '+d.failed+'</span>':"");
+        toast("Broadcast envoye");}catch(e){toast("Erreur broadcast.");}
+        $("bcBtn").disabled=false;$("bcBBtn").disabled=false;
+      }
+      $("bcBtn").onclick=function(){doBroadcast(tgIds);};
+      $("bcBBtn").onclick=function(){doBroadcast(buyers.filter(function(e){return e[1].tgId;}).map(function(e){return e[1].tgId;}));};
     }
     else if(t==="bot"){
       const def=`✅ <b>ACCESMAIL — Commande confirmée</b>\n\nBonjour <b>{prenom}</b> ({handle})\n\n<pre>{acces}</pre>\nTotal : <b>{total}</b>\n\nPour toute question, réponds à ce message.`;
@@ -2293,7 +2388,7 @@ function renderAdmin(){
       const f=$("botMsg"),prev=$("botPrev");function up(){prev.textContent=f.value.replace("{prenom}","John").replace("{handle}","@johndosql").replace("{acces}","user@hotmail.com:pass123").replace("{total}","4,00€");}db.ref("settings/botMessage").once("value",s=>{f.value=s.val()||def;up();});f.addEventListener("input",up);$("saveBotMsg").onclick=()=>db.ref("settings/botMessage").set(f.value).then(()=>toast("Enregistré ✓"));
     }
   }
-  el.querySelectorAll(".atab").forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});showTab("stock");
+  el.querySelectorAll(".atab").forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});showTab("dash");
 }
 
 /* ══ CRYPTO PICKER ════════════════════════════ */
