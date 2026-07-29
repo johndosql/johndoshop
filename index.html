@@ -808,6 +808,70 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   .crypto-grid{grid-template-columns:repeat(4,1fr)!important;}
   .amt-grid{grid-template-columns:repeat(4,1fr)!important;}
 }
+
+/* ══ HISTORIQUE COMMANDES ══════════════════ */
+.orders-screen{display:none;padding:0 0 80px;}
+.orders-screen.active{display:block;}
+.order-card{
+  background:var(--sf);border:1px solid var(--line);border-radius:14px;
+  margin:0 12px 10px;padding:14px 16px;transition:border-color .15s;}
+.order-card:active{border-color:rgba(0,200,160,.3);}
+.order-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.order-date{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);}
+.order-total{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:16px;color:var(--ac);}
+.order-items{display:flex;flex-direction:column;gap:6px;}
+.order-item{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg2);border-radius:9px;padding:8px 10px;}
+.order-domain{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink);}
+.order-qty{font-size:11px;color:var(--sub);}
+.order-status{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  padding:3px 9px;border-radius:999px;margin-top:8px;}
+.order-status.ok{background:rgba(62,201,92,.12);color:var(--ok);}
+.order-status.pending{background:rgba(240,165,0,.1);color:orange;}
+.order-empty{text-align:center;padding:50px 20px;color:var(--sub);}
+.order-empty-ico{font-size:40px;margin-bottom:12px;}
+
+/* ══ NAV 4 ITEMS ══ */
+.bottom-nav{grid-template-columns:repeat(4,1fr);}
+
+/* ══ SPLASH AMÉLIORÉ ════════════════════════ */
+.splash-logo{
+  position:relative;z-index:2;
+  font-family:'Space Grotesk',sans-serif;font-weight:900;
+  font-size:3.2rem;letter-spacing:-.04em;text-align:center;
+  background:linear-gradient(135deg,#00C8A0 0%,#7FFFD4 35%,#ffffff 55%,#00FFCC 75%,#00C8A0 100%);
+  background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  filter:drop-shadow(0 0 30px rgba(0,200,160,.4));
+  animation:logoIn .8s cubic-bezier(.22,1,.36,1) .3s both,
+            logShine 3s linear 1.2s infinite;}
+@keyframes logoIn{from{opacity:0;transform:scale(.75) translateY(24px);}to{opacity:1;transform:none;}}
+@keyframes logShine{0%{background-position:100%;}100%{background-position:-100%;}}
+.splash-sub{
+  position:relative;z-index:2;margin-top:8px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  letter-spacing:.25em;text-transform:uppercase;
+  color:rgba(0,200,160,.5);
+  animation:logoIn .6s cubic-bezier(.22,1,.36,1) .7s both;}
+.splash-glow{
+  position:absolute;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,200,160,.18) 0%,rgba(0,255,204,.06) 40%,transparent 70%);
+  pointer-events:none;
+  animation:glowP 2.5s ease-in-out infinite;}
+/* Anneau orbital décoratif */
+.splash-ring{
+  position:absolute;width:300px;height:300px;border-radius:50%;
+  border:1px solid rgba(0,200,160,.12);pointer-events:none;
+  animation:ringRot 8s linear infinite;}
+.splash-ring2{
+  position:absolute;width:220px;height:220px;border-radius:50%;
+  border:1px solid rgba(0,200,160,.08);pointer-events:none;
+  animation:ringRot 5s linear infinite reverse;}
+@keyframes glowP{0%,100%{transform:scale(1);opacity:.6;}50%{transform:scale(1.3);opacity:1;}}
+@keyframes ringRot{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
@@ -828,6 +892,8 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 </nav>
 
 <div id="splash">
+  <div class="splash-ring"></div>
+  <div class="splash-ring2"></div>
   <div class="splash-glow"></div>
   <!-- Particules CSS pures — fonctionnent sans JS -->
   <span class="spt" style="left:8%;top:18%;font-size:13px;--sd:0s;--ss:2.1s">@</span>
@@ -990,6 +1056,16 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   </div>
 </div>
 
+<!-- SCREEN COMMANDES -->
+<div class="screen orders-screen" id="S_orders">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <span style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;color:var(--ac)">Mes commandes</span>
+    </div>
+  </div>
+  <div id="ordersList" style="padding-top:8px"></div>
+</div>
+
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottomNav">
   <div class="nav-item on" data-tab="shop" id="navShop">
@@ -1021,6 +1097,17 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
       </svg>
     </div>
     <div class="nav-lbl">Solde</div>
+  </div>
+  <div class="nav-item" id="navOrders">
+    <div class="nav-ico">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="9" y1="13" x2="15" y2="13"/>
+        <line x1="9" y1="17" x2="13" y2="17"/>
+      </svg>
+    </div>
+    <div class="nav-lbl">Commandes</div>
   </div>
 </div>
 
@@ -1951,25 +2038,40 @@ function doOrder(method){
 }
 
 /* ══ NAV ═════════════════════════════════════ */
+function renderOrders(){
+  var el=$("ordersList");if(!el)return;
+  if(!fbOk||!me.id){el.innerHTML='<div class="order-empty"><div class="order-empty-ico">📋</div><p>Connecte-toi via Telegram pour voir tes commandes.</p></div>';return;}
+  el.innerHTML='<div style="text-align:center;padding:30px;color:var(--sub)">Chargement…</div>';
+  db.ref("orders/"+me.id).orderByChild("date").limitToLast(20).once("value",function(s){
+    var v=s.val();
+    if(!v){el.innerHTML='<div class="order-empty"><div class="order-empty-ico">📦</div><p style="font-family:Space Grotesk,sans-serif;font-weight:600;font-size:15px;color:var(--ink);margin-bottom:6px">Aucune commande</p><p style="font-size:13px;color:var(--sub)">Tes prochaines commandes apparaîtront ici.</p></div>';return;}
+    el.innerHTML="";
+    Object.entries(v).sort(function(a,b){return b[1].date-a[1].date;}).forEach(function(entry){
+      var o=entry[1];var card=document.createElement("div");card.className="order-card";
+      var d=new Date(o.date);
+      var ds=d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"})+" · "+d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+      var items=(o.items||[]).map(function(it){return "<div class='order-item'><span class='order-domain'>@"+it.domain+"</span><span class='order-qty'>x"+it.qty+"</span></div>";}).join("");
+      card.innerHTML="<div class='order-hdr'><span class='order-date'>"+ds+"</span><span class='order-total'>"+fmt(o.amount||0)+"</span></div><div class='order-items'>"+items+"</div><div class='order-status ok'>✓ Livré</div>";
+      el.appendChild(card);
+    });
+  });
+}
 function goTo(page){
-  ["shop","cart","admin"].forEach(p=>$("S_"+p).classList.toggle("active",p===page));
-  document.querySelectorAll(".nav-item").forEach(i=>i.classList.remove("on"));
+  ["shop","cart","admin"].forEach(function(p){var s=$("S_"+p);if(s)s.classList.toggle("active",p===page);});
+  var os=$("S_orders");if(os)os.classList.toggle("active",page==="orders");
+  document.querySelectorAll(".nav-item").forEach(function(i){i.classList.remove("on");});
   window.scrollTo(0,0);
   if(page==="shop"){$("navShop").classList.add("on");}
-  if(page==="cart"){
-    $("navCart").classList.add("on");
-    /* Différer le rendu du panier pour ne pas bloquer l'animation de transition */
-    requestAnimationFrame(function(){renderCartPage();});
-  }
-  if(page==="admin"){
-    requestAnimationFrame(function(){renderAdmin();});
-  }
+  if(page==="cart"){$("navCart").classList.add("on");requestAnimationFrame(function(){renderCartPage();});}
+  if(page==="admin"){requestAnimationFrame(function(){renderAdmin();});}
+  if(page==="orders"){var no=$("navOrders");if(no)no.classList.add("on");requestAnimationFrame(function(){renderOrders();});}
 }
 /* fastClick sur tous les éléments nav — réponse immédiate sans bloquer le scroll */
 ["btnBack","btnAdminBack"].forEach(function(id){fastClick($(id),function(){goTo("shop");});});
 fastClick($("navShop"),function(){goTo("shop");});
 fastClick($("navCart"),function(){goTo("cart");});
 fastClick($("profileCard"),openDeposit);
+var no=$("navOrders");if(no)no.onclick=function(){goTo("orders");};
 fastClick($("navSolde"),openDeposit);
 fastClick($("depClose"),function(){closeSheet();});
 $("depOverlay").onclick=function(){closeSheet();};
