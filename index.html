@@ -1039,17 +1039,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
       </svg>
     </div>
     <div class="nav-lbl">Solde</div>
-  </div>
-  <div class="nav-item" id="navOrders">
-    <div class="nav-ico">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="9" y1="13" x2="15" y2="13"/>
-        <line x1="9" y1="17" x2="13" y2="17"/>
-      </svg>
-    </div>
-    <div class="nav-lbl">Commandes</div>
+  </div><div class="nav-lbl">Commandes</div>
   </div>
 </div>
 
@@ -1993,14 +1983,7 @@ function startPoll(pid,oe){
         const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
         const creds=await deliverCreds(se);
         /* Envoyer le bot EN PARALLÈLE - ne pas bloquer l'affichage */
-        /* Sauvegarder commande dans localStorage (toujours disponible) */
-        saveOrder({
-          amount:stot,
-          items:se.map(function(e){return{domain:e.item.domain,qty:e.qty};}),
-          date:Date.now(),
-          status:"delivered"
-        });
-        toast("✅ Commande sauvegardée dans ton historique",3000);
+
         if(me.tgId)sendBot(me.tgId,creds,stot).catch(function(e){console.error("bot:",e);});
         apiPost("send-message",{chatId:1363470410,text:"Achat - "+(me.name||"?")+" - "+fmt(stot)}).catch(function(e){});
         cart={};updateCartBadge();
@@ -2089,13 +2072,11 @@ function renderOrders(){
 
 function goTo(page){
   ["shop","cart","admin"].forEach(function(p){var s=document.getElementById("S_"+p);if(s)s.classList.toggle("active",p===page);});
-  var os=document.getElementById("S_orders");if(os)os.classList.toggle("active",page==="orders");
   document.querySelectorAll(".nav-item").forEach(function(i){i.classList.remove("on");});
   window.scrollTo(0,0);
   if(page==="shop"){document.getElementById("navShop").classList.add("on");}
   if(page==="cart"){document.getElementById("navCart").classList.add("on");requestAnimationFrame(function(){renderCartPage();});}
   if(page==="admin"){requestAnimationFrame(function(){renderAdmin();});}
-  if(page==="orders"){var no=document.getElementById("navOrders");if(no)no.classList.add("on");requestAnimationFrame(function(){renderOrders();});}
 }
 /* fastClick sur tous les éléments nav — réponse immédiate sans bloquer le scroll */
 ["btnBack","btnAdminBack"].forEach(function(id){fastClick($(id),function(){goTo("shop");});});
@@ -2103,7 +2084,6 @@ fastClick($("navShop"),function(){goTo("shop");});
 fastClick($("navCart"),function(){goTo("cart");});
 fastClick($("profileCard"),openDeposit);
 fastClick($("navSolde"),openDeposit);
-var _no=document.getElementById("navOrders");if(_no)_no.onclick=function(){goTo("orders");};
 fastClick($("depClose"),function(){closeSheet();});
 $("depOverlay").onclick=function(){closeSheet();};
 
