@@ -1902,38 +1902,21 @@ function swTab(t){$("tSolde").classList.toggle("on",t==="solde");$("tCrypto").cl
 /* ══ DELIVERY ═══════════════════════════════ */
 async function deliverCreds(entries){
   if(!fbOk)return[];
-  var out=[];
-  for(var i=0;i<entries.length;i++){
-    var item=entries[i].item,qty=entries[i].qty;
+  const out=[];
+  for(const{item,qty}of entries){
     try{
-      /* Récupérer TOUS les credentials disponibles */
-      var snap=await db.ref("credentials/"+item.id).once("value");
-      var cr=snap.val()||{};
-      var keys=Object.keys(cr);
-      var delivered=0;
-      for(var k=0;k<keys.length&&delivered<qty;k++){
-        var cred=cr[keys[k]];
-        /* Supprimer dans tous les cas (invalide ou non) pour garder le stock propre */
-        await db.ref("credentials/"+item.id+"/"+keys[k]).remove().catch(function(){});
-        if(cred&&cred.email&&cred.email.includes("@")){
-          out.push({domain:item.domain,email:cred.email,pass:cred.pass||""});
-          delivered++;
-        }
+      const snap=await db.ref("credentials/"+item.id).limitToFirst(qty).once("value");
+      const cr=snap.val()||{};
+      const keys=Object.keys(cr).slice(0,qty);
+      for(const k of keys){
+        await db.ref("credentials/"+item.id+"/"+k).remove();
+        if(cr[k]&&cr[k].email)out.push({domain:item.domain,email:cr[k].email,pass:cr[k].pass||""});
       }
-      /* Stock = nombre réel de credentials restants (toujours exact) */
-      var remainSnap=await db.ref("credentials/"+item.id).once("value");
-      var realStock=remainSnap.val()?Object.keys(remainSnap.val()).length:0;
+      /* Stock = vrais credentials restants */
+      const remainSnap=await db.ref("credentials/"+item.id).once("value");
+      const realStock=remainSnap.val()?Object.keys(remainSnap.val()).length:0;
       await db.ref("products/"+item.id+"/stock").set(realStock);
-      /* Remboursement auto si stock insuffisant */
-      if(delivered<qty&&me&&me.id){
-        var manquants=qty-delivered;
-        var remb=parseFloat((manquants*uPrice(item,qty)).toFixed(2));
-        var bSnap=await db.ref("users/"+me.id+"/balance").once("value");
-        var newBal=parseFloat(((bSnap.val()||0)+remb).toFixed(2));
-        await db.ref("users/"+me.id+"/balance").set(newBal);
-        apiPost("send-message",{chatId:1363470410,text:"[STOCK INSUFFISANT] "+(me.name||"?")+" : "+delivered+"/"+qty+" @"+item.domain+" | "+remb+"eur rembourses"}).catch(function(){});
-      }
-    }catch(e){console.error("deliverCreds:",e);}
+    }catch(e){console.error("deliverCreds error:",e);}
   }
   return out;
 }
