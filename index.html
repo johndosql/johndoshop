@@ -725,27 +725,13 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 
 /* ── PC 900px+ ── */
 @media(min-width:900px){
+  /* Fond sombre PC */
   html,body{background:#010408;overflow-y:auto!important;}
 
-  body{
-    max-width:760px;
-    margin:0 auto;
-    padding:0 20px;
-    display:block;
-  }
-
-  .app{
-    margin:24px 0 24px 220px;
-    border-radius:16px;
-    box-shadow:0 8px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);
-    min-height:calc(100vh - 48px);
-    /* PAS de max-height ni overflow : la PAGE scroll normalement */
-  }
-
-  /* Sidebar fixe à gauche */
+  /* Sidebar fixe à gauche - ne touche PAS au body layout */
   .pc-sidebar{
     display:flex!important;flex-direction:column;gap:6px;
-    position:fixed;top:24px;left:calc(50% - 380px);
+    position:fixed;left:calc(50% - 560px);top:24px;
     width:180px;
   }
   .pc-sidebar-logo{
@@ -776,17 +762,27 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   .pc-user-bal{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;color:var(--ac);}
   .pc-user-lbl{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
 
-  /* Bottom nav cachée */
+  /* App centrée - scroll normal de la page, SANS overflow isolé */
+  .app{
+    max-width:520px;
+    margin:24px auto;
+    border-radius:16px;
+    box-shadow:0 8px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);
+    /* AUCUN overflow, AUCUN max-height, AUCUN position sticky */
+  }
+
+  /* Bottom nav cachée - sidebar la remplace */
   .bottom-nav{display:none!important;}
 
-  /* Splash couvre tout */
-  #splash{position:fixed;inset:0;z-index:9999;}
+  /* Splash couvre tout l'écran */
+  #splash{position:fixed!important;inset:0;z-index:9999;}
 
-  /* Sheets → modal centré */
+  /* Sheets = modals centrés */
   .overlay.on{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
   .sheet{
     position:fixed!important;
-    left:50%!important;top:50%!important;bottom:auto!important;right:auto!important;
+    left:50%!important;top:50%!important;
+    bottom:auto!important;right:auto!important;
     transform:translate(-50%,-45%)!important;
     max-width:500px;width:calc(100% - 40px);
     border-radius:20px!important;max-height:82vh;
@@ -795,16 +791,17 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   .sheet.on{transform:translate(-50%,-50%)!important;opacity:1!important;}
   .sh-handle{display:none;}
 
-  /* Pay screen → modal */
+  /* Pay screen = modal centré */
   .pay-screen{
-    position:fixed!important;left:50%!important;top:50%!important;
+    position:fixed!important;
+    left:50%!important;top:50%!important;
     transform:translateX(-50%) translateY(-45%)!important;
-    max-width:500px;width:calc(100% - 40px);max-height:88vh;
-    border-radius:20px!important;overflow-y:auto;
+    max-width:500px;width:calc(100% - 40px);
+    max-height:88vh;border-radius:20px!important;overflow-y:auto;
   }
   .pay-screen.open{transform:translateX(-50%) translateY(-50%)!important;}
 
-  /* Grilles */
+  /* Grilles plus larges */
   .crypto-grid{grid-template-columns:repeat(4,1fr)!important;}
   .amt-grid{grid-template-columns:repeat(4,1fr)!important;}
 }
@@ -1316,54 +1313,21 @@ function loadProds(){
     updateStockBadge();renderChips();renderCatalog();
     return;
   }
-
-  /* Charger Firebase — rendu différé pour ne pas bloquer les taps */
-  var renderPending=false;
-  function scheduleRender(){
-    if(renderPending)return;
-    renderPending=true;
-    /* Attendre 400ms après le dernier touch avant de re-render */
-    var delay=window._lastTouch&&(Date.now()-window._lastTouch)<600?600:0;
-    setTimeout(function(){
-      requestAnimationFrame(function(){
-        renderPending=false;
-        updateStockBadge();
-        renderChips();
-        renderCatalog();
-      });
-    },delay);
-  }
-
-  /* Chargement initial une seule fois */
-  db.ref("products").once("value").then(function(s){
-    var v=s.val();
-    if(v&&Object.keys(v).length>0){
-      prods=Object.entries(v).map(function(entry){
-        return{id:entry[0],...entry[1]};
-      });
+  db.ref("products").on("value",function(s){
+    var v=s.val()||{};
+    if(Object.keys(v).length>0){
+      prods=Object.entries(v).map(function(e){return{id:e[0],...e[1]};});
     }else{
       prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
     }
-    scheduleRender();
-    /* Après le chargement initial, écouter les changements en temps réel */
-    /* Throttle : max 1 re-render toutes les 5 secondes */
-    var lastRT=0;
-    db.ref("products").on("value",function(s){
-      var now=Date.now();
-      if(now-lastRT<5000)return;
-      lastRT=now;
-      var v=s.val();
-      if(v&&Object.keys(v).length>0){
-        prods=Object.entries(v).map(function(entry){return{id:entry[0],...entry[1]};});
-      }
-      scheduleRender();
-    });
-  }).catch(function(err){
-    console.warn("Firebase error:",err);
+    updateStockBadge();renderChips();renderCatalog();
+  },function(err){
+    console.warn("Firebase:",err);
     prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
-    scheduleRender();
+    updateStockBadge();renderChips();renderCatalog();
   });
 }
+
 
 function updateStockBadge(){
   const total=prods.reduce((s,p)=>s+Number(p.stock||0),0);
