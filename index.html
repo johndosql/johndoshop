@@ -44,13 +44,9 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 #splash{
   position:fixed;inset:0;z-index:200;background:#040810;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  animation:splashAuto .7s ease 2.5s forwards;}
-#splash.out{animation:splashAuto .4s ease forwards;}
-@keyframes splashAuto{
-  0%{opacity:1;pointer-events:auto;}
-  99%{opacity:0;pointer-events:none;}
-  100%{opacity:0;pointer-events:none;visibility:hidden;}
-}
+  transition:opacity .5s ease;
+  opacity:1;pointer-events:auto;}
+#splash.out{opacity:0;pointer-events:none;}
 /* Particules flottantes */
 .spt{position:absolute;font-family:'IBM Plex Mono',monospace;font-weight:700;
   color:#00C8A0;pointer-events:none;
@@ -1060,15 +1056,21 @@ function initSplash(){
   const sp=$("splash");
 
   /* === GARANTIE : la transition se fait toujours après 2s === */
-  let splashDone=false;
+  var splashDone=false;
   function doTransition(){
     if(splashDone)return;splashDone=true;
     sp.classList.add("out");
+    /* Supprimer complètement après la transition */
+    setTimeout(function(){
+      sp.style.display="none";
+      sp.style.pointerEvents="none";
+    },600);
     try{initShopParticles();}catch(e){}
   }
-  /* CSS gère la transition automatiquement après 2.1s */
-  /* Le JS peut l'accélérer si besoin */
-  setTimeout(doTransition,2200);
+  /* Transition après 2s - JS pur, pas de dépendance CSS */
+  setTimeout(doTransition,2000);
+  /* Fallback ultra-court pour PC Telegram (3s max) */
+  setTimeout(doTransition,3000);
 
   /* Particules dans try-catch — ne bloquent jamais la transition */
   try{
