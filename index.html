@@ -2000,6 +2000,7 @@ function startPoll(pid,oe){
           date:Date.now(),
           status:"delivered"
         });
+        toast("✅ Commande sauvegardée dans ton historique",3000);
         if(me.tgId)sendBot(me.tgId,creds,stot).catch(function(e){console.error("bot:",e);});
         apiPost("send-message",{chatId:1363470410,text:"Achat - "+(me.name||"?")+" - "+fmt(stot)}).catch(function(e){});
         cart={};updateCartBadge();
@@ -2029,22 +2030,28 @@ function doOrder(method){
 /* ══ NAV ═════════════════════════════════════ */
 
 /* ══ ORDERS — localStorage (toujours disponible) ══ */
+function getOrderKey(){
+  /* Clé stable basée sur le tgId ou un fallback */
+  var id=me&&me.tgId?"tg_"+me.tgId:(me&&me.id?me.id:"guest");
+  return"acm_orders_"+id;
+}
 function saveOrder(order){
   try{
-    var key="acm_orders_"+me.id;
+    var key=getOrderKey();
     var existing=JSON.parse(localStorage.getItem(key)||"[]");
-    existing.unshift(order); /* ajouter en premier */
-    if(existing.length>50)existing=existing.slice(0,50); /* max 50 */
+    existing.unshift(order);
+    if(existing.length>50)existing=existing.slice(0,50);
     localStorage.setItem(key,JSON.stringify(existing));
+    console.log("Commande sauvegardée, key:",key,"total:",existing.length);
     /* Backup Firebase (best effort) */
-    if(fbOk&&me.id){
+    if(fbOk&&me&&me.id){
       db.ref("users/"+me.id+"/orders").push(order).catch(function(){});
     }
-  }catch(e){console.error("saveOrder:",e);}
+  }catch(e){console.error("saveOrder error:",e);}
 }
 function getOrders(){
   try{
-    var key="acm_orders_"+me.id;
+    var key=getOrderKey();
     return JSON.parse(localStorage.getItem(key)||"[]");
   }catch(e){return[];}
 }
