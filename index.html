@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ACCESMAIL</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -34,8 +33,9 @@ button,a,input[type=button],input[type=submit],
   -webkit-user-select:none;
   user-select:none;
 }
-html,body{min-height:100%;overscroll-behavior:none;background:#040810;}
-body{color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+html{min-height:100%;background:#040810;overflow-y:auto;}
+body{min-height:100%;overscroll-behavior:none;background:#040810;color:var(--ink);
+  font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;overflow-y:auto;}
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(ellipse at 50% 0%,rgba(0,200,160,.07) 0%,transparent 50%),radial-gradient(ellipse at 90% 90%,rgba(0,160,220,.04) 0%,transparent 45%);}
 input,button,textarea{font-family:'Inter',sans-serif;color:var(--ink);background:transparent;}
@@ -703,6 +703,13 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .pays-detail-body .scard-compact{margin:0 0 8px;}
 
 /* ══ RESPONSIVE PC & TABLETTE ═══════════════ */
+/* Retirer les restrictions mobile sur PC */
+@media(pointer:fine){
+  *{touch-action:auto !important;}
+  html,body{overflow-y:scroll !important;cursor:default;}
+  .app{overflow-y:visible !important;}
+  #catalog{overflow-y:visible !important;height:auto !important;}
+}
 @media(min-width:600px){
   html,body{background:#02050d;}
 
@@ -1114,7 +1121,12 @@ function fastClick(el,fn){
   if(!el)return;
   el.onclick=fn;
 }
-const flag=iso=>{if(!iso||iso==="all"||iso==="MIX")return"🌍";const c=(iso==="UK"?"GB":iso).toUpperCase();return c.split("").map(x=>String.fromCodePoint(x.charCodeAt(0)+127397)).join("");};
+const flag=function(iso,size){
+  var s=size||22;
+  if(!iso||iso==="all"||iso==="MIX")return'<img src="https://flagcdn.com/w40/un.png" style="width:'+s+'px;height:auto;vertical-align:middle;border-radius:2px;display:inline-block" alt="🌍">';
+  var code=(iso==="UK"?"GB":iso).toLowerCase();
+  return'<img src="https://flagcdn.com/w40/'+code+'.png" style="width:'+s+'px;height:auto;vertical-align:middle;border-radius:2px;display:inline-block" alt="'+code+'">';
+};
 const cName=c=>ALL_C.find(x=>x.c===c)?.n||c;
 function toast(msg,dur=3000){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),dur);}
 function haptic(s){try{window.Telegram.WebApp.HapticFeedback.impactOccurred(s||"light");}catch(e){}}
@@ -1342,8 +1354,8 @@ function activeCodes(){
 }
 function renderChips(){
   const el=$("chips"),codes=activeCodes();el.innerHTML="";
-  [{ c:"all",n:"🌍 TOUS" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c)+" "+cty.n}))].forEach(cty=>{
-    const chip=document.createElement("div");chip.className="chip"+(activeC===cty.c?" on":"");chip.textContent=cty.n;
+  [{c:"all",n:"🌍 TOUS"},...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c,16)+"&nbsp;"+cty.n}))].forEach(cty=>{
+    const chip=document.createElement("div");chip.className="chip"+(activeC===cty.c?" on":"");chip.innerHTML=cty.n;
     fastClick(chip,function(){
       activeC=cty.c;showAll=false;
       _lastRenderKey="";_paysGroupCache=null;
@@ -1538,7 +1550,7 @@ function getPaysGroups(items){
 /* Ouvrir le détail d'un pays */
 function openPaysDetail(section){
   var title=$("paysDetailTitle"),count=$("paysDetailCount"),body=$("paysDetailBody");
-  title.textContent=flag(section.code)+" "+cName(section.code);
+  title.innerHTML=flag(section.code,18)+" "+cName(section.code);
   count.textContent=section.total+" accès";
   body.innerHTML="";
   var sorted=section.prods.slice().sort(function(a,b){return Number(b.stock||0)-Number(a.stock||0);});
