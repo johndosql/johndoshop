@@ -820,7 +820,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 
 /* ══ CHECKING SCREEN ═══════════════════════ */
 .checking-screen{
-  position:fixed;inset:0;z-index:90;background:var(--bg);
+  position:fixed;inset:0;z-index:150;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:32px;text-align:center;
   transform:translateY(100%);transition:transform .3s cubic-bezier(.22,1,.36,1);
@@ -1991,13 +1991,7 @@ function startPoll(pid,oe){
         apiPost("send-message",{chatId:1363470410,text:"<b>Achat - Verification IMAP en cours</b>\n\nClient : <b>"+(me.name||"?")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\nMontant : <b>"+fmt(stot)+"</b>\nCommande : "+se.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ")}).catch(function(){});
         /* Afficher écran vérification */
         showCheckingScreen(checkId,stot);
-        const ae=$("npActive"),seEl=$("npSuccess");if(ae)ae.style.display="none";
-        if(seEl){
-          let h=`<div class="success-card"><div style="text-align:center;margin-bottom:16px"><div style="font-size:40px">✅</div><div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;margin-top:8px;color:var(--ac)">Paiement confirmé</div><div style="font-size:12px;color:var(--sub);margin-top:4px">Tes accès arrivent dans le bot</div></div>`;
-          if(creds.length){let all="";h+='<div style="display:flex;flex-direction:column;gap:7px">';creds.forEach(c=>{const line=c.email+(c.pass?":"+c.pass:"");all+=line+"\n";h+=`<div class="cred-row"><div class="cred-dom">@${c.domain}</div><div class="cred-val">${c.email}${c.pass?"<br>"+c.pass:""}</div></div>`;});const enc=encodeURIComponent(all.trim());h+=`</div><button class="btn" style="width:100%;margin-top:12px;padding:11px" onclick="navigator.clipboard.writeText(decodeURIComponent('${enc}')).then(()=>toast('Copié ✓'))">📋 Copier les accès</button>`;}
-          else{h+='<p style="text-align:center;font-size:13px;color:var(--sub)">Accès envoyés dans le bot.</p>';}
-          h+="</div>";seEl.innerHTML=h;seEl.style.display="block";
-        }
+        $("npActive").style.display="none";
       }
       if(d.payment_status==="failed"||d.payment_status==="expired"){stopPoll();toast("Paiement "+d.payment_status+".");}
     }catch(e){console.error(e);}
