@@ -727,18 +727,29 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 @media(min-width:900px){
   html,body{
     background:#010408;
-    overflow-y:auto;
-    display:flex;align-items:flex-start;
-    justify-content:center;
-    padding:24px 16px;gap:24px;
-    min-height:100vh;
+    overflow-y:auto!important;
+    overflow-x:hidden;
   }
 
-  /* SIDEBAR */
+  body{
+    /* Centrer le contenu avec sidebar à gauche */
+    display:grid;
+    grid-template-columns:200px minmax(0,520px);
+    grid-template-rows:auto;
+    justify-content:center;
+    padding:24px;
+    gap:20px;
+    min-height:100vh;
+    align-items:start;
+  }
+
+  /* SIDEBAR — 1ère colonne */
   .pc-sidebar{
-    display:flex!important;flex-direction:column;gap:6px;
-    width:200px;flex:0 0 200px;
+    display:flex!important;
+    flex-direction:column;gap:6px;
+    grid-column:1;
     position:sticky;top:24px;
+    height:fit-content;
   }
   .pc-sidebar-logo{
     font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:22px;
@@ -760,38 +771,44 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
     font-weight:800;border-radius:999px;padding:2px 7px;display:none;}
   .pc-badge.show{display:block;}
   .pc-user-card{
-    margin-top:12px;padding:14px;
+    margin-top:auto;padding:14px;
     background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
-    border-radius:12px;
+    border-radius:12px;margin-top:12px;
   }
   .pc-user-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:var(--ink);margin-bottom:2px;}
   .pc-user-bal{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--ac);}
   .pc-user-lbl{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
-  .pc-support{margin-top:auto;padding-top:16px;font-size:11px;color:var(--sub);}
+  .pc-support{margin-top:12px;font-size:11px;color:var(--sub);}
 
-  /* APP colonne principale */
+  /* APP — 2ème colonne, scroll naturel de la PAGE */
   .app{
-    flex:1;max-width:520px;
-    position:sticky;top:24px;
-    max-height:calc(100vh - 48px);
-    overflow-y:auto;overflow-x:hidden;
-    -webkit-overflow-scrolling:touch;
+    grid-column:2;
+    max-width:520px;
+    min-height:100vh;
     border-radius:16px;
     box-shadow:0 8px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);
-    padding-bottom:12px!important;
+    /* PAS de max-height ni overflow — la page entière scroll normalement */
+    padding-bottom:20px!important;
+    position:relative;
   }
-  /* Cacher bottom nav — remplacée par sidebar */
+
+  /* Splash prend tout l'écran normalement */
+  #splash{position:fixed;inset:0;z-index:9999;}
+
+  /* Bottom nav cachée — sidebar la remplace */
   .bottom-nav{display:none!important;}
 
   /* Sheets → modal centré */
   .overlay.on{backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
   .sheet{
-    position:fixed;left:50%!important;top:50%!important;bottom:auto!important;
-    right:auto!important;
+    position:fixed!important;
+    left:50%!important;top:50%!important;
+    bottom:auto!important;right:auto!important;
     transform:translate(-50%,-45%)!important;
     max-width:500px;width:calc(100% - 40px);
     border-radius:20px!important;max-height:80vh;
-    opacity:0;transition:transform .25s cubic-bezier(.22,1,.36,1),opacity .2s!important;
+    opacity:0;
+    transition:transform .25s cubic-bezier(.22,1,.36,1),opacity .2s!important;
   }
   .sheet.on{transform:translate(-50%,-50%)!important;opacity:1!important;}
   .sh-handle{display:none;}
@@ -800,22 +817,20 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   .pay-screen{
     position:fixed!important;
     left:50%!important;top:50%!important;
-    transform:translateX(-50%) translateY(-40%)!important;
+    transform:translateX(-50%) translateY(-45%)!important;
     max-width:500px;width:calc(100% - 40px);
-    max-height:85vh;border-radius:20px!important;
-    overflow:hidden;
+    max-height:88vh;border-radius:20px!important;
+    overflow-y:auto;
   }
   .pay-screen.open{transform:translateX(-50%) translateY(-50%)!important;}
 
-  /* Grilles plus larges */
+  /* Grilles 4 colonnes */
   .crypto-grid{grid-template-columns:repeat(4,1fr)!important;gap:8px!important;}
   .amt-grid{grid-template-columns:repeat(4,1fr)!important;}
 
-  /* Catalog scroll dans l'app */
-  #catalog{overflow-y:visible;height:auto;}
-
-  /* Screens pleine hauteur */
-  .screen.active{min-height:calc(100vh - 80px);}
+  /* Catalog scroll naturel */
+  #catalog{overflow-y:visible!important;height:auto!important;}
+  .screen{min-height:auto;}
 }
 </style>
 </head>
