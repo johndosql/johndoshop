@@ -44,13 +44,8 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 #splash{
   position:fixed;inset:0;z-index:200;background:#040810;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  animation:splashAuto .7s ease 2.5s forwards;}
-#splash.out{animation:splashAuto .4s ease forwards;}
-@keyframes splashAuto{
-  0%{opacity:1;pointer-events:auto;}
-  99%{opacity:0;pointer-events:none;}
-  100%{opacity:0;pointer-events:none;visibility:hidden;}
-}
+  opacity:1;transition:opacity .5s ease;}
+#splash.out{opacity:0;pointer-events:none;}
 /* Particules flottantes */
 .spt{position:absolute;font-family:'IBM Plex Mono',monospace;font-weight:700;
   color:#00C8A0;pointer-events:none;
@@ -1174,23 +1169,22 @@ async function checkPayment(pid){const r=await fetch(VERCEL+"/api/check-payment?
 function initSplash(){
   const sp=$("splash");
 
-  /* === GARANTIE : splash disparaît toujours, sur tous les navigateurs === */
+  /* === GARANTIE : splash disparaît toujours === */
   let splashDone=false;
   function doTransition(){
     if(splashDone)return;splashDone=true;
-    /* Transition directe via style — ne dépend pas du CSS */
+    /* Stopper toute animation CSS qui pourrait interférer */
+    sp.style.animation="none";
     sp.style.transition="opacity 0.5s ease";
     sp.style.opacity="0";
     sp.style.pointerEvents="none";
     setTimeout(function(){
       sp.style.display="none";
-      sp.style.visibility="hidden";
-    },550);
+    },520);
     try{initShopParticles();}catch(e){}
   }
-  /* 2s sur mobile, + un fallback à 2.5s pour PC */
   setTimeout(doTransition,2000);
-  setTimeout(doTransition,2500);
+  setTimeout(doTransition,2600); /* fallback PC */
 
   /* Particules dans try-catch — ne bloquent jamais la transition */
   try{
