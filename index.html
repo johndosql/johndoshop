@@ -2293,7 +2293,7 @@ function renderAdmin(){
       }).catch(function(e){var d=document.getElementById("db");if(d)d.innerHTML='<p style="color:var(--err);padding:12px">Erreur: '+e.message+'</p>';});
     }
     else if(t==="stock"){
-      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div style="display:flex;gap:8px;margin-top:8px"><button id="vidStockBtn" style="flex:1;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider TOUT</button><button id="vidStockNoMsBtn" style="flex:1;padding:11px;background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.25);border-radius:10px;color:orange;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider sauf Hotmail</button></div><div id="parsePrev" style="margin-top:10px"></div></div>`;
+      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div style="display:flex;gap:8px;margin-top:8px"><button id="vidStockBtn" style="flex:1;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider TOUT</button><button id="vidStockNoMsBtn" style="flex:1;padding:11px;background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.25);border-radius:10px;color:orange;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider sauf Hotmail</button></div><button id="vidStockOnlyMsBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,120,255,.08);border:1px solid rgba(0,120,255,.25);border-radius:10px;color:#3399FF;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider UNIQUEMENT Hotmail</button><div id="parsePrev" style="margin-top:10px"></div></div>`;
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
       fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
       function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=async function(){
@@ -2349,6 +2349,28 @@ function renderAdmin(){
             btn.textContent="🗑 Vider sauf Hotmail";btn.disabled=false;
           }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";});
         }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";});
+      };
+      $("vidStockOnlyMsBtn").onclick=function(){
+        if(!confirm("Vider UNIQUEMENT Hotmail/Outlook/Live/MSN (le reste du stock est conservé) ?"))return;
+        var btn=this;btn.disabled=true;btn.textContent="⏳...";
+        function isMs(domain){
+          var d=(domain||"").toLowerCase();
+          return["hotmail","outlook","live.","msn.","office365","office.com"].some(function(k){return d.includes(k);});
+        }
+        db.ref("products").once("value").then(function(snap){
+          var all=snap.val()||{};
+          var toDelete=Object.entries(all).filter(function(e){return isMs(e[1]&&e[1].domain);}).map(function(e){return e[0];});
+          if(!toDelete.length){toast("Rien à supprimer (aucun Hotmail en stock).");btn.disabled=false;btn.textContent="🗑 Vider UNIQUEMENT Hotmail";return;}
+          var proms=[];
+          toDelete.forEach(function(pid){
+            proms.push(db.ref("credentials/"+pid).remove());
+            proms.push(db.ref("products/"+pid).remove());
+          });
+          Promise.all(proms).then(function(){
+            toast("✅ "+toDelete.length+" produit(s) Hotmail vidé(s), le reste est conservé !");
+            btn.textContent="🗑 Vider UNIQUEMENT Hotmail";btn.disabled=false;
+          }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider UNIQUEMENT Hotmail";});
+        }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider UNIQUEMENT Hotmail";});
       };
     }
     else if(t==="catalogue"){
