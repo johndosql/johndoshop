@@ -44,13 +44,8 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 #splash{
   position:fixed;inset:0;z-index:200;background:#040810;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  animation:splashAuto .7s ease 2.5s forwards;}
-#splash.out{animation:splashAuto .4s ease forwards;}
-@keyframes splashAuto{
-  0%{opacity:1;pointer-events:auto;}
-  99%{opacity:0;pointer-events:none;}
-  100%{opacity:0;pointer-events:none;visibility:hidden;}
-}
+  opacity:1;transition:opacity .5s ease;}
+#splash.out{opacity:0;pointer-events:none;}
 /* Particules flottantes */
 .spt{position:absolute;font-family:'IBM Plex Mono',monospace;font-weight:700;
   color:#00C8A0;pointer-events:none;
@@ -1215,16 +1210,19 @@ async function checkPayment(pid){const r=await fetch(VERCEL+"/api/check-payment?
 function initSplash(){
   const sp=$("splash");
 
-  /* === GARANTIE : la transition se fait toujours après 2s === */
-  let splashDone=false;
+  /* === GARANTIE : splash disparaît toujours, sur tous les navigateurs (mobile + PC) === */
+  var splashDone=false;
   function doTransition(){
     if(splashDone)return;splashDone=true;
-    sp.classList.add("out");
+    sp.style.animation="none";
+    sp.style.transition="opacity 0.5s ease";
+    sp.style.opacity="0";
+    sp.style.pointerEvents="none";
+    setTimeout(function(){sp.style.display="none";},520);
     try{initShopParticles();}catch(e){}
   }
-  /* CSS gère la transition automatiquement après 2.1s */
-  /* Le JS peut l'accélérer si besoin */
-  setTimeout(doTransition,2200);
+  setTimeout(doTransition,2000);
+  setTimeout(doTransition,2600); /* fallback PC */
 
   /* Particules dans try-catch — ne bloquent jamais la transition */
   try{
@@ -2288,18 +2286,40 @@ function renderAdmin(){
       }).catch(function(e){var d=document.getElementById("db");if(d)d.innerHTML='<p style="color:var(--err);padding:12px">Erreur: '+e.message+'</p>';});
     }
     else if(t==="stock"){
-      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><button id="vidStockBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:13px;cursor:pointer;touch-action:manipulation">🗑 Vider tout le stock</button><div id="parsePrev" style="margin-top:10px"></div></div>`;
+      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div style="display:flex;gap:8px;margin-top:8px"><button id="vidStockBtn" style="flex:1;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider TOUT</button><button id="vidStockNoMsBtn" style="flex:1;padding:11px;background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.25);border-radius:10px;color:orange;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider sauf Hotmail</button></div><div id="parsePrev" style="margin-top:10px"></div></div>`;
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
       fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
       function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=()=>{$("confirmImp").disabled=true;$("confirmImp").textContent="Import en cours…";const doImport=()=>importMP(groups).then(()=>{toast("✅ "+tot+" comptes importés !");$("parsePrev").innerHTML="";$("txtImp").value="";fb.textContent="📁 Choisir un fichier .txt";}).catch(e=>toast("Erreur: "+e.message));if(rm)db.ref("products").remove().then(()=>db.ref("credentials").remove()).then(doImport);else doImport();};}
       $("parseBtn").onclick=()=>doAnalyse(false);$("replaceBtn").onclick=()=>{if(confirm("⚠️ Vider tout et remplacer ?"))doAnalyse(true);};
       $("vidStockBtn").onclick=function(){
-        if(!confirm("Supprimer TOUT le stock ?"))return;
+        if(!confirm("Supprimer TOUT le stock (y compris Hotmail) ?"))return;
         this.disabled=true;this.textContent="⏳...";
         var btn=this;
         db.ref("credentials").remove().then(function(){return db.ref("products").remove();})
-          .then(function(){toast("✅ Stock vidé !");btn.textContent="🗑 Vider tout le stock";btn.disabled=false;})
-          .catch(function(e){toast("Erreur: "+e.message);btn.textContent="🗑 Vider tout le stock";btn.disabled=false;});
+          .then(function(){toast("✅ Stock vidé !");btn.textContent="🗑 Vider TOUT";btn.disabled=false;})
+          .catch(function(e){toast("Erreur: "+e.message);btn.textContent="🗑 Vider TOUT";btn.disabled=false;});
+      };
+      $("vidStockNoMsBtn").onclick=function(){
+        if(!confirm("Vider le stock SAUF Hotmail/Outlook/Live/MSN ?"))return;
+        var btn=this;btn.disabled=true;btn.textContent="⏳...";
+        function isMs(domain){
+          var d=(domain||"").toLowerCase();
+          return["hotmail","outlook","live.","msn.","office365","office.com"].some(function(k){return d.includes(k);});
+        }
+        db.ref("products").once("value").then(function(snap){
+          var all=snap.val()||{};
+          var toDelete=Object.entries(all).filter(function(e){return!isMs(e[1]&&e[1].domain);}).map(function(e){return e[0];});
+          if(!toDelete.length){toast("Rien à supprimer (tout est Hotmail).");btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";return;}
+          var proms=[];
+          toDelete.forEach(function(pid){
+            proms.push(db.ref("credentials/"+pid).remove());
+            proms.push(db.ref("products/"+pid).remove());
+          });
+          Promise.all(proms).then(function(){
+            toast("✅ "+toDelete.length+" produit(s) vidé(s), Hotmail conservé !");
+            btn.textContent="🗑 Vider sauf Hotmail";btn.disabled=false;
+          }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";});
+        }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";});
       };
     }
     else if(t==="catalogue"){
