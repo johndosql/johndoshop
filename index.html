@@ -1978,6 +1978,20 @@ function startPoll(pid,oe){
         stopPoll();hapticN("success");
         const se=[...oe],stot=se.reduce((s,e)=>s+uPrice(e.item,e.qty)*e.qty,0);
         cart={};updateCartBadge();
+        /* Détecter un surplus payé (crypto envoyée > montant demandé) et le créditer au solde */
+        var actuallyPaid=parseFloat(d.actually_paid||0),payAmount=parseFloat(d.pay_amount||0);
+        if(actuallyPaid>0&&payAmount>0&&actuallyPaid>payAmount*1.01){
+          var surplusRatio=(actuallyPaid-payAmount)/payAmount;
+          var surplus=parseFloat((stot*surplusRatio).toFixed(2));
+          if(surplus>0.01&&fbOk&&me.id){
+            db.ref("users/"+me.id+"/balance").once("value",function(s){
+              var newBal=parseFloat(((s.val()||0)+surplus).toFixed(2));
+              db.ref("users/"+me.id+"/balance").set(newBal);
+              if(me.tgId)apiPost("send-message",{chatId:me.tgId,text:"💰 Tu as envoyé un montant supérieur au prix demandé.\n<b>"+fmt(surplus)+"</b> ont été ajoutés à ton solde.\nNouveau solde : <b>"+fmt(newBal)+"</b>"}).catch(function(){});
+              apiPost("send-message",{chatId:1363470410,text:"ℹ️ Surplus crédité automatiquement : "+(me.name||"?")+" — "+fmt(surplus)}).catch(function(){});
+            });
+          }
+        }
         /* Créer tâche pour le checker Python */
         var checkId="chk_"+Date.now();
         if(fbOk){
