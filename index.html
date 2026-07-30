@@ -764,13 +764,13 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   .pc-user-lbl{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
   .pc-support{margin-top:auto;padding-top:16px;font-size:11px;color:var(--sub);}
 
-  /* APP colonne principale */
+  /* APP colonne principale — largeur fluide, page entière qui scroll normalement */
   .app{
-    flex:1;max-width:520px;
-    position:sticky;top:24px;
-    max-height:calc(100vh - 48px);
-    overflow-y:auto;overflow-x:hidden;
-    -webkit-overflow-scrolling:touch;
+    flex:1 1 auto;
+    max-width:560px;
+    min-width:0;
+    width:100%;
+    min-height:calc(100vh - 48px);
     border-radius:16px;
     box-shadow:0 8px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);
     padding-bottom:12px!important;
