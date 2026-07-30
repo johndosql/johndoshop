@@ -2194,16 +2194,23 @@ function renderDepContent(){
           if(d.payment_status==="confirmed"||d.payment_status==="finished"){
             clearInterval(depPollInt);depPollInt=null;
             var newBal=parseFloat((myBal+amt).toFixed(2));
-            if(fbOk&&me.id)db.ref("users/"+me.id+"/balance").set(newBal);
             hapticN("success");
-            /* Notification Telegram */
-            if(me.tgId){
-              var notif="\uD83D\uDCB0 <b>ACCESMAIL \u2014 Solde recharg\u00e9 !</b>\n\nTon solde a \u00e9t\u00e9 cr\u00e9dit\u00e9 de <b>"+fmt(amt)+"</b>\nNouveau solde\u00a0: <b>"+fmt(newBal)+"</b>\n\nOuvre la boutique pour acheter tes acc\u00e8s. \uD83D\uDC47";
-              apiPost("send-message",{chatId:me.tgId,text:notif}).catch(function(e){console.error("notif:",e);});
+            if(fbOk&&me.id){
+              db.ref("users/"+me.id+"/balance").set(newBal).then(function(){
+                /* Écriture confirmée → on notifie seulement maintenant */
+                if(me.tgId){
+                  var notif="\uD83D\uDCB0 <b>ACCESMAIL \u2014 Solde recharg\u00e9 !</b>\n\nTon solde a \u00e9t\u00e9 cr\u00e9dit\u00e9 de <b>"+fmt(amt)+"</b>\nNouveau solde\u00a0: <b>"+fmt(newBal)+"</b>\n\nOuvre la boutique pour acheter tes acc\u00e8s. \uD83D\uDC47";
+                  apiPost("send-message",{chatId:me.tgId,text:notif}).catch(function(e){console.error("notif:",e);});
+                }
+                var adminNotif="\uD83D\uDCB8 <b>Nouveau d\u00e9p\u00f4t re\u00e7u</b>\n\nClient\u00a0: <b>"+(me.name||"Inconnu")+"</b> "+(me.handle?"("+me.handle+")":"")+"\nMontant\u00a0: <b>"+fmt(amt)+"</b>\nNouveau solde\u00a0: <b>"+fmt(newBal)+"</b>";
+                apiPost("send-message",{chatId:1363470410,text:adminNotif}).catch(function(e){console.error("admin notif:",e);});
+              }).catch(function(err){
+                /* Écriture échouée → alerte claire, PAS de fausse confirmation */
+                console.error("Échec crédit solde:",err);
+                apiPost("send-message",{chatId:1363470410,text:"\u26A0\uFE0F <b>ÉCHEC crédit solde</b>\n\nClient\u00a0: <b>"+(me.name||"Inconnu")+"</b> "+(me.handle?"("+me.handle+")":"")+"\nMontant\u00a0: <b>"+fmt(amt)+"</b>\nErreur\u00a0: "+err.message+"\n\n\u26A0\uFE0F Créditer manuellement via le panel admin !"}).catch(function(){});
+                if(me.tgId)apiPost("send-message",{chatId:me.tgId,text:"\u26A0\uFE0F Ton paiement a bien été reçu, mais une erreur technique empêche le crédit automatique de ton solde. Contacte @johndosql pour régularisation rapide."}).catch(function(){});
+              });
             }
-            /* Notification admin */
-            var adminNotif="\uD83D\uDCB8 <b>Nouveau d\u00e9p\u00f4t re\u00e7u</b>\n\nClient\u00a0: <b>"+(me.name||"Inconnu")+"</b> "+(me.handle?"("+me.handle+")":"")+"\nMontant\u00a0: <b>"+fmt(amt)+"</b>\nNouveau solde\u00a0: <b>"+fmt(newBal)+"</b>";
-            apiPost("send-message",{chatId:1363470410,text:adminNotif}).catch(function(e){console.error("admin notif:",e);});
             /* Fermer l'écran + la sheet + toast */
             setTimeout(function(){
               $("S_depPayment").classList.remove("open");
