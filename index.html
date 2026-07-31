@@ -1548,13 +1548,12 @@ function loadProds(){
       prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
     }
     scheduleRender();
-    /* Après le chargement initial, écouter les changements en temps réel */
-    /* Throttle : max 1 re-render toutes les 5 secondes */
-    var lastRT=0;
+    /* Après le chargement initial, écouter les changements en temps réel.
+       scheduleRender() a déjà son propre anti-doublon (renderPending) — pas besoin
+       d'un second throttle ici. L'ancien throttle de 5s JETAIT carrément la donnée
+       Firebase si elle arrivait trop vite, laissant le stock affiché figé sur une
+       ancienne valeur indéfiniment tant qu'aucun autre changement n'arrivait. */
     db.ref("products").on("value",function(s){
-      var now=Date.now();
-      if(now-lastRT<5000)return;
-      lastRT=now;
       var v=s.val();
       if(v&&Object.keys(v).length>0){
         prods=Object.entries(v).map(function(entry){return{id:entry[0],...entry[1]};});
