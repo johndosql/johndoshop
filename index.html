@@ -1702,7 +1702,11 @@ function filtered(){
 
 var _lastRenderKey="",_renderTimer=null;
 function renderCatalog(){
-  var key=viewMode+"|"+activeC+"|"+query+"|"+sortMode+"|"+prods.length;
+  /* La clé inclut désormais la SOMME des stocks — pas juste le nombre de produits —
+     sinon un changement de stock (1→0 sur un produit existant) passait inaperçu et
+     l'affichage restait périmé alors que Firebase était déjà à jour. */
+  var stockSum=prods.reduce(function(s,p){return s+Number(p.stock||0);},0);
+  var key=viewMode+"|"+activeC+"|"+query+"|"+sortMode+"|"+prods.length+"|"+stockSum;
   if(key===_lastRenderKey)return;
   _lastRenderKey=key;
   var el=$("catalog");
