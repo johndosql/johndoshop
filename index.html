@@ -912,6 +912,39 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 }
 @keyframes ctSpin{to{transform:rotate(360deg);}}
 .ct-loading-txt{font-size:13px;color:var(--sub);}
+
+.ct-badges{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:14px;}
+.ct-badge{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ac);
+  background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.2);
+  padding:5px 10px;border-radius:999px;
+}
+.ct-quota-wrap{margin-top:12px;}
+.ct-quota-bar{width:100%;height:5px;background:var(--bg2);border-radius:99px;overflow:hidden;}
+.ct-quota-fill{height:100%;background:linear-gradient(90deg,#00C8A0,#00FFCC);border-radius:99px;transition:width .3s;}
+.ct-quota-txt{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);text-align:center;margin-top:5px;}
+.ct-history{margin-top:16px;}
+.ct-hist-lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.ct-hist-row{
+  display:flex;align-items:center;gap:10px;
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;
+  padding:9px 12px;margin-bottom:6px;font-size:12px;
+}
+.ct-hist-dom{flex:1;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ct-hist-time{color:var(--sub);font-size:10px;}
+.ct-howto{
+  margin-top:20px;background:var(--sf);border:1px solid var(--line);border-radius:16px;
+  padding:16px 18px;
+}
+.ct-howto-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;color:var(--ink);margin-bottom:12px;}
+.ct-howto-step{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px;}
+.ct-howto-step:last-child{margin-bottom:0;}
+.ct-howto-num{
+  flex:0 0 auto;width:18px;height:18px;border-radius:50%;
+  background:rgba(0,200,160,.12);border:1px solid rgba(0,200,160,.25);color:var(--ac);
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;
+  font-family:'IBM Plex Mono',monospace;
+}
 </style>
 </head>
 <body>
@@ -1064,6 +1097,11 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
       <div class="ct-hero">
         <div class="ct-hero-orb"><div class="ct-hero-orb-ring"></div><div class="ct-hero-orb-core">🔎</div></div>
         <p class="ct-hero-sub">Vérifie en direct si un accès que tu possèdes fonctionne encore, avec les infos de connexion.</p>
+        <div class="ct-badges">
+          <span class="ct-badge">📡 IMAP</span>
+          <span class="ct-badge">📬 POP3</span>
+          <span class="ct-badge">🌍 Détection auto</span>
+        </div>
       </div>
       <div class="ct-card">
         <label class="ct-lbl">Adresse email</label>
@@ -1072,8 +1110,16 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
         <input class="field" id="ctPass" type="text" placeholder="Mot de passe" autocapitalize="off" autocorrect="off" style="margin-bottom:16px">
         <button class="btn" id="ctBtn" style="width:100%;padding:14px;font-size:14px;font-weight:700">Vérifier maintenant</button>
       </div>
+      <div id="ctQuota" class="ct-quota-wrap"></div>
       <div id="ctResult"></div>
-      <div class="ct-hint">🔒 1 vérification toutes les 90 secondes, pour protéger le service.</div>
+      <div id="ctHistory" class="ct-history"></div>
+      <div class="ct-howto">
+        <div class="ct-howto-title">Comment ça marche</div>
+        <div class="ct-howto-step"><span class="ct-howto-num">1</span>On se connecte en direct au serveur mail du fournisseur</div>
+        <div class="ct-howto-step"><span class="ct-howto-num">2</span>On teste tes identifiants exactement comme le ferait ta messagerie</div>
+        <div class="ct-howto-step"><span class="ct-howto-num">3</span>Tu obtiens un résultat clair, sans rien stocker de ton mot de passe</div>
+      </div>
+      <div class="ct-hint">🔒 5 vérifications max toutes les 10 minutes, pour protéger le service.</div>
     </div>
   </div>
 
@@ -1166,6 +1212,16 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
     </div>
     <div class="nav-lbl">Solde</div>
   </div>
+  <div class="nav-item" data-tab="checktool" id="navCheckTool">
+    <div class="nav-ico">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="7"/>
+        <path d="M21 21l-4.3-4.3"/>
+        <path d="M8.5 11l1.8 1.8L14 9.2"/>
+      </svg>
+    </div>
+    <div class="nav-lbl">Checker</div>
+  </div>
 </div>
 
 
@@ -1251,7 +1307,6 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
       <div class="dep-hdl" id="depHdl"></div>
       <div class="dep-bal-lbl">Solde disponible</div>
       <div class="dep-bal" id="depBal">0,00€</div>
-      <button class="btn btn-outline" id="openCheckToolBtn" style="width:100%;margin-top:14px;padding:11px;font-size:13px">🔍 Vérifier un accès</button>
     </div>
     <div id="depContent"></div>
   </div>
@@ -2225,6 +2280,9 @@ function goTo(page){
   if(page==="admin"){
     requestAnimationFrame(function(){renderAdmin();});
   }
+  if(page==="checktool"){
+    $("navCheckTool").classList.add("on");
+  }
 }
 /* fastClick sur tous les éléments nav — réponse immédiate sans bloquer le scroll */
 ["btnBack","btnAdminBack"].forEach(function(id){fastClick($(id),function(){goTo("shop");});});
@@ -2762,21 +2820,57 @@ function hideCheckingScreen(){
   if(sc)sc.classList.remove("open");
 }
 
-/* ══ VÉRIFICATEUR D'ACCÈS UNIQUE (client) ══════════════════
-   Rate-limité côté serveur (Firebase) pour éviter les abus sur le checker :
-   1 vérification toutes les 90 secondes par client. */
-var CHECK_TOOL_COOLDOWN_MS=90000;
+/* ══ VÉRIFICATEUR D'ACCÈS (client) ══════════════════════════
+   Rate-limité côté serveur (Firebase) pour protéger le checker :
+   5 vérifications max toutes les 10 minutes, par client, fenêtre glissante.
+   Utilise pending_manual_checks — une file 100% séparée de pending_checks
+   (les commandes) et du cycle de fond stock_checker : aucune interférence
+   possible avec le traitement des achats ou le nettoyage du stock. */
+var CT_WINDOW_MS=10*60*1000,CT_MAX=5;
 var _ctPollInt=null;
 
-fastClick($("openCheckToolBtn"),function(){
-  closeSheet();
+fastClick($("navCheckTool"),function(){
   $("ctEmail").value="";$("ctPass").value="";$("ctResult").innerHTML="";
   goTo("checktool");
+  renderCtQuota();
+  renderCtHistory();
 });
 fastClick($("btnCheckToolBack"),function(){
   if(_ctPollInt){clearInterval(_ctPollInt);_ctPollInt=null;}
   goTo("shop");
 });
+
+function ctHistoryGet(){
+  try{return JSON.parse(localStorage.getItem("acm_ct_history")||"[]");}catch(e){return[];}
+}
+function ctHistoryAdd(domain,result){
+  try{
+    var h=ctHistoryGet();
+    h.unshift({domain:domain,result:result,ts:Date.now()});
+    localStorage.setItem("acm_ct_history",JSON.stringify(h.slice(0,5)));
+  }catch(e){}
+}
+function renderCtHistory(){
+  var el=$("ctHistory");if(!el)return;
+  var h=ctHistoryGet();
+  if(!h.length){el.innerHTML="";return;}
+  var icons={valid:"✅",invalid:"❌",unknown:"ℹ️"};
+  el.innerHTML='<div class="ct-hist-lbl">Vérifications récentes</div>'+h.map(function(x){
+    var d=new Date(x.ts),hh=("0"+d.getHours()).slice(-2),mm=("0"+d.getMinutes()).slice(-2);
+    return'<div class="ct-hist-row"><span>'+(icons[x.result]||"•")+'</span><span class="ct-hist-dom">@'+x.domain+'</span><span class="ct-hist-time">'+hh+':'+mm+'</span></div>';
+  }).join("");
+}
+async function renderCtQuota(){
+  var el=$("ctQuota");if(!el||!fbOk||!me.id)return;
+  try{
+    var snap=await db.ref("users/"+me.id+"/manualCheckWindow").once("value");
+    var w=snap.val()||{count:0,windowStart:0};
+    var elapsed=Date.now()-(w.windowStart||0);
+    var count=elapsed<CT_WINDOW_MS?(w.count||0):0;
+    var remaining=Math.max(0,CT_MAX-count);
+    el.innerHTML='<div class="ct-quota-bar"><div class="ct-quota-fill" style="width:'+(remaining/CT_MAX*100)+'%"></div></div><div class="ct-quota-txt">'+remaining+'/'+CT_MAX+' vérifications disponibles</div>';
+  }catch(e){}
+}
 
 $("ctBtn").onclick=async function(){
   var email=($("ctEmail").value||"").trim().toLowerCase();
@@ -2785,21 +2879,27 @@ $("ctBtn").onclick=async function(){
   if(!fbOk||!me.id){toast("Connexion requise.");return;}
 
   var btn=$("ctBtn");
-  btn.disabled=true;btn.textContent="Vérification du délai…";
+  btn.disabled=true;btn.textContent="Vérification du quota…";
   $("ctResult").innerHTML="";
 
   try{
-    var lastSnap=await db.ref("users/"+me.id+"/lastManualCheck").once("value");
-    var last=lastSnap.val()||0;
-    var elapsed=Date.now()-last;
-    if(elapsed<CHECK_TOOL_COOLDOWN_MS){
-      var wait=Math.ceil((CHECK_TOOL_COOLDOWN_MS-elapsed)/1000);
-      $("ctResult").innerHTML='<div class="ct-result-cooldown">⏳ Réessaie dans <b>'+wait+'s</b> — une vérification à la fois pour protéger le service.</div>';
+    var winSnap=await db.ref("users/"+me.id+"/manualCheckWindow").once("value");
+    var w=winSnap.val()||{count:0,windowStart:0};
+    var now=Date.now();
+    var elapsed=now-(w.windowStart||0);
+    var count=elapsed<CT_WINDOW_MS?(w.count||0):0;
+    var windowStart=elapsed<CT_WINDOW_MS?(w.windowStart||now):now;
+
+    if(count>=CT_MAX){
+      var wait=Math.ceil((CT_WINDOW_MS-(now-windowStart))/60000);
+      $("ctResult").innerHTML='<div class="ct-result-cooldown">⏳ Limite atteinte (5 vérifications / 10 min).<br>Réessaie dans <b>'+Math.max(1,wait)+' min</b>.</div>';
       btn.disabled=false;btn.textContent="Vérifier maintenant";
       return;
     }
 
-    await db.ref("users/"+me.id+"/lastManualCheck").set(Date.now());
+    await db.ref("users/"+me.id+"/manualCheckWindow").set({count:count+1,windowStart:windowStart});
+    renderCtQuota();
+
     var checkId="mck_"+Date.now();
     await db.ref("pending_manual_checks/"+checkId).set({
       userId:me.id,email:email,pass:pass,createdAt:Date.now(),status:"waiting"
@@ -2808,7 +2908,7 @@ $("ctBtn").onclick=async function(){
     btn.textContent="⏳ Vérification en cours…";
     $("ctResult").innerHTML='<div class="ct-loading-card"><div class="ct-loading-ring"></div><div class="ct-loading-txt">Connexion au serveur mail…</div></div>';
 
-    var attempts=0;
+    var attempts=0,domain=email.split("@")[1]||"";
     _ctPollInt=setInterval(function(){
       attempts++;
       if(attempts>24){ /* 24×2.5s = 1min max */
@@ -2831,6 +2931,8 @@ $("ctBtn").onclick=async function(){
         }else{
           $("ctResult").innerHTML='<div class="ct-result-card ct-result-unknown"><div class="ct-result-icon">ℹ️</div><div class="ct-result-title">Non vérifiable</div><div class="ct-result-sub">Ce fournisseur ne permet pas la vérification automatique.</div></div>';
         }
+        ctHistoryAdd(domain,d.result);
+        renderCtHistory();
       });
     },2500);
   }catch(e){
