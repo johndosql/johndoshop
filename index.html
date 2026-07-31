@@ -817,18 +817,54 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .checking-screen{
   position:fixed;inset:0;z-index:150;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:32px;text-align:center;
-  transform:translateY(100%);transition:transform .3s cubic-bezier(.22,1,.36,1);
+  padding:32px;text-align:center;overflow:hidden;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);
 }
 .checking-screen.open{transform:translateY(0);}
-.checking-dots{display:flex;gap:8px;margin:20px 0;}
-.checking-dot{width:10px;height:10px;border-radius:50%;background:var(--ac);
-  animation:dotBounce 1.2s ease-in-out infinite;}
-.checking-dot:nth-child(2){animation-delay:.2s;}
-.checking-dot:nth-child(3){animation-delay:.4s;}
-@keyframes dotBounce{0%,80%,100%{transform:scale(.6);opacity:.3;}40%{transform:scale(1);opacity:1;}}
-.checking-title{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--ink);margin-bottom:8px;}
-.checking-sub{font-size:13px;color:var(--sub);line-height:1.6;}
+.checking-screen::before{
+  content:'';position:absolute;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,200,160,.13) 0%,rgba(0,255,204,.04) 45%,transparent 70%);
+  animation:chkGlow 3s ease-in-out infinite;pointer-events:none;
+}
+@keyframes chkGlow{0%,100%{transform:scale(1);opacity:.7;}50%{transform:scale(1.15);opacity:1;}}
+.checking-radar{
+  position:relative;width:120px;height:120px;margin-bottom:28px;
+  display:flex;align-items:center;justify-content:center;
+}
+.checking-radar-ring{
+  position:absolute;inset:0;border-radius:50%;
+  border:1.5px solid rgba(0,200,160,.25);
+}
+.checking-radar-ring.r2{inset:14px;border-color:rgba(0,200,160,.4);}
+.checking-radar-ring.r3{inset:28px;border-color:rgba(0,200,160,.6);}
+.checking-radar-sweep{
+  position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 0deg,transparent 0deg,transparent 260deg,rgba(0,255,204,.55) 300deg,rgba(0,255,204,.9) 340deg,transparent 360deg);
+  animation:chkSweep 1.6s linear infinite;
+}
+@keyframes chkSweep{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.checking-radar-core{
+  position:relative;z-index:2;width:44px;height:44px;border-radius:50%;
+  background:linear-gradient(135deg,#00C8A0,#00FFCC);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  box-shadow:0 0 24px rgba(0,255,204,.5);
+  animation:chkPulse 1.6s ease-in-out infinite;
+}
+@keyframes chkPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+.checking-title{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:21px;color:var(--ink);margin-bottom:10px;position:relative;z-index:1;}
+.checking-sub{font-size:13px;color:var(--sub);line-height:1.7;max-width:280px;position:relative;z-index:1;}
+.checking-steps{
+  display:flex;flex-direction:column;gap:9px;margin-top:26px;
+  background:var(--sf);border:1px solid var(--line);border-radius:14px;
+  padding:14px 18px;min-width:250px;position:relative;z-index:1;
+}
+.checking-step{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--sub);transition:color .3s;}
+.checking-step-dot{width:7px;height:7px;border-radius:50%;background:var(--line);flex:0 0 auto;transition:all .3s;}
+.checking-step.active .checking-step-dot{background:var(--ac);box-shadow:0 0 8px var(--ac);animation:chkStepPulse 1s ease-in-out infinite;}
+.checking-step.active{color:var(--ink);font-weight:600;}
+.checking-step.done .checking-step-dot{background:var(--ok);box-shadow:none;}
+.checking-step.done{color:var(--sub);}
+@keyframes chkStepPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 </style>
 </head>
 <body>
@@ -1014,14 +1050,20 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 
 <!-- ÉCRAN VÉRIFICATION -->
 <div class="checking-screen" id="checkingScreen">
-  <div style="font-size:48px;margin-bottom:16px">🔍</div>
-  <div class="checking-title">Vérification en cours</div>
-  <div class="checking-dots">
-    <div class="checking-dot"></div>
-    <div class="checking-dot"></div>
-    <div class="checking-dot"></div>
+  <div class="checking-radar">
+    <div class="checking-radar-ring"></div>
+    <div class="checking-radar-ring r2"></div>
+    <div class="checking-radar-ring r3"></div>
+    <div class="checking-radar-sweep"></div>
+    <div class="checking-radar-core">🔒</div>
   </div>
-  <div class="checking-sub">Nous vérifions la validité de tes accès...<br>Tu recevras ta commande dans quelques secondes.</div>
+  <div class="checking-title">Vérification en cours</div>
+  <div class="checking-sub">On vérifie que tes accès fonctionnent vraiment avant de te les envoyer.</div>
+  <div class="checking-steps">
+    <div class="checking-step active" id="ckStep1"><div class="checking-step-dot"></div>Connexion aux serveurs mail</div>
+    <div class="checking-step" id="ckStep2"><div class="checking-step-dot"></div>Vérification des identifiants</div>
+    <div class="checking-step" id="ckStep3"><div class="checking-step-dot"></div>Envoi dans ton bot Telegram</div>
+  </div>
 </div>
 <!-- BOTTOM NAV -->
 <div class="bottom-nav" id="bottomNav">
@@ -1963,6 +2005,39 @@ async function sendBot(chatId,creds,total){
     .replace(/{total}/g,fmt(total));
   try{await apiPost("send-message",{chatId:chatId,text:msg});}catch(e){console.error("sendBot:",e);}
 }
+
+/* Hotmail/Outlook/Live/MSN : vérifié manuellement par l'admin avant import →
+   livré instantanément, jamais mis en file pour le checker IMAP */
+function isHotmailFamily(domain){
+  var d=(domain||"").toLowerCase();
+  return["hotmail","outlook","live.","msn.","office365","office.com"].some(function(k){return d.includes(k);});
+}
+
+/* Livre directement les articles Hotmail (sans passer par le checker), gère le
+   remboursement proportionnel si le stock manquait entre-temps. Retourne le montant
+   réellement livré (utile pour ajuster ce qu'on envoie ensuite au checker s'il reste
+   des articles non-Hotmail dans le même panier). */
+async function deliverHotmailDirect(items,tgId,name,handle,userId){
+  if(!items.length)return 0;
+  var requestedQty=items.reduce(function(s,e){return s+e.qty;},0);
+  var requestedAmount=items.reduce(function(s,e){return s+uPrice(e.item,e.qty)*e.qty;},0);
+  var creds=await deliverCreds(items);
+  if(tgId)sendBot(tgId,creds,requestedAmount).catch(function(e){console.error("sendBot hotmail:",e);});
+  /* Remboursement proportionnel si moins livré que demandé (stock épuisé entre-temps) */
+  if(creds.length<requestedQty&&userId&&fbOk){
+    var manquants=requestedQty-creds.length;
+    var refund=parseFloat((requestedAmount*(manquants/requestedQty)).toFixed(2));
+    if(refund>0.01){
+      db.ref("users/"+userId+"/balance").once("value",function(s){
+        var newBal=parseFloat(((s.val()||0)+refund).toFixed(2));
+        db.ref("users/"+userId+"/balance").set(newBal);
+        if(tgId)apiPost("send-message",{chatId:tgId,text:"⚠️ Stock Hotmail insuffisant : "+creds.length+"/"+requestedQty+" livrés.\n<b>"+fmt(refund)+"</b> remboursés sur ton solde."}).catch(function(){});
+      });
+    }
+  }
+  apiPost("send-message",{chatId:1363470410,text:"📧 <b>Hotmail livré directement (sans check)</b>\n\nClient : <b>"+(name||"?")+"</b>"+(handle?" ("+handle+")":"")+"\nLivré : "+creds.length+"/"+requestedQty+"\nMontant : "+fmt(requestedAmount)}).catch(function(){});
+  return requestedAmount;
+}
 function stopPoll(){if(pollInt){clearInterval(pollInt);pollInt=null;}}
 function startPoll(pid,oe){
   stopPoll();
@@ -1997,21 +2072,34 @@ function startPoll(pid,oe){
             });
           }
         }
-        /* Créer tâche pour le checker Python */
-        var checkId="chk_"+Date.now();
-        if(fbOk){
-          db.ref("pending_checks/"+checkId).set({
-            userId:me.id,tgId:me.tgId||null,
-            name:me.name||"Client",handle:me.handle||"",
-            amount:stot,
-            items:se.map(function(e){return{domain:e.item.domain,qty:e.qty,prodId:e.item.id};}),
-            createdAt:Date.now(),status:"waiting"
-          });
+        /* Séparer Hotmail (livraison directe, déjà vérifié manuellement) du reste (checker IMAP) */
+        var hotmailItems=se.filter(function(e){return isHotmailFamily(e.item.domain);});
+        var otherItems=se.filter(function(e){return!isHotmailFamily(e.item.domain);});
+
+        if(hotmailItems.length){
+          deliverHotmailDirect(hotmailItems,me.tgId,me.name,me.handle,me.id).catch(function(e){console.error("hotmail direct:",e);});
         }
-        /* Notif admin */
-        apiPost("send-message",{chatId:1363470410,text:"<b>Achat - Verification IMAP en cours</b>\n\nClient : <b>"+(me.name||"?")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\nMontant : <b>"+fmt(stot)+"</b>\nCommande : "+se.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ")}).catch(function(){});
-        /* Afficher écran vérification */
-        showCheckingScreen(checkId,stot);
+
+        if(otherItems.length){
+          var otherAmount=otherItems.reduce(function(s,e){return s+uPrice(e.item,e.qty)*e.qty;},0);
+          /* Créer tâche pour le checker Python — uniquement pour le non-Hotmail */
+          var checkId="chk_"+Date.now();
+          if(fbOk){
+            db.ref("pending_checks/"+checkId).set({
+              userId:me.id,tgId:me.tgId||null,
+              name:me.name||"Client",handle:me.handle||"",
+              amount:otherAmount,
+              items:otherItems.map(function(e){return{domain:e.item.domain,qty:e.qty,prodId:e.item.id};}),
+              createdAt:Date.now(),status:"waiting"
+            });
+          }
+          apiPost("send-message",{chatId:1363470410,text:"<b>Achat - Verification IMAP en cours</b>\n\nClient : <b>"+(me.name||"?")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\nMontant : <b>"+fmt(otherAmount)+"</b>\nCommande : "+otherItems.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ")}).catch(function(){});
+          showCheckingScreen(checkId,otherAmount);
+        }else if(hotmailItems.length){
+          /* Panier 100% Hotmail — pas besoin d'écran de vérification */
+          hapticN("success");
+          toast("✅ Commande confirmée ! Tu vas recevoir tes accès dans le bot.",5000);
+        }
         $("npActive").style.display="none";
       }
       if(d.payment_status==="failed"||d.payment_status==="expired"){stopPoll();toast("Paiement "+d.payment_status+".");}
@@ -2023,21 +2111,33 @@ function doOrder(method){
   if(method==="balance"){
     if(myBal<tot){toast("Solde insuffisant.");return;}
     if(fbOk&&me.id)db.ref("users/"+me.id+"/balance").set(parseFloat((myBal-tot).toFixed(2)));
-    /* Créer tâche pour le checker Python (comme pour crypto) */
-    var checkId="chk_"+Date.now();
-    if(fbOk){
-      db.ref("pending_checks/"+checkId).set({
-        userId:me.id,tgId:me.tgId||null,
-        name:me.name||"Client",handle:me.handle||"",
-        amount:tot,
-        items:se.map(function(e){return{domain:e.item.domain,qty:e.qty,prodId:e.item.id};}),
-        createdAt:Date.now(),status:"waiting"
-      });
-    }
-    apiPost("send-message",{chatId:1363470410,text:"<b>Achat (solde) - Verification IMAP en cours</b>\n\nClient : <b>"+(me.name||"?")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\nMontant : <b>"+fmt(tot)+"</b>\nCommande : "+se.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ")}).catch(function(){});
     hapticN("success");
     cart={};updateCartBadge();goTo("shop");
-    showCheckingScreen(checkId,tot);
+
+    var hotmailItems=se.filter(function(e){return isHotmailFamily(e.item.domain);});
+    var otherItems=se.filter(function(e){return!isHotmailFamily(e.item.domain);});
+
+    if(hotmailItems.length){
+      deliverHotmailDirect(hotmailItems,me.tgId,me.name,me.handle,me.id).catch(function(e){console.error("hotmail direct:",e);});
+    }
+
+    if(otherItems.length){
+      var otherAmount=otherItems.reduce(function(s,e){return s+uPrice(e.item,e.qty)*e.qty;},0);
+      var checkId="chk_"+Date.now();
+      if(fbOk){
+        db.ref("pending_checks/"+checkId).set({
+          userId:me.id,tgId:me.tgId||null,
+          name:me.name||"Client",handle:me.handle||"",
+          amount:otherAmount,
+          items:otherItems.map(function(e){return{domain:e.item.domain,qty:e.qty,prodId:e.item.id};}),
+          createdAt:Date.now(),status:"waiting"
+        });
+      }
+      apiPost("send-message",{chatId:1363470410,text:"<b>Achat (solde) - Verification IMAP en cours</b>\n\nClient : <b>"+(me.name||"?")+"</b>"+(me.handle?" ("+me.handle+")":"")+"\nMontant : <b>"+fmt(otherAmount)+"</b>\nCommande : "+otherItems.map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ")}).catch(function(){});
+      showCheckingScreen(checkId,otherAmount);
+    }else if(hotmailItems.length){
+      toast("✅ Commande confirmée ! Tu vas recevoir tes accès dans le bot.",5000);
+    }
   }else{toast("Confirmation envoyée.");cart={};updateCartBadge();goTo("shop");}
 }
 
@@ -2530,24 +2630,59 @@ var _checkingPoll=null;
 function showCheckingScreen(checkId,amount){
   var sc=document.getElementById("checkingScreen");
   if(sc)sc.classList.add("open");
+  var steps=["ckStep1","ckStep2","ckStep3"];
+  var stepIdx=0;
+  function setStep(i){
+    steps.forEach(function(id,j){
+      var el=document.getElementById(id);if(!el)return;
+      el.classList.remove("active","done");
+      if(j<i)el.classList.add("done");
+      else if(j===i)el.classList.add("active");
+    });
+  }
+  setStep(0);
+  var stepInterval=setInterval(function(){
+    stepIdx=(stepIdx+1)%steps.length;
+    setStep(stepIdx);
+  },1800);
+  function finishSteps(cb){
+    steps.forEach(function(id){var el=document.getElementById(id);if(el){el.classList.remove("active");el.classList.add("done");}});
+    setTimeout(cb,400);
+  }
   /* Écouter le résultat du checker Python */
   var attempts=0;
+  function doTimeoutRefund(){
+    clearInterval(_checkingPoll);clearInterval(stepInterval);
+    hideCheckingScreen();
+    if(fbOk&&me.id){
+      db.ref("users/"+me.id+"/balance").once("value",function(bs){
+        var newBal=parseFloat(((bs.val()||0)+amount).toFixed(2));
+        db.ref("users/"+me.id+"/balance").set(newBal).then(function(){
+          db.ref("pending_checks/"+checkId).update({status:"done",timeout_refunded:true});
+          toast("⚠️ Délai dépassé — "+fmt(amount)+" remboursés sur ton solde. Réessaie ou contacte @johndosql.",7000);
+          if(me.tgId)apiPost("send-message",{chatId:me.tgId,text:"⚠️ Ta commande a mis trop de temps à être traitée.\n<b>"+fmt(amount)+"</b> ont été remboursés sur ton solde.\nNouveau solde : <b>"+fmt(newBal)+"</b>\n\nRéessaie ou contacte @johndosql."}).catch(function(){});
+          apiPost("send-message",{chatId:1363470410,text:"🔥 <b>URGENT — Commande jamais traitée</b>\n\nClient : "+(me.name||"?")+"\nMontant : "+fmt(amount)+"\nRemboursé automatiquement après 5min sans réponse.\n\n⚠️ Vérifie checker.py ET si la commande a bien été créée dans pending_checks (checkId: "+checkId+")"}).catch(function(){});
+        }).catch(function(err){
+          toast("Erreur de remboursement — contacte @johndosql avec ta commande.",8000);
+          apiPost("send-message",{chatId:1363470410,text:"🔥 URGENT: échec remboursement auto pour "+(me.name||"?")+" — "+fmt(amount)+" — "+err.message}).catch(function(){});
+        });
+      });
+    }
+  }
   _checkingPoll=setInterval(function(){
     attempts++;
-    if(!fbOk){clearInterval(_checkingPoll);hideCheckingScreen();return;}
+    if(!fbOk){clearInterval(_checkingPoll);clearInterval(stepInterval);hideCheckingScreen();return;}
+    if(attempts>60){doTimeoutRefund();return;}
     db.ref("pending_checks/"+checkId).once("value",function(s){
       var d=s.val();
-      if(!d)return;
+      if(!d)return;  /* commande pas encore visible — le timeout ci-dessus reste actif et se déclenchera quand même */
       if(d.status==="done"){
-        clearInterval(_checkingPoll);
-        hideCheckingScreen();
-        hapticN("success");
-        toast("✅ Commande confirmée ! Tu vas recevoir tes accès dans le bot.",5000);
-      }else if(attempts>60){
-        /* Timeout 5 min : fallback livraison directe */
-        clearInterval(_checkingPoll);
-        hideCheckingScreen();
-        toast("Commande en cours de traitement...",4000);
+        clearInterval(_checkingPoll);clearInterval(stepInterval);
+        finishSteps(function(){
+          hideCheckingScreen();
+          hapticN("success");
+          toast("✅ Commande confirmée ! Tu vas recevoir tes accès dans le bot.",5000);
+        });
       }
     });
   },5000);
