@@ -1575,16 +1575,18 @@ function updateStockBadge(){
   if($("statPays"))$("statPays").textContent=pays;
 }
 
-var _cachedCodes=null,_cachedProdsLen=-1;
+var _cachedCodes=null,_cachedProdsLen=-1,_cachedStockSum=-1;
 function activeCodes(){
-  /* Cache activeCodes — recalculer seulement si prods a changé */
-  if(_cachedCodes&&_cachedProdsLen===prods.length)return _cachedCodes;
+  /* Cache activeCodes — recalculer si prods a changé OU si un stock a changé
+     (même bug que les deux autres caches : le nombre de produits seul ne suffit pas). */
+  var stockSum=prods.reduce(function(s,p){return s+Number(p.stock||0);},0);
+  if(_cachedCodes&&_cachedProdsLen===prods.length&&_cachedStockSum===stockSum)return _cachedCodes;
   var s=new Set();
   for(var i=0;i<prods.length;i++){
     var cs=prods[i].countries||[];
     for(var j=0;j<cs.length;j++){if(Number(prods[i].stock||0)>0)s.add(cs[j]);}
   }
-  _cachedCodes=s;_cachedProdsLen=prods.length;
+  _cachedCodes=s;_cachedProdsLen=prods.length;_cachedStockSum=stockSum;
   return s;
 }
 function renderChips(){
@@ -1768,7 +1770,11 @@ function renderCatalogDom(el){
 /* Cache du groupage par pays */
 var _paysGroupCache=null,_paysGroupKey="";
 function getPaysGroups(items){
-  var key=activeC+"|"+query+"|"+items.length;
+  /* La clé inclut la somme des stocks — sinon ce cache renvoyait les anciens totaux
+     même après un changement de stock, puisque items.length seul ne bouge pas
+     quand un produit passe juste de 5 à 0. C'était le vrai bug restant. */
+  var stockSum=items.reduce(function(s,p){return s+Number(p.stock||0);},0);
+  var key=activeC+"|"+query+"|"+items.length+"|"+stockSum;
   if(_paysGroupCache&&_paysGroupKey===key)return _paysGroupCache;
   var paysMap={};
   for(var i=0;i<items.length;i++){
