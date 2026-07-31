@@ -865,6 +865,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .checking-step.done .checking-step-dot{background:var(--ok);box-shadow:none;}
 .checking-step.done{color:var(--sub);}
 @keyframes chkStepPulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes dotBounceCt{0%,100%{opacity:.3;transform:scale(.7);}50%{opacity:1;transform:scale(1);}}
 </style>
 </head>
 <body>
@@ -1169,6 +1170,21 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   </div>
 </div>
 <div class="overlay" id="depOverlay"></div>
+<div class="overlay" id="checkToolOverlay"></div>
+<div class="sheet" id="checkToolSheet">
+  <div class="sh-handle"></div>
+  <div class="sh-hdr">
+    <span class="sh-title">🔍 Vérifier un accès</span>
+    <button class="sh-close" id="checkToolClose">✕</button>
+  </div>
+  <div class="sh-body">
+    <p style="font-size:12px;color:var(--sub);margin-bottom:14px;line-height:1.7">Vérifie si un accès que tu possèdes fonctionne encore. Un seul compte à la fois.</p>
+    <input class="field" id="ctEmail" type="text" placeholder="email@domaine.com" autocapitalize="off" autocorrect="off" style="margin-bottom:8px">
+    <input class="field" id="ctPass" type="text" placeholder="Mot de passe" autocapitalize="off" autocorrect="off" style="margin-bottom:12px">
+    <button class="btn" id="ctBtn" style="width:100%;padding:13px;font-size:14px">Vérifier</button>
+    <div id="ctResult" style="margin-top:14px"></div>
+  </div>
+</div>
 <div class="sheet" id="depSheet">
   <div class="sh-handle"></div>
   <div class="sh-hdr">
@@ -1182,6 +1198,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
       <div class="dep-hdl" id="depHdl"></div>
       <div class="dep-bal-lbl">Solde disponible</div>
       <div class="dep-bal" id="depBal">0,00€</div>
+      <button class="btn btn-outline" id="openCheckToolBtn" style="width:100%;margin-top:14px;padding:11px;font-size:13px">🔍 Vérifier un accès</button>
     </div>
     <div id="depContent"></div>
   </div>
@@ -2691,6 +2708,84 @@ function hideCheckingScreen(){
   var sc=document.getElementById("checkingScreen");
   if(sc)sc.classList.remove("open");
 }
+
+/* ══ VÉRIFICATEUR D'ACCÈS UNIQUE (client) ══════════════════
+   Rate-limité côté serveur (Firebase) pour éviter les abus sur le checker :
+   1 vérification toutes les 90 secondes par client. */
+var CHECK_TOOL_COOLDOWN_MS=90000;
+var _ctPollInt=null;
+
+$("openCheckToolBtn").onclick=function(){
+  $("ctEmail").value="";$("ctPass").value="";$("ctResult").innerHTML="";
+  $("checkToolOverlay").classList.add("on");
+  requestAnimationFrame(function(){$("checkToolSheet").classList.add("on");});
+};
+function closeCheckTool(){
+  $("checkToolSheet").classList.remove("on");
+  setTimeout(function(){$("checkToolOverlay").classList.remove("on");},290);
+  if(_ctPollInt){clearInterval(_ctPollInt);_ctPollInt=null;}
+}
+$("checkToolClose").onclick=closeCheckTool;
+$("checkToolOverlay").onclick=closeCheckTool;
+
+$("ctBtn").onclick=async function(){
+  var email=($("ctEmail").value||"").trim().toLowerCase();
+  var pass=$("ctPass").value||"";
+  if(!email||!email.includes("@")||!pass){toast("Renseigne un email et un mot de passe valides.");return;}
+  if(!fbOk||!me.id){toast("Connexion requise.");return;}
+
+  var btn=$("ctBtn");
+  btn.disabled=true;btn.textContent="Vérification du délai…";
+
+  try{
+    var lastSnap=await db.ref("users/"+me.id+"/lastManualCheck").once("value");
+    var last=lastSnap.val()||0;
+    var elapsed=Date.now()-last;
+    if(elapsed<CHECK_TOOL_COOLDOWN_MS){
+      var wait=Math.ceil((CHECK_TOOL_COOLDOWN_MS-elapsed)/1000);
+      $("ctResult").innerHTML='<div style="background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.2);border-radius:10px;padding:12px 14px;font-size:13px;color:orange;text-align:center">⏳ Réessaie dans <b>'+wait+'s</b> — une vérification à la fois pour éviter les abus.</div>';
+      btn.disabled=false;btn.textContent="Vérifier";
+      return;
+    }
+
+    await db.ref("users/"+me.id+"/lastManualCheck").set(Date.now());
+    var checkId="mck_"+Date.now();
+    await db.ref("pending_manual_checks/"+checkId).set({
+      userId:me.id,email:email,pass:pass,createdAt:Date.now(),status:"waiting"
+    });
+
+    btn.textContent="⏳ Vérification en cours…";
+    $("ctResult").innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--sub)"><div style="width:8px;height:8px;border-radius:50%;background:var(--ac);animation:dotBounceCt 1s ease-in-out infinite"></div>Connexion au serveur mail…</div>';
+
+    var attempts=0;
+    _ctPollInt=setInterval(function(){
+      attempts++;
+      if(attempts>24){ /* 24×2.5s = 1min max */
+        clearInterval(_ctPollInt);_ctPollInt=null;
+        $("ctResult").innerHTML='<div style="background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.2);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--err);text-align:center">⏱️ Délai dépassé, réessaie plus tard.</div>';
+        btn.disabled=false;btn.textContent="Vérifier";
+        return;
+      }
+      db.ref("pending_manual_checks/"+checkId).once("value",function(s){
+        var d=s.val();
+        if(!d||d.status!=="done")return;
+        clearInterval(_ctPollInt);_ctPollInt=null;
+        btn.disabled=false;btn.textContent="Vérifier";
+        if(d.result==="valid"){
+          hapticN("success");
+          $("ctResult").innerHTML='<div style="background:rgba(62,201,92,.1);border:1px solid rgba(62,201,92,.25);border-radius:10px;padding:14px;text-align:center"><div style="font-size:24px;margin-bottom:4px">✅</div><div style="font-weight:700;color:var(--ok);font-size:14px">Accès valide</div><div style="font-size:12px;color:var(--sub);margin-top:2px">Ce compte fonctionne correctement.</div></div>';
+        }else if(d.result==="invalid"){
+          $("ctResult").innerHTML='<div style="background:rgba(255,79,64,.1);border:1px solid rgba(255,79,64,.25);border-radius:10px;padding:14px;text-align:center"><div style="font-size:24px;margin-bottom:4px">❌</div><div style="font-weight:700;color:var(--err);font-size:14px">Accès invalide</div><div style="font-size:12px;color:var(--sub);margin-top:2px">Email ou mot de passe incorrect.</div></div>';
+        }else{
+          $("ctResult").innerHTML='<div style="background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.2);border-radius:10px;padding:14px;text-align:center"><div style="font-size:24px;margin-bottom:4px">ℹ️</div><div style="font-weight:700;color:orange;font-size:14px">Non vérifiable</div><div style="font-size:12px;color:var(--sub);margin-top:2px">Ce fournisseur ne permet pas la vérification automatique.</div></div>';
+        }
+      });
+    },2500);
+  }catch(e){
+    toast("Erreur: "+e.message,4000);
+    btn.disabled=false;btn.textContent="Vérifier";
+  }
+};
 
 initSplash();
 
