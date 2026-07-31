@@ -2483,15 +2483,25 @@ function parseMP(txt){
   });
   return{groups:Object.values(grouped),dupes,invalid,total:seen.size};
 }
-function importMP(groups){
+async function importMP(groups){
   const upd={};
-  groups.forEach(g=>{
+  for(const g of groups){
     const ex=prods.find(p=>p.domain===g.domain&&(p.countries||[]).includes(g.country));
-    const ref=ex?null:db.ref("products").push();const pid=ex?ex.id:ref.key;
-    const old=ex?Number(ex.stock||0):0;
-    upd["products/"+pid]={domain:g.domain,countries:[g.country],price:PRICE_BASE,stock:old+g.accounts.length};
+    const ref=ex?null:db.ref("products").push();
+    const pid=ex?ex.id:ref.key;
+    /* TOUJOURS relire le vrai nombre de credentials en Firebase avant de calculer
+       le nouveau stock — jamais se fier au cache local (prods), qui peut être
+       périmé si le checker a supprimé des invalides en arrière-plan entre-temps.
+       C'est ce décalage qui causait des stocks affichés totalement faux. */
+    let realOld=0;
+    if(ex){
+      const snap=await db.ref("credentials/"+pid).once("value");
+      const v=snap.val()||{};
+      realOld=Object.keys(v).length;
+    }
+    upd["products/"+pid]={domain:g.domain,countries:[g.country],price:PRICE_BASE,stock:realOld+g.accounts.length};
     g.accounts.forEach(a=>{const r=db.ref("credentials/"+pid).push();upd["credentials/"+pid+"/"+r.key]={email:a.email,pass:a.pass,sold:false};});
-  });
+  }
   return db.ref("/").update(upd);
 }
 
