@@ -202,6 +202,8 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   cursor:pointer;transition:all .15s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;flex:0 0 auto;}
 .chip:active{transform:scale(.92);}
 .chip.on{background:var(--ac);border-color:var(--ac);color:#111;}
+.chip-pays{border-style:dashed;}
+.chip-pays.on{border-style:solid;}
 
 /* ══ STOCK LIST ═════════════════════════ */
 .stock-list{display:flex;flex-direction:column;gap:10px;padding:0 12px;}
@@ -1630,18 +1632,38 @@ function activeCodes(){
   return s;
 }
 function renderChips(){
-  const el=$("chips"),codes=activeCodes();el.innerHTML="";
-  [{ c:"all",n:"🌍 TOUS" },{ c:"BESTSELLERS",n:"🔥 Best-sellers" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c,16)+"&nbsp;"+cty.n}))].forEach(cty=>{
+  const el=$("chips");el.innerHTML="";
+  /* Chips fixes : TOUS et Best-sellers, toujours visibles */
+  [{ c:"all",n:"🌍 TOUS" },{ c:"BESTSELLERS",n:"🔥 Best-sellers" }].forEach(cty=>{
     const chip=document.createElement("div");chip.className="chip"+(activeC===cty.c?" on":"");chip.innerHTML=cty.n;
     fastClick(chip,function(){
       activeC=cty.c;showAll=false;
       if(cty.c==="BESTSELLERS")viewMode="dom";
+      else if(cty.c==="all"){
+        /* "TOUS" doit vraiment tout réinitialiser — sinon une recherche en cours
+           laissait la vue coincée sur la liste au lieu de revenir à l'accueil pays. */
+        viewMode="pays";query="";
+        var si=$("searchIn");if(si)si.value="";
+        var sc=$("searchClear");if(sc)sc.style.display="none";
+      }
       _lastRenderKey="";_paysGroupCache=null;
       renderChips();
       setTimeout(function(){renderCatalog();},0);
     });
     el.appendChild(chip);
   });
+  /* Un seul bouton "pays" à la place de la longue liste — ouvre le sélecteur complet.
+     Affiche le pays actif s'il y en a un, sinon une invite générique. */
+  const isCountrySelected=activeC!=="all"&&activeC!=="BESTSELLERS";
+  const paysChip=document.createElement("div");
+  paysChip.className="chip chip-pays"+(isCountrySelected?" on":"");
+  paysChip.innerHTML=isCountrySelected?(flag(activeC,16)+"&nbsp;"+cName(activeC)+" ▾"):"📍 Choisir un pays ▾";
+  fastClick(paysChip,function(){
+    buildPaysGrid();
+    $("paysOverlay").classList.add("on");
+    $("paysSheet").classList.add("on");
+  });
+  el.appendChild(paysChip);
 }
 
 /* ══ PAYS POPUP ═══════════════════════════════ */
@@ -1984,7 +2006,7 @@ function renderCatalogPays(el){
     clearTimeout(inp._t);
     inp._t=setTimeout(function(){renderCatalog();},150);
   });
-  clr.onclick=()=>{inp.value="";query="";showAll=false;renderCatalog();inp.blur();row.classList.remove("on");clr.style.display="none";};
+  clr.onclick=()=>{inp.value="";query="";showAll=false;viewMode="pays";activeC="all";_lastRenderKey="";_paysGroupCache=null;renderChips();renderCatalog();inp.blur();row.classList.remove("on");clr.style.display="none";};
   /* Fermer le clavier si on touche en dehors ou si on scroll */
   document.addEventListener("touchstart",(e)=>{if(!row.contains(e.target))inp.blur();},{passive:true});
   document.getElementById("catalog").addEventListener("scroll",()=>inp.blur(),{passive:true});
@@ -2240,9 +2262,11 @@ function isKnownPublicProvider(domain){
 }
 function isProDomain(domain){return!isKnownPublicProvider(domain);}
 
-/* Icône du fournisseur — favicon public du site, jamais de logo hébergé (droits de marque) */
+/* Icône du fournisseur — favicon public du site, jamais de logo hébergé (droits de marque).
+   DuckDuckGo a une bien meilleure couverture que Google et échoue proprement (pas d'icône
+   générique moche) quand il n'a rien pour un domaine peu connu. */
 function providerFaviconUrl(domain){
-  return "https://www.google.com/s2/favicons?sz=64&domain="+encodeURIComponent(domain);
+  return "https://icons.duckduckgo.com/ip3/"+encodeURIComponent(domain)+".ico";
 }
 
 /* Livre directement les articles Hotmail (sans passer par le checker), gère le
