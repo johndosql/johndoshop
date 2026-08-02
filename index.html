@@ -1971,25 +1971,34 @@ function renderCatalogPays(el){
     return;
   }
 
-  /* Pays sélectionné : liste des domaines */
-  var items=filtered().sort(function(a,b){return Number(b.stock||0)-Number(a.stock||0);});
+  /* Pays sélectionné : liste des domaines — favicon, best-sellers, groupement pro/public */
+  var items=filtered();
   if(!items.length){el.innerHTML='<p class="empty">Aucun accès pour ce pays.</p>';return;}
-  var maxSt=Number(items[0].stock||1);
-  items.forEach(function(p){
-    var st=Number(p.stock||0);
-    var pct=Math.max(3,Math.round(st/maxSt*100));
-    var col=st<=0?"var(--err)":st<=5?"orange":"var(--ac)";
-    var card=document.createElement("div");card.className="scard-compact";
-    card.innerHTML="<div class='sc-info'>"
-      +"<div class='sc-dom'>@"+p.domain+"</div>"
-      +"<div class='sc-meta'><span class='sc-stock'>"+(st<=0?"Épuisé":st+" en stock")+"</span>"
-      +"<div class='sc-bar'><div class='sc-bar-fill' style='width:"+pct+"%;background:"+col+"'></div></div>"
-      +"</div></div>"
-      +"<div class='sc-price'>"+fmt(PRICE_BASE)+"</div>"
-      +"<button class='add-btn' style='width:34px;height:34px;font-size:18px;touch-action:manipulation'"+(st<=0?" disabled":"")+">+</button>";
-    card.querySelector(".add-btn").onclick=function(){addCart(p);};
-    el.appendChild(card);
-  });
+  var best=topSellers(items,5);
+  var bestIds=new Set(best.map(function(p){return p.id;}));
+  var rest=items.filter(function(p){return!bestIds.has(p.id);}).sort(function(a,b){return Number(b.stock||0)-Number(a.stock||0);});
+  var pub=rest.filter(function(p){return isKnownPublicProvider(p.domain);});
+  var pro=rest.filter(function(p){return isProDomain(p.domain);});
+
+  if(best.length){
+    var h1=document.createElement("div");h1.className="pd-sec-lbl";h1.innerHTML="🔥 Best-sellers";el.appendChild(h1);
+    best.forEach(function(p){el.appendChild(buildDomCompactCard(p,true));});
+  }
+  if(pub.length){
+    var h2=document.createElement("div");h2.className="pd-sec-lbl";h2.innerHTML=best.length?"📮 Grand public":"";el.appendChild(h2);
+    pub.forEach(function(p){el.appendChild(buildDomCompactCard(p,false));});
+  }
+  if(pro.length){
+    var h3=document.createElement("div");h3.className="pd-sec-lbl pd-sec-toggle";h3.innerHTML="💼 Pro / Entreprise ("+pro.length+") <span class='pd-chevron'>▾</span>";
+    var proWrap=document.createElement("div");proWrap.className="pd-pro-wrap collapsed";
+    pro.forEach(function(p){proWrap.appendChild(buildDomCompactCard(p,false));});
+    h3.onclick=function(){
+      proWrap.classList.toggle("collapsed");
+      h3.querySelector(".pd-chevron").textContent=proWrap.classList.contains("collapsed")?"▾":"▴";
+    };
+    el.appendChild(h3);
+    el.appendChild(proWrap);
+  }
 }
 
 /* ══ SEARCH ════════════════════════════════ */
