@@ -349,7 +349,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
   text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);}
 .pd-chevron{color:var(--sub);transition:transform .2s;}
-.pd-pro-wrap{overflow:hidden;max-height:2000px;transition:max-height .3s ease;margin-top:6px;}
+.pd-pro-wrap{overflow:hidden;max-height:0;transition:max-height .3s ease;margin-top:6px;}
 .pd-pro-wrap.collapsed{max-height:0;margin-top:0;}
 .sc-meta{display:flex;align-items:center;gap:8px;}
 .sc-stock{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);}
@@ -1851,6 +1851,7 @@ function renderCatalogDom(el){
   });
   if(hasMore){const m=document.createElement("div");m.className="see-more-btn";m.textContent="Voir les "+(all.length-GRID_LIMIT)+" autres accès →";m.onclick=()=>{showAll=true;renderCatalog();};el.appendChild(m);}
   const t=document.createElement("div");t.className="trust";t.textContent="Crypto sécurisé · Livraison instantanée · Stock temps réel";el.appendChild(t);
+  observeFavicons(el);
 }
 
 /* Cache du groupage par pays */
@@ -1923,12 +1924,15 @@ function openPaysDetail(section){
     var proWrap=document.createElement("div");proWrap.className="pd-pro-wrap collapsed";
     pro.forEach(function(p){proWrap.appendChild(buildDomCompactCard(p,false));});
     h3.onclick=function(){
+      var willExpand=proWrap.classList.contains("collapsed");
       proWrap.classList.toggle("collapsed");
-      h3.querySelector(".pd-chevron").textContent=proWrap.classList.contains("collapsed")?"▾":"▴";
+      proWrap.style.maxHeight=willExpand?(proWrap.scrollHeight+"px"):"0px";
+      h3.querySelector(".pd-chevron").textContent=willExpand?"▴":"▾";
     };
     body.appendChild(h3);
     body.appendChild(proWrap);
   }
+  observeFavicons(body);
   haptic("light");
 }
 
@@ -1988,6 +1992,7 @@ function renderCatalogPays(el){
     t.style.cssText="text-align:center;color:var(--sub);font-family:'IBM Plex Mono',monospace;font-size:10px;padding:16px 0 4px;";
     t.textContent="Crypto sécurisé · Livraison instantanée";
     el.appendChild(t);
+    observeFavicons(el);
     return;
   }
 
@@ -2013,12 +2018,15 @@ function renderCatalogPays(el){
     var proWrap=document.createElement("div");proWrap.className="pd-pro-wrap collapsed";
     pro.forEach(function(p){proWrap.appendChild(buildDomCompactCard(p,false));});
     h3.onclick=function(){
+      var willExpand=proWrap.classList.contains("collapsed");
       proWrap.classList.toggle("collapsed");
-      h3.querySelector(".pd-chevron").textContent=proWrap.classList.contains("collapsed")?"▾":"▴";
+      proWrap.style.maxHeight=willExpand?(proWrap.scrollHeight+"px"):"0px";
+      h3.querySelector(".pd-chevron").textContent=willExpand?"▴":"▾";
     };
     el.appendChild(h3);
     el.appendChild(proWrap);
   }
+  observeFavicons(el);
 }
 
 /* ══ SEARCH ════════════════════════════════ */
@@ -2300,11 +2308,41 @@ function providerFaviconUrl(domain){
   return "https://www.google.com/s2/favicons?sz=32&domain="+encodeURIComponent(domain);
 }
 /* Icône complète prête à insérer — pour TOUS les domaines, grand public ou pro.
-   loading="lazy" (natif navigateur) ne charge que les icônes proches de l'écran,
-   pas les 500 d'un coup — c'est ça qui évite la rafale de requêtes qui ralentissait
-   tout, pas le fait d'exclure des domaines. */
+   Le "loading=lazy" natif du navigateur est mal supporté dans la WebView de Telegram
+   (chargement une fois sur deux, aléatoire) — remplacé par un vrai chargement différé
+   maison (IntersectionObserver), cohérent sur toutes les plateformes. L'image n'a pas
+   de src au départ (juste data-src) : observeFavicons() déclenche le chargement quand
+   la carte devient visible, jamais avant — ce qui évite aussi la rafale de requêtes
+   simultanées quand une longue liste s'affiche d'un coup. */
 function favIconTag(domain){
-  return "<img class='prov-ico' src='"+providerFaviconUrl(domain)+"' width='16' height='16' loading='lazy' decoding='async' referrerpolicy='no-referrer' onerror=\"this.style.visibility='hidden'\">";
+  return "<img class='prov-ico' data-src='"+providerFaviconUrl(domain)+"' width='16' height='16' decoding='async' referrerpolicy='no-referrer' onerror=\"this.style.visibility='hidden'\">";
+}
+
+var _favObserver=null;
+function getFavObserver(){
+  if(_favObserver)return _favObserver;
+  if(!window.IntersectionObserver){
+    /* Navigateur très ancien sans support — on charge tout de suite en repli */
+    _favObserver={observe:function(el){var s=el.getAttribute("data-src");if(s){el.src=s;el.removeAttribute("data-src");}}};
+    return _favObserver;
+  }
+  _favObserver=new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(!entry.isIntersecting)return;
+      var img=entry.target;
+      var s=img.getAttribute("data-src");
+      if(s){img.src=s;img.removeAttribute("data-src");}
+      _favObserver.unobserve(img);
+    });
+  },{rootMargin:"150px"});
+  return _favObserver;
+}
+/* À appeler juste après avoir inséré des cartes contenant des .prov-ico dans le DOM */
+function observeFavicons(container){
+  if(!container)return;
+  var obs=getFavObserver();
+  var imgs=container.querySelectorAll(".prov-ico[data-src]");
+  for(var i=0;i<imgs.length;i++)obs.observe(imgs[i]);
 }
 
 /* Livre directement les articles Hotmail (sans passer par le checker), gère le
@@ -2670,7 +2708,15 @@ async function importMP(groups){
     if(!ex)return Promise.resolve({pid:null,realOld:0});
     return db.ref("credentials/"+ex.id).once("value").then(function(snap){
       const v=snap.val()||{};
-      return{pid:ex.id,realOld:Object.keys(v).length};
+      /* Hotmail : vérifié manuellement avant import → compte immédiatement.
+         Mix/IMAP : ne compter que ce qui a déjà prouvé sa validité (lastChecked) —
+         sinon le stock affiché ment (ex: 40 affichés, 0 réellement vendables car
+         jamais encore testés par le checker de fond). */
+      const isHm=isHotmailFamily(g.domain);
+      const realOld=isHm?Object.keys(v).length:Object.values(v).filter(function(c){
+        return c&&c.lastChecked&&!c.suspect&&!c.timeoutStrikes;
+      }).length;
+      return{pid:ex.id,realOld:realOld};
     });
   }));
   /* 2) Construire une seule mise à jour multi-chemins — un seul aller-retour réseau */
@@ -2678,7 +2724,12 @@ async function importMP(groups){
   groups.forEach(function(g,i){
     const info=reads[i];
     const pid=info.pid||db.ref("products").push().key;
-    upd["products/"+pid]={domain:g.domain,countries:[g.country],price:PRICE_BASE,stock:info.realOld+g.accounts.length};
+    const isHm=isHotmailFamily(g.domain);
+    /* Le nouveau lot ne compte dans le stock affiché QUE pour Hotmail (déjà vérifié
+       à la main). Pour le mix, il reste invisible/non-vendable tant que le checker
+       de fond ne l'a pas validé au moins une fois — évite exactement ton cas. */
+    const newStock=isHm?(info.realOld+g.accounts.length):info.realOld;
+    upd["products/"+pid]={domain:g.domain,countries:[g.country],price:PRICE_BASE,stock:newStock};
     g.accounts.forEach(a=>{const r=db.ref("credentials/"+pid).push();upd["credentials/"+pid+"/"+r.key]={email:a.email,pass:a.pass,sold:false};});
   });
   return db.ref("/").update(upd);
