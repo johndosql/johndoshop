@@ -11,13 +11,14 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#040810;--bg2:#070D18;--sf:#0D1424;--sf2:#131B2E;
-  --ink:#D8F0FF;--sub:#3A5070;--muted:#1E3048;
-  --ac:#00C8A0;--ac2:#00FFCC;
-  --ok:#00E878;--err:#FF4F40;--errs:rgba(255,79,64,.14);
-  --line:rgba(0,200,160,.08);--r:12px;
+  --bg:#080D18;--bg2:#0C1322;--sf:#121A2E;--sf2:#182238;
+  --ink:#E2EDF7;--sub:#6C86A8;--muted:#28405C;
+  --ac:#00C8A0;--ac2:#2EE6C2;
+  --ok:#3EDB74;--err:#FF5B4D;--errs:rgba(255,79,64,.14);
+  --line:rgba(0,200,160,.10);--r:12px;
   color-scheme:dark;
 }
+body{background:var(--bg);background-image:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(0,200,160,.05),transparent);}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 /* Éliminer le délai 300ms iOS sur TOUS les éléments interactifs */
 button,a,input[type=button],input[type=submit],
@@ -215,7 +216,11 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 
 .scard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
 .scard-main{flex:1;min-width:0;}
-.scard-dom{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:15px;color:var(--ink);margin-bottom:6px;}
+.scard-dom{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:15px;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:7px;}
+.prov-ico{width:16px;height:16px;border-radius:4px;flex:0 0 auto;object-fit:contain;}
+.best-badge{font-size:12px;animation:bestPulse 1.6s ease-in-out infinite;}
+@keyframes bestPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.65;transform:scale(1.15);}}
+.scard-best{border-color:rgba(255,140,0,.35);box-shadow:0 0 0 1px rgba(255,140,0,.12),0 4px 20px rgba(255,140,0,.08);}
 .scard-flags{font-size:15px;letter-spacing:2px;}
 .scard-right{text-align:right;flex:0 0 auto;}
 .scard-price{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:20px;color:var(--ac);margin-bottom:8px;}
@@ -288,7 +293,19 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .scard-compact{display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:0 12px 6px;transition:border-color .15s;animation:fadeUp .3s both;}
 .scard-compact:active{border-color:rgba(0,200,160,.25);}
 .sc-info{flex:1;min-width:0;}
-.sc-dom{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ac);margin-bottom:4px;}
+.sc-dom{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ac);margin-bottom:4px;display:flex;align-items:center;gap:6px;}
+
+.pd-sec-lbl{
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;color:var(--sub);
+  text-transform:uppercase;letter-spacing:.06em;margin:16px 4px 8px;
+}
+.pd-sec-lbl:first-child{margin-top:4px;}
+.pd-sec-toggle{cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+  background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);}
+.pd-chevron{color:var(--sub);transition:transform .2s;}
+.pd-pro-wrap{overflow:hidden;max-height:2000px;transition:max-height .3s ease;margin-top:6px;}
+.pd-pro-wrap.collapsed{max-height:0;margin-top:0;}
 .sc-meta{display:flex;align-items:center;gap:8px;}
 .sc-stock{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--sub);}
 .sc-bar{height:3px;background:var(--muted);border-radius:2px;overflow:hidden;width:50px;}
@@ -1565,7 +1582,30 @@ function loadProds(){
     prods=SEED.map(function(p,i){return{id:"s"+i,...p};});
     scheduleRender();
   });
+
+  /* Charger les stats de ventes pour les best-sellers — léger, mis à jour en direct */
+  if(fbOk){
+    db.ref("domain_stats").on("value",function(s){
+      var v=s.val()||{};
+      domainSales={};
+      Object.values(v).forEach(function(d){
+        if(d&&d.domain)domainSales[d.domain.toLowerCase()]=Number(d.sales||0);
+      });
+      _lastRenderKey="";_paysGroupCache=null;
+      renderCatalog();
+    });
+  }
 }
+
+var domainSales={};
+function salesFor(domain){return domainSales[(domain||"").toLowerCase()]||0;}
+/* Top N d'une liste de produits par ventes (au moins 1 vente pour compter comme best-seller) */
+function topSellers(items,n){
+  return items.filter(function(p){return salesFor(p.domain)>0;})
+    .sort(function(a,b){return salesFor(b.domain)-salesFor(a.domain);})
+    .slice(0,n||5);
+}
+
 
 function updateStockBadge(){
   const total=prods.reduce((s,p)=>s+Number(p.stock||0),0);
@@ -1591,10 +1631,11 @@ function activeCodes(){
 }
 function renderChips(){
   const el=$("chips"),codes=activeCodes();el.innerHTML="";
-  [{ c:"all",n:"🌍 TOUS" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c,16)+"&nbsp;"+cty.n}))].forEach(cty=>{
+  [{ c:"all",n:"🌍 TOUS" },{ c:"BESTSELLERS",n:"🔥 Best-sellers" },...ALL_C.filter(x=>x.c!=="all"&&x.c!=="MIX"&&codes.has(x.c)).map(cty=>({c:cty.c,n:flag(cty.c,16)+"&nbsp;"+cty.n}))].forEach(cty=>{
     const chip=document.createElement("div");chip.className="chip"+(activeC===cty.c?" on":"");chip.innerHTML=cty.n;
     fastClick(chip,function(){
       activeC=cty.c;showAll=false;
+      if(cty.c==="BESTSELLERS")viewMode="dom";
       _lastRenderKey="";_paysGroupCache=null;
       renderChips();
       setTimeout(function(){renderCatalog();},0);
@@ -1675,6 +1716,16 @@ function setView(v){viewMode=v;showAll=false;renderCatalog();}
 
 function filtered(){
   var q=query.trim().toLowerCase();
+  if(activeC==="BESTSELLERS"){
+    var top=topSellers(prods,20);
+    if(!q)return top;
+    return top.filter(function(p){
+      var dom=(p.domain||"").toLowerCase();
+      if(dom.includes(q))return true;
+      var cs=p.countries||[];
+      return cs.some(function(c){return c.toLowerCase().includes(q)||cName(c).toLowerCase().includes(q);});
+    });
+  }
   var result=[];
   for(var i=0;i<prods.length;i++){
     var p=prods[i];
@@ -1726,7 +1777,8 @@ function renderCatalog(){
 function renderCatalogDom(el){
   let all=filtered();
   /* Tri */
-  if(sortMode==="desc")all=all.sort((a,b)=>Number(b.stock||0)-Number(a.stock||0));
+  if(activeC==="BESTSELLERS")all=all.sort((a,b)=>salesFor(b.domain)-salesFor(a.domain));
+  else if(sortMode==="desc")all=all.sort((a,b)=>Number(b.stock||0)-Number(a.stock||0));
   else if(sortMode==="asc")all=all.sort((a,b)=>Number(a.stock||0)-Number(b.stock||0));
   else all=all.sort((a,b)=>a.domain.localeCompare(b.domain));
   const isFiltered=activeC!=="all"||query.trim()!=="";
@@ -1735,6 +1787,7 @@ function renderCatalogDom(el){
   el.innerHTML="";
   if(!items.length){el.innerHTML='<p class="empty">Aucun accès trouvé.</p>';return;}
   const maxStock=Math.max(...items.map(p=>Number(p.stock||0)),1);
+  const bestSet=new Set(topSellers(all,5).map(p=>p.id));
   items.forEach((p,i)=>{
     const st=Number(p.stock||0);
     let tagCls="gold",tagTxt=st+" en stock";
@@ -1742,11 +1795,12 @@ function renderCatalogDom(el){
     else if(st<=5){tagCls="orange";tagTxt="⚠ "+st+" restants";}
     else if(st<=15){tagCls="green";tagTxt=st+" en stock";}
     const pct=Math.max(4,Math.round(st/maxStock*100));
-    const card=document.createElement("div");card.className="scard";card.style.animationDelay=(i*.04)+"s";
+    const isBest=bestSet.has(p.id);
+    const card=document.createElement("div");card.className="scard"+(isBest?" scard-best":"");card.style.animationDelay=(i*.04)+"s";
     card.innerHTML=`
       <div class="scard-top">
         <div class="scard-main">
-          <div class="scard-dom">@${p.domain}</div>
+          <div class="scard-dom"><img class="prov-ico" src="${providerFaviconUrl(p.domain)}" loading="lazy" onerror="this.style.display='none'">@${p.domain}${isBest?'<span class="best-badge">🔥</span>':''}</div>
           <div class="scard-flags">${(p.countries||[]).map(c=>flag(c)).join(" ")}</div>
         </div>
         <div class="scard-right">
@@ -1792,29 +1846,57 @@ function getPaysGroups(items){
   return sections;
 }
 
+/* Construit une carte compacte réutilisable (best-sellers / grand public / pro) */
+function buildDomCompactCard(p,isBest){
+  var st=Number(p.stock||0);
+  var maxSt=Math.max(1,st);
+  var pct=st>0?100:0;
+  var col=st<=0?"var(--err)":st<=5?"orange":"var(--ac)";
+  var card=document.createElement("div");card.className="scard-compact"+(isBest?" scard-best":"");
+  card.innerHTML="<div class='sc-info'>"
+    +"<div class='sc-dom'><img class='prov-ico' src='"+providerFaviconUrl(p.domain)+"' loading='lazy' onerror=\"this.style.display='none'\">@"+p.domain+(isBest?"<span class='best-badge'>🔥</span>":"")+"</div>"
+    +"<div class='sc-meta'><span class='sc-stock'>"+(st<=0?"Épuisé":st+" en stock")+"</span>"
+    +"<div class='sc-bar'><div class='sc-bar-fill' style='width:"+pct+"%;background:"+col+"'></div></div></div>"
+    +"</div>"
+    +"<div class='sc-price'>"+fmt(PRICE_BASE)+"</div>"
+    +"<button class='add-btn' style='width:34px;height:34px;font-size:18px'"+(st<=0?" disabled":"")+">+</button>";
+  card.querySelector(".add-btn").onclick=function(){addCart(p);};
+  return card;
+}
+
 /* Ouvrir le détail d'un pays */
 function openPaysDetail(section){
   var title=$("paysDetailTitle"),count=$("paysDetailCount"),body=$("paysDetailBody");
   title.textContent=flag(section.code)+" "+cName(section.code);
   count.textContent=section.total+" accès";
   body.innerHTML="";
-  var sorted=section.prods.slice().sort(function(a,b){return Number(b.stock||0)-Number(a.stock||0);});
-  var maxSt=Math.max.apply(null,sorted.map(function(p){return Number(p.stock||0);}));
-  sorted.forEach(function(p){
-    var st=Number(p.stock||0);
-    var card=document.createElement("div");card.className="scard-compact";
-    var pct=maxSt>0?Math.max(4,Math.round(st/maxSt*100)):0;
-    var col=st<=0?"var(--err)":st<=5?"orange":"var(--ac)";
-    card.innerHTML="<div class='sc-info'>"
-      +"<div class='sc-dom'>@"+p.domain+"</div>"
-      +"<div class='sc-meta'><span class='sc-stock'>"+(st<=0?"Épuisé":st+" en stock")+"</span>"
-      +"<div class='sc-bar'><div class='sc-bar-fill' style='width:"+pct+"%;background:"+col+"'></div></div></div>"
-      +"</div>"
-      +"<div class='sc-price'>"+fmt(PRICE_BASE)+"</div>"
-      +"<button class='add-btn' style='width:34px;height:34px;font-size:18px'"+(st<=0?" disabled":"")+">+</button>";
-    card.querySelector(".add-btn").onclick=function(){addCart(p);};
-    body.appendChild(card);
-  });
+
+  var all=section.prods.slice().sort(function(a,b){return Number(b.stock||0)-Number(a.stock||0);});
+  var best=topSellers(all,5);
+  var bestIds=new Set(best.map(function(p){return p.id;}));
+  var rest=all.filter(function(p){return!bestIds.has(p.id);});
+  var pub=rest.filter(function(p){return isKnownPublicProvider(p.domain);});
+  var pro=rest.filter(function(p){return isProDomain(p.domain);});
+
+  if(best.length){
+    var h1=document.createElement("div");h1.className="pd-sec-lbl";h1.innerHTML="🔥 Best-sellers";body.appendChild(h1);
+    best.forEach(function(p){body.appendChild(buildDomCompactCard(p,true));});
+  }
+  if(pub.length){
+    var h2=document.createElement("div");h2.className="pd-sec-lbl";h2.innerHTML="📮 Grand public";body.appendChild(h2);
+    pub.forEach(function(p){body.appendChild(buildDomCompactCard(p,false));});
+  }
+  if(pro.length){
+    var h3=document.createElement("div");h3.className="pd-sec-lbl pd-sec-toggle";h3.innerHTML="💼 Pro / Entreprise ("+pro.length+") <span class='pd-chevron'>▾</span>";
+    var proWrap=document.createElement("div");proWrap.className="pd-pro-wrap collapsed";
+    pro.forEach(function(p){proWrap.appendChild(buildDomCompactCard(p,false));});
+    h3.onclick=function(){
+      proWrap.classList.toggle("collapsed");
+      h3.querySelector(".pd-chevron").textContent=proWrap.classList.contains("collapsed")?"▾":"▴";
+    };
+    body.appendChild(h3);
+    body.appendChild(proWrap);
+  }
   haptic("light");
 }
 
@@ -2147,6 +2229,22 @@ function isHotmailFamily(domain){
   return["hotmail","outlook","live.","msn.","office365","office.com"].some(function(k){return d.includes(k);});
 }
 
+/* Liste des fournisseurs mail grand public connus (même liste que checker.py) —
+   tout domaine qui N'EST PAS dedans est classé "Pro / Entreprise" par élimination.
+   Plus fiable que d'essayer de deviner "est-ce que c'est une entreprise" au cas par cas. */
+var KNOWN_PUBLIC_PROVIDERS=new Set(["free.fr","orange.fr","wanadoo.fr","sfr.fr","neuf.fr","cegetel.net","laposte.net","bbox.fr","numericable.fr","aliceadsl.fr","tele2.fr","voila.fr","club-internet.fr","noos.fr","b2ma.fr","freenet.de","web.de","gmx.de","gmx.com","gmx.fr","gmx.at","gmx.net","gmx.ch","t-online.de","alice.de","arcor.de","1und1.de","vodafone.de","kabelmail.de","onlinehome.de","yandex.ru","yandex.com","ya.ru","mail.ru","inbox.ru","list.ru","bk.ru","r7.com","rambler.ru","skynet.be","telenet.be","proximus.be","voo.be","bluewin.ch","sunrise.ch","hispeed.ch","ziggo.nl","kpnmail.nl","planet.nl","xs4all.nl","home.nl","hetnet.nl","telfort.nl","chello.nl","terra.es","ono.com","telefonica.net","libero.it","virgilio.it","tiscali.it","alice.it","sapo.pt","mail.pt","btinternet.com","sky.com","virginmedia.com","talktalk.net","blueyonder.co.uk","eircom.net","telia.com","online.no","get.no","live.se","wp.pl","onet.pl","o2.pl","interia.pl","seznam.cz","centrum.cz","zoho.com","aol.com","protonmail.com","fastmail.com","qq.com","163.com","126.com","sina.com","comcast.net","verizon.net","att.net","cox.net","earthlink.net","charter.net","frontier.com","windstream.net","roadrunner.com","optonline.net","bellsouth.net","sbcglobal.net","pacbell.net","sympatico.ca","bell.net","rogers.com","shaw.ca","telus.net","videotron.ca","uol.com.br","bol.com.br","terra.com.br","ig.com.br","outlook.com.br","hotmail.com.br","yahoo.com.br","prodigy.net.mx","yahoo.com.mx","yahoo.com.ar","fibertel.com.ar","speedy.com.ar","yahoo.co.za","mweb.co.za","webmail.co.za","telkomsa.net","yahoo.co.jp","yahoo.co.in","rediffmail.com","yahoo.com.sg","yahoo.com.hk","naver.com","daum.net","hanmail.net","sohu.com","yeah.net","tom.com","bigpond.com","optusnet.com.au","xtra.co.nz","iinet.net.au","internode.on.net","gmail.com","googlemail.com","yahoo.com","yahoo.fr","yahoo.co.uk","yahoo.de","yahoo.es","yahoo.it","icloud.com","me.com","mac.com","juno.com","netzero.net"]);
+function isKnownPublicProvider(domain){
+  var d=(domain||"").toLowerCase();
+  if(isHotmailFamily(d))return true;
+  return KNOWN_PUBLIC_PROVIDERS.has(d);
+}
+function isProDomain(domain){return!isKnownPublicProvider(domain);}
+
+/* Icône du fournisseur — favicon public du site, jamais de logo hébergé (droits de marque) */
+function providerFaviconUrl(domain){
+  return "https://www.google.com/s2/favicons?sz=64&domain="+encodeURIComponent(domain);
+}
+
 /* Livre directement les articles Hotmail (sans passer par le checker), gère le
    remboursement proportionnel si le stock manquait entre-temps. Retourne le montant
    réellement livré (utile pour ajuster ce qu'on envoie ensuite au checker s'il reste
@@ -2157,6 +2255,17 @@ async function deliverHotmailDirect(items,tgId,name,handle,userId){
   var requestedAmount=items.reduce(function(s,e){return s+uPrice(e.item,e.qty)*e.qty;},0);
   var creds=await deliverCreds(items);
   if(tgId)sendBot(tgId,creds,requestedAmount).catch(function(e){console.error("sendBot hotmail:",e);});
+  /* Compteur de ventes par domaine — sert au calcul des best-sellers */
+  if(fbOk&&creds.length){
+    var byDomain={};
+    creds.forEach(function(c){byDomain[c.domain]=(byDomain[c.domain]||0)+1;});
+    Object.keys(byDomain).forEach(function(dom){
+      var safe=dom.toLowerCase().replace(/\./g,"_");
+      db.ref("domain_stats/"+safe+"/sales").once("value",function(s){
+        db.ref("domain_stats/"+safe).update({domain:dom,sales:(s.val()||0)+byDomain[dom]});
+      });
+    });
+  }
   /* Remboursement proportionnel si moins livré que demandé (stock épuisé entre-temps) */
   if(creds.length<requestedQty&&userId&&fbOk){
     var manquants=requestedQty-creds.length;
@@ -2489,24 +2598,27 @@ function parseMP(txt){
   return{groups:Object.values(grouped),dupes,invalid,total:seen.size};
 }
 async function importMP(groups){
-  const upd={};
-  for(const g of groups){
+  /* 1) Lire en PARALLÈLE le vrai nombre de credentials actuels pour chaque groupe
+     concernant un produit existant — jamais se fier au cache local (prods), qui peut
+     être périmé si le checker a supprimé des invalides en arrière-plan entre-temps.
+     Fait en parallèle (Promise.all) plutôt qu'un par un : c'est ce qui rendait
+     l'import lent, groupe après groupe, avant cette correction. */
+  const reads=await Promise.all(groups.map(function(g){
     const ex=prods.find(p=>p.domain===g.domain&&(p.countries||[]).includes(g.country));
-    const ref=ex?null:db.ref("products").push();
-    const pid=ex?ex.id:ref.key;
-    /* TOUJOURS relire le vrai nombre de credentials en Firebase avant de calculer
-       le nouveau stock — jamais se fier au cache local (prods), qui peut être
-       périmé si le checker a supprimé des invalides en arrière-plan entre-temps.
-       C'est ce décalage qui causait des stocks affichés totalement faux. */
-    let realOld=0;
-    if(ex){
-      const snap=await db.ref("credentials/"+pid).once("value");
+    if(!ex)return Promise.resolve({pid:null,realOld:0});
+    return db.ref("credentials/"+ex.id).once("value").then(function(snap){
       const v=snap.val()||{};
-      realOld=Object.keys(v).length;
-    }
-    upd["products/"+pid]={domain:g.domain,countries:[g.country],price:PRICE_BASE,stock:realOld+g.accounts.length};
+      return{pid:ex.id,realOld:Object.keys(v).length};
+    });
+  }));
+  /* 2) Construire une seule mise à jour multi-chemins — un seul aller-retour réseau */
+  const upd={};
+  groups.forEach(function(g,i){
+    const info=reads[i];
+    const pid=info.pid||db.ref("products").push().key;
+    upd["products/"+pid]={domain:g.domain,countries:[g.country],price:PRICE_BASE,stock:info.realOld+g.accounts.length};
     g.accounts.forEach(a=>{const r=db.ref("credentials/"+pid).push();upd["credentials/"+pid+"/"+r.key]={email:a.email,pass:a.pass,sold:false};});
-  }
+  });
   return db.ref("/").update(upd);
 }
 
@@ -2602,12 +2714,10 @@ function renderAdmin(){
           var all=snap.val()||{};
           var toDelete=Object.entries(all).filter(function(e){return!isMs(e[1]&&e[1].domain);}).map(function(e){return e[0];});
           if(!toDelete.length){toast("Rien à supprimer (tout est Hotmail).");btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";return;}
-          var proms=[];
-          toDelete.forEach(function(pid){
-            proms.push(db.ref("credentials/"+pid).remove());
-            proms.push(db.ref("products/"+pid).remove());
-          });
-          Promise.all(proms).then(function(){
+          /* Une SEULE requête multi-chemins au lieu d'une boucle — bien plus rapide et atomique */
+          var upd={};
+          toDelete.forEach(function(pid){upd["credentials/"+pid]=null;upd["products/"+pid]=null;});
+          db.ref("/").update(upd).then(function(){
             toast("✅ "+toDelete.length+" produit(s) vidé(s), Hotmail conservé !");
             btn.textContent="🗑 Vider sauf Hotmail";btn.disabled=false;
           }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";});
@@ -2624,12 +2734,9 @@ function renderAdmin(){
           var all=snap.val()||{};
           var toDelete=Object.entries(all).filter(function(e){return isMs(e[1]&&e[1].domain);}).map(function(e){return e[0];});
           if(!toDelete.length){toast("Rien à supprimer (aucun Hotmail en stock).");btn.disabled=false;btn.textContent="🗑 Vider UNIQUEMENT Hotmail";return;}
-          var proms=[];
-          toDelete.forEach(function(pid){
-            proms.push(db.ref("credentials/"+pid).remove());
-            proms.push(db.ref("products/"+pid).remove());
-          });
-          Promise.all(proms).then(function(){
+          var upd={};
+          toDelete.forEach(function(pid){upd["credentials/"+pid]=null;upd["products/"+pid]=null;});
+          db.ref("/").update(upd).then(function(){
             toast("✅ "+toDelete.length+" produit(s) Hotmail vidé(s), le reste est conservé !");
             btn.textContent="🗑 Vider UNIQUEMENT Hotmail";btn.disabled=false;
           }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider UNIQUEMENT Hotmail";});
@@ -2646,12 +2753,9 @@ function renderAdmin(){
           var all=snap.val()||{};
           var toDelete=Object.entries(all).filter(function(e){return isNeverImportable(e[1]&&e[1].domain);}).map(function(e){return e[0];});
           if(!toDelete.length){toast("Rien à purger (aucun Gmail/Yahoo/iCloud en stock).");btn.disabled=false;btn.textContent="🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)";return;}
-          var proms=[];
-          toDelete.forEach(function(pid){
-            proms.push(db.ref("credentials/"+pid).remove());
-            proms.push(db.ref("products/"+pid).remove());
-          });
-          Promise.all(proms).then(function(){
+          var upd={};
+          toDelete.forEach(function(pid){upd["credentials/"+pid]=null;upd["products/"+pid]=null;});
+          db.ref("/").update(upd).then(function(){
             toast("✅ "+toDelete.length+" produit(s) Gmail/Yahoo/iCloud purgé(s) !");
             btn.textContent="🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)";btn.disabled=false;
           }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)";});
