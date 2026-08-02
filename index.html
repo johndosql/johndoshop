@@ -248,16 +248,59 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .tag.red{background:var(--errs);color:var(--err);border-color:rgba(255,79,64,.2);}
 .tag.orange{background:rgba(255,140,0,.1);color:orange;border-color:rgba(255,140,0,.2);}
 
-.stats-row{
-  margin:0 12px 14px;display:flex;align-items:center;
-  background:var(--sf);border:1px solid var(--line);border-radius:var(--r);
-  padding:12px 0;overflow:hidden;}
+.hero{
+  position:relative;overflow:hidden;
+  margin:0 12px 14px;
+  background:linear-gradient(180deg,var(--sf) 0%,var(--sf2) 100%);
+  border:1px solid var(--line);border-radius:16px;
+  padding:14px 0 0;
+}
+.hero-glow{
+  position:absolute;border-radius:50%;pointer-events:none;
+  filter:blur(30px);opacity:.55;
+}
+.hero-glow-a{
+  width:180px;height:180px;top:-70px;left:-40px;
+  background:radial-gradient(circle,rgba(0,200,160,.35),transparent 70%);
+  animation:heroDrift 9s ease-in-out infinite alternate;
+}
+.hero-glow-b{
+  width:160px;height:160px;bottom:-80px;right:-30px;
+  background:radial-gradient(circle,rgba(46,230,194,.25),transparent 70%);
+  animation:heroDrift 11s ease-in-out infinite alternate-reverse;
+}
+@keyframes heroDrift{
+  0%{transform:translate(0,0) scale(1);}
+  100%{transform:translate(14px,10px) scale(1.12);}
+}
+.hero-stats-row{position:relative;z-index:1;display:flex;align-items:center;padding:0 0 12px;}
 .stat-item{flex:1;text-align:center;padding:0 4px;}
 .stat-val{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:18px;
   color:var(--ac);line-height:1;}
 .stat-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;
   letter-spacing:.1em;color:var(--sub);margin-top:4px;}
 .stat-sep{width:1px;background:var(--line);height:36px;flex:0 0 auto;}
+.hero-rotator{
+  position:relative;z-index:1;height:30px;
+  border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+}
+.hero-r-item{
+  position:absolute;
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;color:var(--ac);
+  opacity:0;animation:pbFade 16s infinite;
+}
+.hero-r-item:nth-child(1){animation-delay:0s;}
+.hero-r-item:nth-child(2){animation-delay:4s;}
+.hero-r-item:nth-child(3){animation-delay:8s;}
+.hero-r-item:nth-child(4){animation-delay:12s;}
+@keyframes pbFade{
+  0%{opacity:0;transform:translateY(4px);}
+  4%{opacity:1;transform:translateY(0);}
+  22%{opacity:1;transform:translateY(0);}
+  26%{opacity:0;transform:translateY(-4px);}
+  100%{opacity:0;}
+}
   text-align:center;padding:13px;border:1px dashed rgba(240,165,0,.2);
   border-radius:var(--r);cursor:pointer;
   font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sub);
@@ -319,29 +362,6 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .trust{text-align:center;color:var(--muted);font-family:'IBM Plex Mono',monospace;
   font-size:10px;padding:20px 0 4px;letter-spacing:.05em;}
 .empty{text-align:center;color:var(--sub);font-size:14px;padding:50px 0;}
-
-/* ══ TICKER ═════════════════════════════ */
-.promo-banner{
-  margin:0 12px 14px;height:38px;position:relative;
-  background:var(--sf);border:1px solid var(--line);border-radius:var(--r);
-  overflow:hidden;
-}
-.pb-item{
-  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--ac);
-  opacity:0;animation:pbFade 16s infinite;
-}
-.pb-item:nth-child(1){animation-delay:0s;}
-.pb-item:nth-child(2){animation-delay:4s;}
-.pb-item:nth-child(3){animation-delay:8s;}
-.pb-item:nth-child(4){animation-delay:12s;}
-@keyframes pbFade{
-  0%{opacity:0;transform:translateY(4px);}
-  4%{opacity:1;transform:translateY(0);}
-  22%{opacity:1;transform:translateY(0);}
-  26%{opacity:0;transform:translateY(-4px);}
-  100%{opacity:0;}
-}
 
 /* ══ BOTTOM NAV ════════════════════════ */
 .bottom-nav{
@@ -1038,26 +1058,36 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
       </div>
     </div>
 
-    <!-- Stats row -->
-    <div class="stats-row">
-      <div class="stat-item">
-        <div class="stat-val" id="statAcces">—</div>
-        <div class="stat-lbl">accès dispo</div>
+    <!-- Hero immersif -->
+    <div class="hero">
+      <div class="hero-glow hero-glow-a"></div>
+      <div class="hero-glow hero-glow-b"></div>
+      <div class="hero-stats-row">
+        <div class="stat-item">
+          <div class="stat-val" id="statAcces">—</div>
+          <div class="stat-lbl">accès dispo</div>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat-item" id="statPaysBtn" style="cursor:pointer" title="Voir les pays">
+          <div class="stat-val" id="statPays" style="text-decoration:underline dotted;text-underline-offset:3px">—</div>
+          <div class="stat-lbl">pays 👆</div>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--ok)">4€</div>
+          <div class="stat-lbl">prix unitaire</div>
+        </div>
+        <div class="stat-sep"></div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--ac)">3€</div>
+          <div class="stat-lbl">dès 10 accès</div>
+        </div>
       </div>
-      <div class="stat-sep"></div>
-      <div class="stat-item" id="statPaysBtn" style="cursor:pointer" title="Voir les pays">
-        <div class="stat-val" id="statPays" style="text-decoration:underline dotted;text-underline-offset:3px">—</div>
-        <div class="stat-lbl">pays 👆</div>
-      </div>
-      <div class="stat-sep"></div>
-      <div class="stat-item">
-        <div class="stat-val" style="color:var(--ok)">4€</div>
-        <div class="stat-lbl">prix unitaire</div>
-      </div>
-      <div class="stat-sep"></div>
-      <div class="stat-item">
-        <div class="stat-val" style="color:var(--ac)">3€</div>
-        <div class="stat-lbl">dès 10 accès</div>
+      <div class="hero-rotator">
+        <span class="hero-r-item">🔥 Restock quotidien</span>
+        <span class="hero-r-item">✅ Stock vérifié en continu</span>
+        <span class="hero-r-item">⚡ Livraison instantanée</span>
+        <span class="hero-r-item">🔒 Paiement crypto sécurisé</span>
       </div>
     </div>
     <div class="search-row" id="searchRow">
@@ -1071,12 +1101,6 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
           <rect x="1" y="12.7" width="16" height="1.8" rx="1" fill="currentColor"/>
         </svg>
       </button>
-    </div>
-    <div class="promo-banner">
-      <span class="pb-item">🔥 Restock quotidien</span>
-      <span class="pb-item">✅ Stock vérifié en continu</span>
-      <span class="pb-item">⚡ Livraison instantanée</span>
-      <span class="pb-item">🔒 Paiement crypto sécurisé</span>
     </div>
     <div class="chips-wrap"><div class="chips" id="chips"></div></div>
     <div id="shopBanner"></div>
@@ -2271,15 +2295,16 @@ function isProDomain(domain){return!isKnownPublicProvider(domain);}
    DuckDuckGo a une bien meilleure couverture que Google et échoue proprement (pas d'icône
    générique moche) quand il n'a rien pour un domaine peu connu. */
 function providerFaviconUrl(domain){
-  return "https://icons.duckduckgo.com/ip3/"+encodeURIComponent(domain)+".ico";
+  /* Service Google — CDN mondial, très rapide et fiable à grande échelle.
+     C'est ÇA qui règle la fluidité, pas le fait de restreindre les domaines. */
+  return "https://www.google.com/s2/favicons?sz=32&domain="+encodeURIComponent(domain);
 }
-/* Icône complète prête à insérer — uniquement pour les fournisseurs grand public
-   connus (bonne couverture, chargement fiable). Les domaines pro/entreprise sont
-   trop variés/rares pour qu'un favicon vaille le coût réseau — on ne le tente même
-   pas, ce qui évite des dizaines de requêtes inutiles et rend l'affichage plus fluide. */
+/* Icône complète prête à insérer — pour TOUS les domaines, grand public ou pro.
+   loading="lazy" (natif navigateur) ne charge que les icônes proches de l'écran,
+   pas les 500 d'un coup — c'est ça qui évite la rafale de requêtes qui ralentissait
+   tout, pas le fait d'exclure des domaines. */
 function favIconTag(domain){
-  if(!isKnownPublicProvider(domain))return"";
-  return "<img class='prov-ico' src='"+providerFaviconUrl(domain)+"' width='16' height='16' loading='lazy' decoding='async' onerror=\"this.style.display='none'\">";
+  return "<img class='prov-ico' src='"+providerFaviconUrl(domain)+"' width='16' height='16' loading='lazy' decoding='async' referrerpolicy='no-referrer' onerror=\"this.style.visibility='hidden'\">";
 }
 
 /* Livre directement les articles Hotmail (sans passer par le checker), gère le
