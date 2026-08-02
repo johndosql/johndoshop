@@ -2946,7 +2946,28 @@ function renderAdmin(){
     else if(t==="stock"){
       pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div style="display:flex;gap:8px;margin-top:8px"><button id="vidStockBtn" style="flex:1;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider TOUT</button><button id="vidStockNoMsBtn" style="flex:1;padding:11px;background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.25);border-radius:10px;color:orange;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider sauf Hotmail</button></div><button id="vidStockOnlyMsBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,120,255,.08);border:1px solid rgba(0,120,255,.25);border-radius:10px;color:#3399FF;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider UNIQUEMENT Hotmail</button><button id="vidStockGmailBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(200,0,0,.08);border:1px solid rgba(200,0,0,.25);border-radius:10px;color:#E05050;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)</button><button id="recalcCountriesBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🔄 Recalculer les pays de tous les produits</button><div id="parsePrev" style="margin-top:10px"></div></div>`;
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
-      fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
+      fi.onchange=async e=>{
+        const f=e.target.files[0];if(!f)return;
+        fb.textContent="⏳ Lecture…";
+        try{
+          const buf=await f.arrayBuffer();
+          let text;
+          try{
+            /* fatal:true = échoue proprement si l'UTF-8 est invalide, au lieu de
+               remplacer silencieusement les caractères par des �. C'est ce qui
+               corrompait des mots de passe avec accents/caractères spéciaux. */
+            text=new TextDecoder("utf-8",{fatal:true}).decode(buf);
+          }catch(err){
+            /* Pas de l'UTF-8 valide — très probablement du Windows-1252 (courant
+               pour des fichiers exportés/édités sous Windows) */
+            text=new TextDecoder("windows-1252").decode(buf);
+          }
+          $("txtImp").value=text;
+          fb.textContent="✅ "+f.name;
+          $("parseBtn").click();
+        }catch(err){toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";}
+        fi.value="";
+      };
       function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=async function(){
         var btn=$("confirmImp");btn.disabled=true;btn.textContent="Vérification anti-doublons…";
         var soldSnap=await db.ref("sold_emails").once("value").catch(function(){return{val:function(){return{};}};});
