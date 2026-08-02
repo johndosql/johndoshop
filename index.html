@@ -180,9 +180,9 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .search-row{margin:0 12px 12px;
   display:flex;align-items:center;gap:8px;
   background:var(--sf);border:1px solid var(--line);border-radius:var(--r);
-  padding:0 14px;height:44px;transition:border-color .18s;}
-.search-row.on{border-color:rgba(240,165,0,.3);}
-.s-hash{font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--ac);flex:0 0 auto;}
+  padding:0 14px;height:44px;transition:border-color .18s,box-shadow .18s;}
+.search-row.on{border-color:rgba(0,200,160,.4);box-shadow:0 0 0 3px rgba(0,200,160,.08);}
+.s-hash{color:var(--ac);flex:0 0 auto;}
 .s-in{flex:1;background:transparent;border:none;outline:none;font-size:14px;color:var(--ink);}
 .s-in::placeholder{color:var(--sub);}
 .s-x{background:var(--sf2);border:1px solid var(--line);border-radius:7px;
@@ -321,20 +321,27 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .empty{text-align:center;color:var(--sub);font-size:14px;padding:50px 0;}
 
 /* ══ TICKER ═════════════════════════════ */
-.ticker-bar{
-  margin:0 12px 14px;
+.promo-banner{
+  margin:0 12px 14px;height:38px;position:relative;
   background:var(--sf);border:1px solid var(--line);border-radius:var(--r);
-  padding:8px 12px;display:flex;align-items:center;gap:8px;overflow:hidden;}
-.t-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:0 0 auto;
-  box-shadow:0 0 5px var(--ok);}
-.t-mask{flex:1;overflow:hidden;
-  -webkit-mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);}
-.t-inner{display:flex;white-space:nowrap;animation:tick 4.5s linear infinite;will-change:transform;}
-@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.ti{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sub);padding:0 6px;}
-.ti.g{color:var(--ok);}
-.ti.r{color:var(--err);}
-.ti.s{color:rgba(255,255,255,.1);padding:0 12px;}
+  overflow:hidden;
+}
+.pb-item{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--ac);
+  opacity:0;animation:pbFade 16s infinite;
+}
+.pb-item:nth-child(1){animation-delay:0s;}
+.pb-item:nth-child(2){animation-delay:4s;}
+.pb-item:nth-child(3){animation-delay:8s;}
+.pb-item:nth-child(4){animation-delay:12s;}
+@keyframes pbFade{
+  0%{opacity:0;transform:translateY(4px);}
+  4%{opacity:1;transform:translateY(0);}
+  22%{opacity:1;transform:translateY(0);}
+  26%{opacity:0;transform:translateY(-4px);}
+  100%{opacity:0;}
+}
 
 /* ══ BOTTOM NAV ════════════════════════ */
 .bottom-nav{
@@ -1054,7 +1061,7 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
       </div>
     </div>
     <div class="search-row" id="searchRow">
-      <span class="s-hash">#</span>
+      <svg class="s-hash" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input class="s-in" id="searchIn" type="text" placeholder="Rechercher par domaine ou pays…" inputmode="search">
       <button class="s-x" id="searchClear">✕</button>
       <button class="menu-btn" id="openMenu" title="Options">
@@ -1065,20 +1072,11 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
         </svg>
       </button>
     </div>
-    <div class="ticker-bar">
-      <div class="t-dot"></div>
-      <div class="t-mask">
-        <div class="t-inner" style="animation-duration:18s">
-          <span class="ti g">Stock quotidien</span>
-          <span class="ti s">·</span>
-          <span class="ti r">Non dispo : GMX · Yahoo · Gmail · iCloud</span>
-          <span class="ti s">·</span>
-          <span class="ti g">Stock quotidien</span>
-          <span class="ti s">·</span>
-          <span class="ti r">Non dispo : GMX · Yahoo · Gmail · iCloud</span>
-          <span class="ti s">·</span>
-        </div>
-      </div>
+    <div class="promo-banner">
+      <span class="pb-item">🔥 Restock quotidien</span>
+      <span class="pb-item">✅ Stock vérifié en continu</span>
+      <span class="pb-item">⚡ Livraison instantanée</span>
+      <span class="pb-item">🔒 Paiement crypto sécurisé</span>
     </div>
     <div class="chips-wrap"><div class="chips" id="chips"></div></div>
     <div id="shopBanner"></div>
@@ -1652,18 +1650,6 @@ function renderChips(){
     });
     el.appendChild(chip);
   });
-  /* Un seul bouton "pays" à la place de la longue liste — ouvre le sélecteur complet.
-     Affiche le pays actif s'il y en a un, sinon une invite générique. */
-  const isCountrySelected=activeC!=="all"&&activeC!=="BESTSELLERS";
-  const paysChip=document.createElement("div");
-  paysChip.className="chip chip-pays"+(isCountrySelected?" on":"");
-  paysChip.innerHTML=isCountrySelected?(flag(activeC,16)+"&nbsp;"+cName(activeC)+" ▾"):"📍 Choisir un pays ▾";
-  fastClick(paysChip,function(){
-    buildPaysGrid();
-    $("paysOverlay").classList.add("on");
-    $("paysSheet").classList.add("on");
-  });
-  el.appendChild(paysChip);
 }
 
 /* ══ PAYS POPUP ═══════════════════════════════ */
@@ -1822,7 +1808,7 @@ function renderCatalogDom(el){
     card.innerHTML=`
       <div class="scard-top">
         <div class="scard-main">
-          <div class="scard-dom"><img class="prov-ico" src="${providerFaviconUrl(p.domain)}" loading="lazy" onerror="this.style.display='none'">@${p.domain}${isBest?'<span class="best-badge">🔥</span>':''}</div>
+          <div class="scard-dom">${favIconTag(p.domain)}@${p.domain}${isBest?'<span class="best-badge">🔥</span>':''}</div>
           <div class="scard-flags">${(p.countries||[]).map(c=>flag(c)).join(" ")}</div>
         </div>
         <div class="scard-right">
@@ -1876,7 +1862,7 @@ function buildDomCompactCard(p,isBest){
   var col=st<=0?"var(--err)":st<=5?"orange":"var(--ac)";
   var card=document.createElement("div");card.className="scard-compact"+(isBest?" scard-best":"");
   card.innerHTML="<div class='sc-info'>"
-    +"<div class='sc-dom'><img class='prov-ico' src='"+providerFaviconUrl(p.domain)+"' loading='lazy' onerror=\"this.style.display='none'\">@"+p.domain+(isBest?"<span class='best-badge'>🔥</span>":"")+"</div>"
+    +"<div class='sc-dom'>"+favIconTag(p.domain)+"@"+p.domain+(isBest?"<span class='best-badge'>🔥</span>":"")+"</div>"
     +"<div class='sc-meta'><span class='sc-stock'>"+(st<=0?"Épuisé":st+" en stock")+"</span>"
     +"<div class='sc-bar'><div class='sc-bar-fill' style='width:"+pct+"%;background:"+col+"'></div></div></div>"
     +"</div>"
@@ -1939,6 +1925,16 @@ function renderCatalogPays(el){
     }).sort(function(a,b){return b.total-a.total;});
 
     if(!available.length){el.innerHTML='<p class="empty">Aucun accès disponible.</p>';return;}
+
+    /* Section Best-sellers en tête d'accueil */
+    var top=topSellers(prods,5);
+    if(top.length){
+      var bh=document.createElement("div");bh.className="pd-sec-lbl";bh.innerHTML="🔥 Best-sellers";bh.style.marginTop="0";
+      el.appendChild(bh);
+      top.forEach(function(p){el.appendChild(buildDomCompactCard(p,true));});
+      var sep=document.createElement("div");sep.className="pd-sec-lbl";sep.innerHTML="🌍 Parcourir par pays";
+      el.appendChild(sep);
+    }
 
     var hint=document.createElement("p");
     hint.style.cssText="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--sub);text-align:center;padding:4px 0 12px;letter-spacing:.06em;";
@@ -2276,6 +2272,14 @@ function isProDomain(domain){return!isKnownPublicProvider(domain);}
    générique moche) quand il n'a rien pour un domaine peu connu. */
 function providerFaviconUrl(domain){
   return "https://icons.duckduckgo.com/ip3/"+encodeURIComponent(domain)+".ico";
+}
+/* Icône complète prête à insérer — uniquement pour les fournisseurs grand public
+   connus (bonne couverture, chargement fiable). Les domaines pro/entreprise sont
+   trop variés/rares pour qu'un favicon vaille le coût réseau — on ne le tente même
+   pas, ce qui évite des dizaines de requêtes inutiles et rend l'affichage plus fluide. */
+function favIconTag(domain){
+  if(!isKnownPublicProvider(domain))return"";
+  return "<img class='prov-ico' src='"+providerFaviconUrl(domain)+"' width='16' height='16' loading='lazy' decoding='async' onerror=\"this.style.display='none'\">";
 }
 
 /* Livre directement les articles Hotmail (sans passer par le checker), gère le
