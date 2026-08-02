@@ -1380,6 +1380,49 @@ const CRYPTOS=[
 
 const TMAP={fr:"FR",de:"DE",be:"BE",es:"ES",it:"IT",nl:"NL",pt:"PT",uk:"UK",gb:"UK",ru:"RU",cn:"CN",jp:"JP",br:"BR",au:"AU",ch:"CH",at:"AT",pl:"PL",cz:"CZ",sk:"SK",ro:"RO",gr:"GR",tr:"TR",se:"SE",no:"NO",dk:"DK",fi:"FI",hu:"HU",bg:"BG",hr:"HR",ua:"UA","in":"IN",mx:"MX",ar:"AR",cl:"CL",za:"ZA",ng:"NG",eg:"EG",ma:"MA",dz:"DZ",tn:"TN",sn:"SN",ci:"CI",cm:"CM",re:"RE",gp:"GP",mq:"MQ",id:"ID",sg:"SG",my:"MY",th:"TH",vn:"VN",ph:"PH",pk:"PK",bd:"BD",kr:"KR",tw:"TW",hk:"HK",nz:"NZ",me:"ME",rs:"RS",si:"SI",lt:"LT",lv:"LV",ee:"EE",ge:"GE",am:"AM",az:"AZ",kz:"KZ",uz:"UZ",by:"BY",md:"MD",ie:"IE",is:"IS",lu:"LU",li:"LI",mt:"MT",cy:"CY",il:"IL",sa:"SA",ae:"AE",qa:"QA",kw:"KW",bh:"BH",om:"OM",jo:"JO",lb:"LB",ir:"IR",ke:"KE",gh:"GH",tz:"TZ",ug:"UG",rw:"RW",et:"ET",ao:"AO",mz:"MZ",zm:"ZM",zw:"ZW",pe:"PE",ve:"VE",ec:"EC",bo:"BO",py:"PY",uy:"UY",gt:"GT",cr:"CR",pa:"PA","do":"DO",cu:"CU",hn:"HN",ni:"NI",sv:"SV",lk:"LK",np:"NP",kh:"KH",mm:"MM",la:"LA",mn:"MN",dj:"DJ",yt:"YT",nc:"NC",gf:"FR"};
 const GENERIC=new Set(["com","net","org","info","biz","app","io","pro","shop","store","online","site","mail","email","us"]);
+/* Marques connues qui ont un TLD générique (.net, .com...) mais sont clairement
+   rattachées à un pays précis — sinon elles tombent à tort dans "MIX mondial".
+   Ex: telefonica.net est espagnol malgré son .net. */
+const DOMAIN_COUNTRY_OVERRIDE={
+  "telefonica.net":"ES","ono.com":"ES",
+  "libero.it":"IT","virgilio.it":"IT","tiscali.it":"IT","email.it":"IT",
+  "mail.ru":"RU","inbox.ru":"RU","list.ru":"RU","bk.ru":"RU","r7.com":"RU","rambler.ru":"RU",
+  "yandex.com":"RU",
+  "ukr.net":"UA","i.ua":"UA",
+  "walla.co.il":"IL",
+  "sapo.pt":"PT","mail.pt":"PT",
+  "globo.com":"BR","globomail.com":"BR","uol.com.br":"BR",
+  "mynet.com":"TR",
+  "naver.com":"KR","daum.net":"KR","hanmail.net":"KR","nate.com":"KR",
+  "qq.com":"CN","163.com":"CN","126.com":"CN","sina.com":"CN","sohu.com":"CN","yeah.net":"CN","tom.com":"CN","aliyun.com":"CN","foxmail.com":"CN",
+  "indiatimes.com":"IN","rediffmail.com":"IN",
+  "abv.bg":"BG","mail.bg":"BG",
+  "freemail.hu":"HU","citromail.hu":"HU",
+  "luukku.com":"FI","kolumbus.fi":"FI","elisa.fi":"FI","saunalahti.fi":"FI",
+  "inbox.lv":"LV","mail.ee":"EE","hot.ee":"EE",
+  "wp.pl":"PL","onet.pl":"PL","o2.pl":"PL","op.pl":"PL","interia.pl":"PL","poczta.fm":"PL","gazeta.pl":"PL",
+  /* France — fournisseurs à extension générique */
+  "cegetel.net":"FR","laposte.net":"FR",
+  /* Allemagne — GMX a plusieurs extensions génériques */
+  "gmx.com":"DE","gmx.net":"DE",
+  /* Royaume-Uni */
+  "btinternet.com":"UK","sky.com":"UK","virginmedia.com":"UK","talktalk.net":"UK",
+  /* Irlande */
+  "eircom.net":"IE",
+  /* Suède (Telia est un groupe nordique, siège suédois) */
+  "telia.com":"SE",
+  /* États-Unis — tous les grands FAI historiques */
+  "aol.com":"US","comcast.net":"US","verizon.net":"US","att.net":"US","cox.net":"US",
+  "earthlink.net":"US","charter.net":"US","frontier.com":"US","windstream.net":"US",
+  "roadrunner.com":"US","optonline.net":"US","bellsouth.net":"US","sbcglobal.net":"US",
+  "pacbell.net":"US","juno.com":"US","netzero.net":"US",
+  /* Canada */
+  "bell.net":"CA","rogers.com":"CA","telus.net":"CA",
+  /* Afrique du Sud (Telkom) */
+  "telkomsa.net":"ZA",
+  /* Australie */
+  "bigpond.com":"AU","internode.on.net":"AU"
+};
 const ALL_C=[{c:"all",n:"Tous"},{c:"AD",n:"Andorre"},{c:"AE",n:"Émirats"},{c:"AF",n:"Afghanistan"},{c:"AL",n:"Albanie"},{c:"AM",n:"Arménie"},{c:"AO",n:"Angola"},{c:"AR",n:"Argentine"},{c:"AT",n:"Autriche"},{c:"AU",n:"Australie"},{c:"AZ",n:"Azerbaïdjan"},{c:"BA",n:"Bosnie"},{c:"BD",n:"Bangladesh"},{c:"BE",n:"Belgique"},{c:"BF",n:"Burkina"},{c:"BG",n:"Bulgarie"},{c:"BH",n:"Bahreïn"},{c:"BI",n:"Burundi"},{c:"BJ",n:"Bénin"},{c:"BO",n:"Bolivie"},{c:"BR",n:"Brésil"},{c:"BY",n:"Biélorussie"},{c:"CA",n:"Canada"},{c:"CD",n:"Congo RDC"},{c:"CF",n:"Centrafrique"},{c:"CG",n:"Congo"},{c:"CH",n:"Suisse"},{c:"CI",n:"Côte d'Ivoire"},{c:"CL",n:"Chili"},{c:"CM",n:"Cameroun"},{c:"CN",n:"Chine"},{c:"CO",n:"Colombie"},{c:"CR",n:"Costa Rica"},{c:"CU",n:"Cuba"},{c:"CY",n:"Chypre"},{c:"CZ",n:"Tchéquie"},{c:"DE",n:"Allemagne"},{c:"DJ",n:"Djibouti"},{c:"DK",n:"Danemark"},{c:"DO",n:"Rép. dom."},{c:"DZ",n:"Algérie"},{c:"EC",n:"Équateur"},{c:"EE",n:"Estonie"},{c:"EG",n:"Égypte"},{c:"ES",n:"Espagne"},{c:"ET",n:"Éthiopie"},{c:"FI",n:"Finlande"},{c:"FJ",n:"Fidji"},{c:"FR",n:"France"},{c:"GA",n:"Gabon"},{c:"GB",n:"Royaume-Uni"},{c:"GE",n:"Géorgie"},{c:"GH",n:"Ghana"},{c:"GM",n:"Gambie"},{c:"GN",n:"Guinée"},{c:"GP",n:"Guadeloupe"},{c:"GR",n:"Grèce"},{c:"GT",n:"Guatemala"},{c:"GY",n:"Guyana"},{c:"HK",n:"Hong Kong"},{c:"HN",n:"Honduras"},{c:"HR",n:"Croatie"},{c:"HT",n:"Haïti"},{c:"HU",n:"Hongrie"},{c:"ID",n:"Indonésie"},{c:"IE",n:"Irlande"},{c:"IL",n:"Israël"},{c:"IN",n:"Inde"},{c:"IQ",n:"Irak"},{c:"IR",n:"Iran"},{c:"IS",n:"Islande"},{c:"IT",n:"Italie"},{c:"JM",n:"Jamaïque"},{c:"JO",n:"Jordanie"},{c:"JP",n:"Japon"},{c:"KE",n:"Kenya"},{c:"KH",n:"Cambodge"},{c:"KR",n:"Corée Sud"},{c:"KW",n:"Koweït"},{c:"KZ",n:"Kazakhstan"},{c:"LA",n:"Laos"},{c:"LB",n:"Liban"},{c:"LK",n:"Sri Lanka"},{c:"LT",n:"Lituanie"},{c:"LU",n:"Luxembourg"},{c:"LV",n:"Lettonie"},{c:"LY",n:"Libye"},{c:"MA",n:"Maroc"},{c:"MC",n:"Monaco"},{c:"MD",n:"Moldavie"},{c:"ME",n:"Monténégro"},{c:"MG",n:"Madagascar"},{c:"MK",n:"Macédoine"},{c:"ML",n:"Mali"},{c:"MM",n:"Myanmar"},{c:"MN",n:"Mongolie"},{c:"MQ",n:"Martinique"},{c:"MR",n:"Mauritanie"},{c:"MT",n:"Malte"},{c:"MU",n:"Maurice"},{c:"MW",n:"Malawi"},{c:"MX",n:"Mexique"},{c:"MY",n:"Malaisie"},{c:"MZ",n:"Mozambique"},{c:"NA",n:"Namibie"},{c:"NE",n:"Niger"},{c:"NG",n:"Nigeria"},{c:"NI",n:"Nicaragua"},{c:"NL",n:"Pays-Bas"},{c:"NO",n:"Norvège"},{c:"NP",n:"Népal"},{c:"NZ",n:"Nouvelle-Zél."},{c:"OM",n:"Oman"},{c:"PA",n:"Panama"},{c:"PE",n:"Pérou"},{c:"PH",n:"Philippines"},{c:"PK",n:"Pakistan"},{c:"PL",n:"Pologne"},{c:"PT",n:"Portugal"},{c:"PY",n:"Paraguay"},{c:"QA",n:"Qatar"},{c:"RE",n:"Réunion"},{c:"RO",n:"Roumanie"},{c:"RS",n:"Serbie"},{c:"RU",n:"Russie"},{c:"RW",n:"Rwanda"},{c:"SA",n:"Arabie saoud."},{c:"SC",n:"Seychelles"},{c:"SD",n:"Soudan"},{c:"SE",n:"Suède"},{c:"SG",n:"Singapour"},{c:"SI",n:"Slovénie"},{c:"SK",n:"Slovaquie"},{c:"SL",n:"Sierra Leone"},{c:"SN",n:"Sénégal"},{c:"SO",n:"Somalie"},{c:"SR",n:"Suriname"},{c:"SV",n:"Salvador"},{c:"SY",n:"Syrie"},{c:"TD",n:"Tchad"},{c:"TG",n:"Togo"},{c:"TH",n:"Thaïlande"},{c:"TN",n:"Tunisie"},{c:"TR",n:"Turquie"},{c:"TT",n:"Trinité"},{c:"TW",n:"Taïwan"},{c:"TZ",n:"Tanzanie"},{c:"UA",n:"Ukraine"},{c:"UG",n:"Ouganda"},{c:"US",n:"États-Unis"},{c:"UY",n:"Uruguay"},{c:"UZ",n:"Ouzbékistan"},{c:"VE",n:"Venezuela"},{c:"VN",n:"Viêt Nam"},{c:"WS",n:"Samoa"},{c:"XK",n:"Kosovo"},{c:"YE",n:"Yémen"},{c:"YT",n:"Mayotte"},{c:"ZA",n:"Afrique Sud"},{c:"ZM",n:"Zambie"},{c:"ZW",n:"Zimbabwe"},{c:"MIX",n:"Mix mondial"}];
 const SEED=[
   {domain:"hotmail.com",countries:["FR","US","UK","DE","ES","CA"],price:4,stock:0},
@@ -2291,7 +2334,7 @@ function isHotmailFamily(domain){
 /* Liste des fournisseurs mail grand public connus (même liste que checker.py) —
    tout domaine qui N'EST PAS dedans est classé "Pro / Entreprise" par élimination.
    Plus fiable que d'essayer de deviner "est-ce que c'est une entreprise" au cas par cas. */
-var KNOWN_PUBLIC_PROVIDERS=new Set(["free.fr","orange.fr","wanadoo.fr","sfr.fr","neuf.fr","cegetel.net","laposte.net","bbox.fr","numericable.fr","aliceadsl.fr","tele2.fr","voila.fr","club-internet.fr","noos.fr","b2ma.fr","freenet.de","web.de","gmx.de","gmx.com","gmx.fr","gmx.at","gmx.net","gmx.ch","t-online.de","alice.de","arcor.de","1und1.de","vodafone.de","kabelmail.de","onlinehome.de","yandex.ru","yandex.com","ya.ru","mail.ru","inbox.ru","list.ru","bk.ru","r7.com","rambler.ru","skynet.be","telenet.be","proximus.be","voo.be","bluewin.ch","sunrise.ch","hispeed.ch","ziggo.nl","kpnmail.nl","planet.nl","xs4all.nl","home.nl","hetnet.nl","telfort.nl","chello.nl","terra.es","ono.com","telefonica.net","libero.it","virgilio.it","tiscali.it","alice.it","email.it","sapo.pt","mail.pt","btinternet.com","sky.com","virginmedia.com","talktalk.net","blueyonder.co.uk","eircom.net","telia.com","telia.se","spray.se","online.no","get.no","live.se","wp.pl","onet.pl","o2.pl","interia.pl","poczta.fm","seznam.cz","centrum.cz","zoho.com","aol.com","protonmail.com","fastmail.com","qq.com","163.com","126.com","sina.com","aliyun.com","foxmail.com","comcast.net","verizon.net","att.net","cox.net","earthlink.net","charter.net","frontier.com","windstream.net","roadrunner.com","optonline.net","bellsouth.net","sbcglobal.net","pacbell.net","sympatico.ca","bell.net","rogers.com","shaw.ca","telus.net","videotron.ca","uol.com.br","bol.com.br","terra.com.br","ig.com.br","globo.com","globomail.com","outlook.com.br","hotmail.com.br","yahoo.com.br","prodigy.net.mx","yahoo.com.mx","yahoo.com.ar","fibertel.com.ar","speedy.com.ar","yahoo.co.za","mweb.co.za","webmail.co.za","telkomsa.net","yahoo.co.jp","yahoo.co.in","rediffmail.com","indiatimes.com","yahoo.com.sg","yahoo.com.hk","yahoo.com.tw","yahoo.com.vn","naver.com","daum.net","hanmail.net","nate.com","sohu.com","yeah.net","tom.com","bigpond.com","optusnet.com.au","xtra.co.nz","iinet.net.au","internode.on.net","mail.dk","luukku.com","kolumbus.fi","elisa.fi","saunalahti.fi","inbox.lv","mail.ee","hot.ee","freemail.hu","citromail.hu","abv.bg","mail.bg","ukr.net","i.ua","mynet.com","walla.co.il","gmail.com","googlemail.com","yahoo.com","yahoo.fr","yahoo.co.uk","yahoo.de","yahoo.es","yahoo.it","icloud.com","me.com","mac.com","juno.com","netzero.net"]);
+var KNOWN_PUBLIC_PROVIDERS=new Set(["free.fr","orange.fr","wanadoo.fr","sfr.fr","neuf.fr","cegetel.net","laposte.net","bbox.fr","numericable.fr","aliceadsl.fr","tele2.fr","voila.fr","club-internet.fr","noos.fr","b2ma.fr","freenet.de","web.de","gmx.de","gmx.com","gmx.fr","gmx.at","gmx.net","gmx.ch","t-online.de","alice.de","arcor.de","1und1.de","vodafone.de","kabelmail.de","yandex.ru","yandex.com","ya.ru","mail.ru","inbox.ru","list.ru","bk.ru","r7.com","rambler.ru","skynet.be","telenet.be","proximus.be","voo.be","bluewin.ch","sunrise.ch","hispeed.ch","ziggo.nl","kpnmail.nl","planet.nl","xs4all.nl","home.nl","hetnet.nl","telfort.nl","chello.nl","terra.es","ono.com","telefonica.net","libero.it","virgilio.it","tiscali.it","alice.it","email.it","sapo.pt","mail.pt","btinternet.com","sky.com","virginmedia.com","talktalk.net","blueyonder.co.uk","eircom.net","telia.com","telia.se","spray.se","online.no","get.no","live.se","wp.pl","onet.pl","o2.pl","op.pl","interia.pl","poczta.fm","gazeta.pl","seznam.cz","centrum.cz","zoho.com","aol.com","protonmail.com","fastmail.com","qq.com","163.com","126.com","sina.com","aliyun.com","foxmail.com","comcast.net","verizon.net","att.net","cox.net","earthlink.net","charter.net","frontier.com","windstream.net","roadrunner.com","optonline.net","bellsouth.net","sbcglobal.net","pacbell.net","sympatico.ca","bell.net","rogers.com","shaw.ca","telus.net","videotron.ca","uol.com.br","bol.com.br","terra.com.br","ig.com.br","globo.com","globomail.com","outlook.com.br","hotmail.com.br","yahoo.com.br","prodigy.net.mx","yahoo.com.mx","yahoo.com.ar","fibertel.com.ar","speedy.com.ar","yahoo.co.za","mweb.co.za","webmail.co.za","telkomsa.net","yahoo.co.jp","yahoo.co.in","rediffmail.com","indiatimes.com","yahoo.com.sg","yahoo.com.hk","yahoo.com.tw","yahoo.com.vn","naver.com","daum.net","hanmail.net","nate.com","sohu.com","yeah.net","tom.com","bigpond.com","optusnet.com.au","xtra.co.nz","iinet.net.au","internode.on.net","mail.dk","luukku.com","kolumbus.fi","elisa.fi","saunalahti.fi","inbox.lv","mail.ee","hot.ee","freemail.hu","citromail.hu","abv.bg","mail.bg","ukr.net","i.ua","mynet.com","walla.co.il","gmail.com","googlemail.com","yahoo.com","yahoo.fr","yahoo.co.uk","yahoo.de","yahoo.es","yahoo.it","icloud.com","me.com","mac.com","juno.com","netzero.net"]);
 function isKnownPublicProvider(domain){
   var d=(domain||"").toLowerCase();
   if(isHotmailFamily(d))return true;
@@ -2690,7 +2733,7 @@ function parseMP(txt){
     if(!email.includes("@")||!email.includes(".")){invalid++;return;}
     if(seen.has(email)){dupes++;return;}
     seen.add(email);
-    if(!country){const domain=email.split("@")[1],tld=domain.split(".").pop().toLowerCase();country=TMAP[tld]||null;if(!country)country=GENERIC.has(tld)?"MIX":tld.toUpperCase();}
+    if(!country){const domain=email.split("@")[1],tld=domain.split(".").pop().toLowerCase();country=DOMAIN_COUNTRY_OVERRIDE[domain]||TMAP[tld]||null;if(!country)country=GENERIC.has(tld)?"MIX":tld.toUpperCase();}
     const domain=email.split("@")[1],key=domain+"||"+country;
     if(!grouped[key])grouped[key]={domain,country,accounts:[]};
     grouped[key].accounts.push({email,pass});
