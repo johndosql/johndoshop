@@ -531,10 +531,27 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
   border:1px solid var(--line);background:var(--sf2);cursor:pointer;color:var(--ink);
   transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
 .sm-btn:active{transform:scale(.88);}
-.atab{flex:1;padding:9px 4px;font-size:12px;font-weight:600;border-radius:9px;
-  background:var(--sf);border:1px solid var(--line);color:var(--sub);cursor:pointer;text-align:center;transition:all .15s;}
-.atab:active{transform:scale(.91);}
-.atab.on{background:rgba(240,165,0,.12);border-color:rgba(240,165,0,.3);color:var(--ac);}
+.atab{flex:1;padding:10px 4px;font-size:12px;font-weight:600;border-radius:10px;
+  background:var(--sf);border:1px solid var(--line);color:var(--sub);cursor:pointer;text-align:center;
+  transition:all .18s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;}
+.atab:active{transform:scale(.93);}
+.atab.on{background:linear-gradient(135deg,rgba(0,200,160,.16),rgba(46,230,194,.10));border-color:rgba(0,200,160,.35);color:var(--ac);box-shadow:0 2px 12px rgba(0,200,160,.12);}
+.admin-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line);
+}
+.admin-title{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:16px;color:var(--ink);}
+.admin-logout{
+  background:var(--sf);border:1px solid var(--line);border-radius:9px;
+  color:var(--sub);font-size:11px;font-weight:600;padding:7px 12px;cursor:pointer;transition:all .15s;
+}
+.admin-logout:active{transform:scale(.94);}
+.a-card{transition:border-color .15s;}
+.a-section-lbl{
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;color:var(--sub);
+  text-transform:uppercase;letter-spacing:.06em;margin:16px 2px 8px;
+}
+.a-section-lbl:first-child{margin-top:0;}
 .banner{background:rgba(240,165,0,.1);color:var(--ac);font-size:12px;padding:9px 12px;
   border-radius:10px;margin-bottom:12px;line-height:1.5;border:1px solid rgba(240,165,0,.2);}
 .banner.err{background:var(--errs);color:var(--err);border-color:rgba(255,79,64,.2);}
@@ -1423,6 +1440,17 @@ const DOMAIN_COUNTRY_OVERRIDE={
   /* Australie */
   "bigpond.com":"AU","internode.on.net":"AU"
 };
+/* Source unique de vérité pour la détection du pays d'un domaine — utilisée à
+   l'import ET par l'outil de recalcul rétroactif, pour ne jamais désynchroniser
+   les deux logiques. */
+function computeCountryFor(domain){
+  domain=(domain||"").toLowerCase();
+  /* Override personnalisé (ajouté depuis le panel admin) — priorité absolue */
+  var ov=(typeof customDomainOverrides!=="undefined")?customDomainOverrides[domain]:null;
+  if(ov&&ov.country)return ov.country;
+  const tld=domain.split(".").pop();
+  return DOMAIN_COUNTRY_OVERRIDE[domain]||TMAP[tld]||(GENERIC.has(tld)?"MIX":tld.toUpperCase());
+}
 const ALL_C=[{c:"all",n:"Tous"},{c:"AD",n:"Andorre"},{c:"AE",n:"Émirats"},{c:"AF",n:"Afghanistan"},{c:"AL",n:"Albanie"},{c:"AM",n:"Arménie"},{c:"AO",n:"Angola"},{c:"AR",n:"Argentine"},{c:"AT",n:"Autriche"},{c:"AU",n:"Australie"},{c:"AZ",n:"Azerbaïdjan"},{c:"BA",n:"Bosnie"},{c:"BD",n:"Bangladesh"},{c:"BE",n:"Belgique"},{c:"BF",n:"Burkina"},{c:"BG",n:"Bulgarie"},{c:"BH",n:"Bahreïn"},{c:"BI",n:"Burundi"},{c:"BJ",n:"Bénin"},{c:"BO",n:"Bolivie"},{c:"BR",n:"Brésil"},{c:"BY",n:"Biélorussie"},{c:"CA",n:"Canada"},{c:"CD",n:"Congo RDC"},{c:"CF",n:"Centrafrique"},{c:"CG",n:"Congo"},{c:"CH",n:"Suisse"},{c:"CI",n:"Côte d'Ivoire"},{c:"CL",n:"Chili"},{c:"CM",n:"Cameroun"},{c:"CN",n:"Chine"},{c:"CO",n:"Colombie"},{c:"CR",n:"Costa Rica"},{c:"CU",n:"Cuba"},{c:"CY",n:"Chypre"},{c:"CZ",n:"Tchéquie"},{c:"DE",n:"Allemagne"},{c:"DJ",n:"Djibouti"},{c:"DK",n:"Danemark"},{c:"DO",n:"Rép. dom."},{c:"DZ",n:"Algérie"},{c:"EC",n:"Équateur"},{c:"EE",n:"Estonie"},{c:"EG",n:"Égypte"},{c:"ES",n:"Espagne"},{c:"ET",n:"Éthiopie"},{c:"FI",n:"Finlande"},{c:"FJ",n:"Fidji"},{c:"FR",n:"France"},{c:"GA",n:"Gabon"},{c:"GB",n:"Royaume-Uni"},{c:"GE",n:"Géorgie"},{c:"GH",n:"Ghana"},{c:"GM",n:"Gambie"},{c:"GN",n:"Guinée"},{c:"GP",n:"Guadeloupe"},{c:"GR",n:"Grèce"},{c:"GT",n:"Guatemala"},{c:"GY",n:"Guyana"},{c:"HK",n:"Hong Kong"},{c:"HN",n:"Honduras"},{c:"HR",n:"Croatie"},{c:"HT",n:"Haïti"},{c:"HU",n:"Hongrie"},{c:"ID",n:"Indonésie"},{c:"IE",n:"Irlande"},{c:"IL",n:"Israël"},{c:"IN",n:"Inde"},{c:"IQ",n:"Irak"},{c:"IR",n:"Iran"},{c:"IS",n:"Islande"},{c:"IT",n:"Italie"},{c:"JM",n:"Jamaïque"},{c:"JO",n:"Jordanie"},{c:"JP",n:"Japon"},{c:"KE",n:"Kenya"},{c:"KH",n:"Cambodge"},{c:"KR",n:"Corée Sud"},{c:"KW",n:"Koweït"},{c:"KZ",n:"Kazakhstan"},{c:"LA",n:"Laos"},{c:"LB",n:"Liban"},{c:"LK",n:"Sri Lanka"},{c:"LT",n:"Lituanie"},{c:"LU",n:"Luxembourg"},{c:"LV",n:"Lettonie"},{c:"LY",n:"Libye"},{c:"MA",n:"Maroc"},{c:"MC",n:"Monaco"},{c:"MD",n:"Moldavie"},{c:"ME",n:"Monténégro"},{c:"MG",n:"Madagascar"},{c:"MK",n:"Macédoine"},{c:"ML",n:"Mali"},{c:"MM",n:"Myanmar"},{c:"MN",n:"Mongolie"},{c:"MQ",n:"Martinique"},{c:"MR",n:"Mauritanie"},{c:"MT",n:"Malte"},{c:"MU",n:"Maurice"},{c:"MW",n:"Malawi"},{c:"MX",n:"Mexique"},{c:"MY",n:"Malaisie"},{c:"MZ",n:"Mozambique"},{c:"NA",n:"Namibie"},{c:"NE",n:"Niger"},{c:"NG",n:"Nigeria"},{c:"NI",n:"Nicaragua"},{c:"NL",n:"Pays-Bas"},{c:"NO",n:"Norvège"},{c:"NP",n:"Népal"},{c:"NZ",n:"Nouvelle-Zél."},{c:"OM",n:"Oman"},{c:"PA",n:"Panama"},{c:"PE",n:"Pérou"},{c:"PH",n:"Philippines"},{c:"PK",n:"Pakistan"},{c:"PL",n:"Pologne"},{c:"PT",n:"Portugal"},{c:"PY",n:"Paraguay"},{c:"QA",n:"Qatar"},{c:"RE",n:"Réunion"},{c:"RO",n:"Roumanie"},{c:"RS",n:"Serbie"},{c:"RU",n:"Russie"},{c:"RW",n:"Rwanda"},{c:"SA",n:"Arabie saoud."},{c:"SC",n:"Seychelles"},{c:"SD",n:"Soudan"},{c:"SE",n:"Suède"},{c:"SG",n:"Singapour"},{c:"SI",n:"Slovénie"},{c:"SK",n:"Slovaquie"},{c:"SL",n:"Sierra Leone"},{c:"SN",n:"Sénégal"},{c:"SO",n:"Somalie"},{c:"SR",n:"Suriname"},{c:"SV",n:"Salvador"},{c:"SY",n:"Syrie"},{c:"TD",n:"Tchad"},{c:"TG",n:"Togo"},{c:"TH",n:"Thaïlande"},{c:"TN",n:"Tunisie"},{c:"TR",n:"Turquie"},{c:"TT",n:"Trinité"},{c:"TW",n:"Taïwan"},{c:"TZ",n:"Tanzanie"},{c:"UA",n:"Ukraine"},{c:"UG",n:"Ouganda"},{c:"US",n:"États-Unis"},{c:"UY",n:"Uruguay"},{c:"UZ",n:"Ouzbékistan"},{c:"VE",n:"Venezuela"},{c:"VN",n:"Viêt Nam"},{c:"WS",n:"Samoa"},{c:"XK",n:"Kosovo"},{c:"YE",n:"Yémen"},{c:"YT",n:"Mayotte"},{c:"ZA",n:"Afrique Sud"},{c:"ZM",n:"Zambie"},{c:"ZW",n:"Zimbabwe"},{c:"MIX",n:"Mix mondial"}];
 const SEED=[
   {domain:"hotmail.com",countries:["FR","US","UK","DE","ES","CA"],price:4,stock:0},
@@ -1661,9 +1689,21 @@ function loadProds(){
       _lastRenderKey="";_paysGroupCache=null;
       renderCatalog();
     });
+    /* Overrides de domaines ajoutés depuis le panel admin — priorité absolue sur
+       les listes codées en dur, pour que tu puisses corriger toi-même sans jamais
+       attendre une mise à jour du code. */
+    db.ref("settings/domainOverrides").on("value",function(s){
+      var raw=s.val()||{};
+      var built={};
+      Object.values(raw).forEach(function(ov){if(ov&&ov.domain)built[ov.domain]=ov;});
+      customDomainOverrides=built;
+      _lastRenderKey="";_paysGroupCache=null;
+      renderCatalog();
+    });
   }
 }
 
+var customDomainOverrides={};
 var domainSales={};
 function salesFor(domain){return domainSales[(domain||"").toLowerCase()]||0;}
 /* Top N d'une liste de produits par ventes (au moins 1 vente pour compter comme best-seller) */
@@ -2334,13 +2374,83 @@ function isHotmailFamily(domain){
 /* Liste des fournisseurs mail grand public connus (même liste que checker.py) —
    tout domaine qui N'EST PAS dedans est classé "Pro / Entreprise" par élimination.
    Plus fiable que d'essayer de deviner "est-ce que c'est une entreprise" au cas par cas. */
-var KNOWN_PUBLIC_PROVIDERS=new Set(["free.fr","orange.fr","wanadoo.fr","sfr.fr","neuf.fr","cegetel.net","laposte.net","bbox.fr","numericable.fr","aliceadsl.fr","tele2.fr","voila.fr","club-internet.fr","noos.fr","b2ma.fr","freenet.de","web.de","gmx.de","gmx.com","gmx.fr","gmx.at","gmx.net","gmx.ch","t-online.de","alice.de","arcor.de","1und1.de","vodafone.de","kabelmail.de","yandex.ru","yandex.com","ya.ru","mail.ru","inbox.ru","list.ru","bk.ru","r7.com","rambler.ru","skynet.be","telenet.be","proximus.be","voo.be","bluewin.ch","sunrise.ch","hispeed.ch","ziggo.nl","kpnmail.nl","planet.nl","xs4all.nl","home.nl","hetnet.nl","telfort.nl","chello.nl","terra.es","ono.com","telefonica.net","libero.it","virgilio.it","tiscali.it","alice.it","email.it","sapo.pt","mail.pt","btinternet.com","sky.com","virginmedia.com","talktalk.net","blueyonder.co.uk","eircom.net","telia.com","telia.se","spray.se","online.no","get.no","live.se","wp.pl","onet.pl","o2.pl","op.pl","interia.pl","poczta.fm","gazeta.pl","seznam.cz","centrum.cz","zoho.com","aol.com","protonmail.com","fastmail.com","qq.com","163.com","126.com","sina.com","aliyun.com","foxmail.com","comcast.net","verizon.net","att.net","cox.net","earthlink.net","charter.net","frontier.com","windstream.net","roadrunner.com","optonline.net","bellsouth.net","sbcglobal.net","pacbell.net","sympatico.ca","bell.net","rogers.com","shaw.ca","telus.net","videotron.ca","uol.com.br","bol.com.br","terra.com.br","ig.com.br","globo.com","globomail.com","outlook.com.br","hotmail.com.br","yahoo.com.br","prodigy.net.mx","yahoo.com.mx","yahoo.com.ar","fibertel.com.ar","speedy.com.ar","yahoo.co.za","mweb.co.za","webmail.co.za","telkomsa.net","yahoo.co.jp","yahoo.co.in","rediffmail.com","indiatimes.com","yahoo.com.sg","yahoo.com.hk","yahoo.com.tw","yahoo.com.vn","naver.com","daum.net","hanmail.net","nate.com","sohu.com","yeah.net","tom.com","bigpond.com","optusnet.com.au","xtra.co.nz","iinet.net.au","internode.on.net","mail.dk","luukku.com","kolumbus.fi","elisa.fi","saunalahti.fi","inbox.lv","mail.ee","hot.ee","freemail.hu","citromail.hu","abv.bg","mail.bg","ukr.net","i.ua","mynet.com","walla.co.il","gmail.com","googlemail.com","yahoo.com","yahoo.fr","yahoo.co.uk","yahoo.de","yahoo.es","yahoo.it","icloud.com","me.com","mac.com","juno.com","netzero.net"]);
+var KNOWN_PUBLIC_PROVIDERS=new Set(["free.fr","orange.fr","wanadoo.fr","sfr.fr","neuf.fr","cegetel.net","laposte.net","bbox.fr","numericable.fr","aliceadsl.fr","tele2.fr","voila.fr","club-internet.fr","noos.fr","b2ma.fr","freenet.de","web.de","gmx.de","gmx.com","gmx.fr","gmx.at","gmx.net","gmx.ch","t-online.de","alice.de","arcor.de","1und1.de","vodafone.de","kabelmail.de","yandex.ru","yandex.com","ya.ru","mail.ru","inbox.ru","list.ru","bk.ru","r7.com","rambler.ru","skynet.be","telenet.be","proximus.be","voo.be","bluewin.ch","sunrise.ch","hispeed.ch","ziggo.nl","kpnmail.nl","planet.nl","xs4all.nl","home.nl","hetnet.nl","telfort.nl","chello.nl","terra.es","ono.com","telefonica.net","movistar.es","telecable.es","libero.it","virgilio.it","tiscali.it","alice.it","email.it","sapo.pt","mail.pt","btinternet.com","sky.com","virginmedia.com","talktalk.net","blueyonder.co.uk","eircom.net","telia.com","telia.se","spray.se","online.no","get.no","live.se","wp.pl","onet.pl","o2.pl","op.pl","interia.pl","poczta.fm","gazeta.pl","seznam.cz","centrum.cz","zoho.com","aol.com","protonmail.com","fastmail.com","qq.com","163.com","126.com","sina.com","aliyun.com","foxmail.com","comcast.net","verizon.net","att.net","cox.net","earthlink.net","charter.net","frontier.com","windstream.net","roadrunner.com","optonline.net","bellsouth.net","sbcglobal.net","pacbell.net","sympatico.ca","bell.net","bellnet.ca","rogers.com","shaw.ca","telus.net","videotron.ca","uol.com.br","bol.com.br","terra.com.br","ig.com.br","globo.com","globomail.com","outlook.com.br","hotmail.com.br","yahoo.com.br","prodigy.net.mx","yahoo.com.mx","yahoo.com.ar","fibertel.com.ar","speedy.com.ar","yahoo.co.za","mweb.co.za","webmail.co.za","telkomsa.net","yahoo.co.jp","yahoo.co.in","rediffmail.com","indiatimes.com","yahoo.com.sg","yahoo.com.hk","yahoo.com.tw","yahoo.com.vn","naver.com","daum.net","hanmail.net","nate.com","sohu.com","yeah.net","tom.com","bigpond.com","optusnet.com.au","xtra.co.nz","iinet.net.au","internode.on.net","mail.dk","luukku.com","kolumbus.fi","elisa.fi","saunalahti.fi","inbox.lv","mail.ee","hot.ee","freemail.hu","citromail.hu","t-online.hu","tvnetwork.hu","abv.bg","mail.bg","ukr.net","i.ua","mynet.com","walla.co.il","gmail.com","googlemail.com","yahoo.com","yahoo.fr","yahoo.co.uk","yahoo.de","yahoo.es","yahoo.it","icloud.com","me.com","mac.com","juno.com","netzero.net"]);
 function isKnownPublicProvider(domain){
   var d=(domain||"").toLowerCase();
   if(isHotmailFamily(d))return true;
+  /* Override personnalisé (ajouté depuis le panel admin) — priorité absolue */
+  var ov=customDomainOverrides[d];
+  if(ov&&typeof ov.public==="boolean")return ov.public;
   return KNOWN_PUBLIC_PROVIDERS.has(d);
 }
 function isProDomain(domain){return!isKnownPublicProvider(domain);}
+
+/* Onglet Domaines — auto-gestion des corrections de classification/pays,
+   sans jamais avoir besoin d'attendre une mise à jour du code. Priorité
+   absolue sur toutes les listes codées en dur (grand public + pays). */
+function renderDomainsTab(pane){
+  pane.innerHTML=`<div class="a-card">
+    <div class="a-title">Ajouter / corriger un domaine</div>
+    <p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.6">Ces réglages ont priorité absolue sur tout le reste. Utile pour corriger un domaine mal classé (Pro/Grand public) ou mal rattaché (pays) immédiatement, sans attendre.</p>
+    <input class="field" id="dovDomain" placeholder="Domaine (ex: telefonica.net)" style="margin-bottom:8px">
+    <select class="field" id="dovPublic" style="margin-bottom:8px">
+      <option value="">Classification — ne pas changer</option>
+      <option value="true">📮 Grand public</option>
+      <option value="false">💼 Pro / Entreprise</option>
+    </select>
+    <input class="field" id="dovCountry" placeholder="Code pays (ex: ES) — vide = auto" style="margin-bottom:10px;text-transform:uppercase">
+    <button class="btn" id="dovAddBtn" style="width:100%">Enregistrer</button>
+  </div>
+  <div class="a-section-lbl">Overrides actifs (<span id="dovCount">0</span>)</div>
+  <div id="dovList"></div>`;
+
+  function renderList(){
+    var entries=Object.entries(customDomainOverrides);
+    $("dovCount").textContent=entries.length;
+    var listEl=$("dovList");
+    if(!entries.length){
+      listEl.innerHTML='<p style="text-align:center;color:var(--sub);font-size:12px;padding:16px 0">Aucun override pour l\'instant — tout utilise les listes par défaut.</p>';
+      return;
+    }
+    listEl.innerHTML=entries.map(function(e){
+      var domain=e[0],ov=e[1]||{};
+      var pubTxt=ov.public===true?"📮 Grand public":ov.public===false?"💼 Pro":"";
+      var ctryTxt=ov.country?(pubTxt?" · ":"")+"🌍 "+ov.country:"";
+      return'<div style="display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px">'
+        +'<div style="flex:1;min-width:0"><div style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@'+domain+'</div>'
+        +'<div style="font-size:11px;color:var(--sub);margin-top:2px">'+(pubTxt+ctryTxt||"—")+'</div></div>'
+        +'<button data-domain="'+domain+'" class="dov-del" style="background:rgba(255,79,64,.1);border:1px solid rgba(255,79,64,.2);color:var(--err);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;flex:0 0 auto">✕</button>'
+        +'</div>';
+    }).join("");
+    listEl.querySelectorAll(".dov-del").forEach(function(btn){
+      btn.onclick=function(){
+        var d=this.dataset.domain;
+        if(!confirm("Retirer l'override pour "+d+" ?"))return;
+        var key=d.replace(/\./g,"_");
+        db.ref("settings/domainOverrides/"+key).remove().then(function(){toast("Override retiré.");});
+      };
+    });
+  }
+  renderList();
+  db.ref("settings/domainOverrides").on("value",renderList);
+
+  $("dovAddBtn").onclick=function(){
+    var domain=($("dovDomain").value||"").trim().toLowerCase();
+    var pubVal=$("dovPublic").value;
+    var country=($("dovCountry").value||"").trim().toUpperCase();
+    if(!domain||!domain.includes(".")){toast("Domaine invalide.");return;}
+    if(pubVal===""&&!country){toast("Choisis au moins une classification ou un pays.");return;}
+    var entry={domain:domain};
+    if(pubVal==="true")entry.public=true;
+    else if(pubVal==="false")entry.public=false;
+    if(country)entry.country=country;
+    var key=domain.replace(/\./g,"_");
+    db.ref("settings/domainOverrides/"+key).set(entry).then(function(){
+      toast("✅ "+domain+" enregistré.");
+      $("dovDomain").value="";$("dovCountry").value="";$("dovPublic").value="";
+    }).catch(function(e){toast("Erreur: "+e.message);});
+  };
+}
 
 /* Icône du fournisseur — favicon public du site, jamais de logo hébergé (droits de marque).
    DuckDuckGo a une bien meilleure couverture que Google et échoue proprement (pas d'icône
@@ -2733,7 +2843,7 @@ function parseMP(txt){
     if(!email.includes("@")||!email.includes(".")){invalid++;return;}
     if(seen.has(email)){dupes++;return;}
     seen.add(email);
-    if(!country){const domain=email.split("@")[1],tld=domain.split(".").pop().toLowerCase();country=DOMAIN_COUNTRY_OVERRIDE[domain]||TMAP[tld]||null;if(!country)country=GENERIC.has(tld)?"MIX":tld.toUpperCase();}
+    if(!country){const domain=email.split("@")[1];country=computeCountryFor(domain);}
     const domain=email.split("@")[1],key=domain+"||"+country;
     if(!grouped[key])grouped[key]={domain,country,accounts:[]};
     grouped[key].accounts.push({email,pass});
@@ -2791,31 +2901,50 @@ function renderAdmin(){
     };return;
   }
   if(!fbOk){el.innerHTML='<div class="banner err">Firebase non connecté.</div>';return;}
-  el.innerHTML=`<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap"><button class="atab on" data-t="dash">📊 Stats</button><button class="atab" data-t="stock">📦 Stock</button><button class="atab" data-t="catalogue">🗂 Catalogue</button><button class="atab" data-t="users">👥 Clients</button><button class="atab" data-t="bot">📱 Bot</button></div><button class="btn btn-outline" id="logoutBtn" style="width:100%;margin-bottom:12px;font-size:12px;padding:8px">Déconnexion</button><div id="adminPane"></div>`;
+  el.innerHTML=`<div class="admin-header"><span class="admin-title">⚙️ Administration</span><button class="admin-logout" id="logoutBtn">↩ Déconnexion</button></div><div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap"><button class="atab on" data-t="dash">📊 Stats</button><button class="atab" data-t="stock">📦 Stock</button><button class="atab" data-t="domains">🌐 Domaines</button><button class="atab" data-t="catalogue">🗂 Catalogue</button><button class="atab" data-t="users">👥 Clients</button><button class="atab" data-t="bot">📱 Bot</button></div><div id="adminPane"></div>`;
   $("logoutBtn").onclick=()=>{fbAuth.signOut().then(()=>{adminOk=false;goTo("shop");});};
   function showTab(t){
     el.querySelectorAll(".atab").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
     const pane=$("adminPane");
     if(t==="dash"){
       pane.innerHTML='<div id="db"><p style="text-align:center;padding:20px;color:var(--sub)">Chargement...</p></div>';
-      Promise.all([db.ref("users").once("value"),db.ref("products").once("value")]).then(function(s){
-        var U=s[0].val()||{},P=s[1].val()||{};
+      Promise.all([db.ref("users").once("value"),db.ref("products").once("value"),db.ref("domain_stats").once("value")]).then(function(s){
+        var U=s[0].val()||{},P=s[1].val()||{},DS=s[2].val()||{};
         var uList=Object.entries(U).filter(function(e){return /^u[0-9]+$/.test(e[0])&&e[1]&&e[1].name;});
         var buyers=uList.filter(function(e){return parseFloat(e[1].balance||0)>0;});
         var totalSoldes=uList.reduce(function(s,e){return s+parseFloat(e[1].balance||0);},0);
         var totalStock=Object.values(P).reduce(function(s,p){return s+(p?parseInt(p.stock||0):0);},0);
-        function sc(v,l,c){return'<div class="a-card" style="text-align:center;padding:12px"><div style="font-family:Space Grotesk,sans-serif;font-weight:800;font-size:18px;color:'+(c||"var(--ink)")+'">'+v+'</div><div style="font-size:10px;color:var(--sub);margin-top:2px;text-transform:uppercase;letter-spacing:.05em">'+l+'</div></div>';}
+        var totalVentes=Object.values(DS).reduce(function(s,d){return s+(d?parseInt(d.sales||0):0);},0);
+        function sc(v,l,c){return'<div class="a-card" style="text-align:center;padding:14px 8px"><div style="font-family:Space Grotesk,sans-serif;font-weight:800;font-size:19px;color:'+(c||"var(--ink)")+'">'+v+'</div><div style="font-size:10px;color:var(--sub);margin-top:3px;text-transform:uppercase;letter-spacing:.05em">'+l+'</div></div>';}
+        var top=Object.values(DS).filter(function(d){return d&&d.domain;}).sort(function(a,b){return(b.sales||0)-(a.sales||0);}).slice(0,8);
+        var topHtml=top.length?top.map(function(d,i){
+          var pct=top[0].sales?Math.round((d.sales/top[0].sales)*100):0;
+          return'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">'
+            +'<span style="font-family:Space Grotesk,sans-serif;font-weight:800;font-size:12px;color:var(--sub);width:16px">'+(i+1)+'</span>'
+            +favIconTag(d.domain)
+            +'<div style="flex:1;min-width:0"><div style="font-size:12.5px;color:var(--ink);font-family:IBM Plex Mono,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@'+d.domain+'</div>'
+            +'<div style="height:3px;background:var(--bg2);border-radius:99px;margin-top:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,var(--ac),var(--ac2))"></div></div></div>'
+            +'<span style="font-family:Space Grotesk,sans-serif;font-weight:700;font-size:13px;color:var(--ac)">'+d.sales+'</span>'
+            +'</div>';
+        }).join(""):'<p style="text-align:center;color:var(--sub);font-size:12px;padding:16px 0">Aucune vente enregistrée pour le moment.</p>';
         document.getElementById("db").innerHTML=
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+          '<div class="a-section-lbl">Vue d\'ensemble</div>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
           +sc(buyers.length,"Acheteurs","var(--ac)")
           +sc(uList.length,"Total clients","var(--sub)")
           +sc(totalStock,"Accès en stock","var(--ink)")
           +sc(fmt(totalSoldes),"Soldes clients","var(--ok)")
-          +'</div>';
+          +'</div>'
+          +'<div class="a-section-lbl">🔥 Domaines les plus vendus <span style="color:var(--sub);font-weight:400;text-transform:none;letter-spacing:0"> · '+totalVentes+' ventes au total</span></div>'
+          +'<div class="a-card" style="padding:4px 14px">'+topHtml+'</div>';
+        observeFavicons(document.getElementById("db"));
       }).catch(function(e){var d=document.getElementById("db");if(d)d.innerHTML='<p style="color:var(--err);padding:12px">Erreur: '+e.message+'</p>';});
     }
+    else if(t==="domains"){
+      renderDomainsTab(pane);
+    }
     else if(t==="stock"){
-      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div style="display:flex;gap:8px;margin-top:8px"><button id="vidStockBtn" style="flex:1;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider TOUT</button><button id="vidStockNoMsBtn" style="flex:1;padding:11px;background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.25);border-radius:10px;color:orange;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider sauf Hotmail</button></div><button id="vidStockOnlyMsBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,120,255,.08);border:1px solid rgba(0,120,255,.25);border-radius:10px;color:#3399FF;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider UNIQUEMENT Hotmail</button><button id="vidStockGmailBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(200,0,0,.08);border:1px solid rgba(200,0,0,.25);border-radius:10px;color:#E05050;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)</button><div id="parsePrev" style="margin-top:10px"></div></div>`;
+      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div style="display:flex;gap:8px;margin-top:8px"><button id="vidStockBtn" style="flex:1;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider TOUT</button><button id="vidStockNoMsBtn" style="flex:1;padding:11px;background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.25);border-radius:10px;color:orange;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider sauf Hotmail</button></div><button id="vidStockOnlyMsBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,120,255,.08);border:1px solid rgba(0,120,255,.25);border-radius:10px;color:#3399FF;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider UNIQUEMENT Hotmail</button><button id="vidStockGmailBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(200,0,0,.08);border:1px solid rgba(200,0,0,.25);border-radius:10px;color:#E05050;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)</button><button id="recalcCountriesBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🔄 Recalculer les pays de tous les produits</button><div id="parsePrev" style="margin-top:10px"></div></div>`;
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
       fi.onchange=e=>{const f=e.target.files[0];if(!f)return;fb.textContent="⏳ Lecture…";const r=new FileReader();r.onload=ev=>{$("txtImp").value=ev.target.result;fb.textContent="✅ "+f.name;$("parseBtn").click();};r.onerror=()=>{toast("Erreur.");fb.textContent="📁 Choisir un fichier .txt";};r.readAsText(f,"UTF-8");fi.value="";};
       function doAnalyse(rm){const txt=$("txtImp").value.trim();if(!txt){toast("Choisis un fichier.");return;}const{groups,dupes,invalid,total:tot}=parseMP(txt);const prev=$("parsePrev");if(!groups.length){prev.innerHTML='<div class="banner err">Aucun compte valide.</div>';return;}let h=`<div class="banner">✅ <b>${tot}</b> comptes${dupes?` · ⚠ <b>${dupes}</b> doublons`:""}${invalid?` · ❌ <b>${invalid}</b> invalides`:""}</div><div style="font-size:12px;color:var(--sub);background:var(--bg2);padding:10px 12px;border-radius:9px;margin-bottom:10px;line-height:1.9">`;groups.forEach(g=>{h+=`• @${g.domain} — ${flag(g.country)} ${cName(g.country)} — <b>${g.accounts.length} comptes</b><br>`;});h+=`</div><button class="btn" id="confirmImp" style="width:100%">${rm?"🔄 Vider + importer":"✅ Importer"} ${tot} comptes</button>`;prev.innerHTML=h;$("confirmImp").onclick=async function(){
@@ -2916,6 +3045,69 @@ function renderAdmin(){
             btn.textContent="🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)";btn.disabled=false;
           }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)";});
         }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)";});
+      };
+      $("recalcCountriesBtn").onclick=function(){
+        if(!confirm("Recalculer le pays de tous les produits selon les règles actuelles ?\nHotmail/Outlook/Live/MSN ne sont jamais touchés."))return;
+        var btn=this;btn.disabled=true;btn.textContent="⏳ Analyse...";
+        db.ref("products").once("value").then(function(snap){
+          var all=snap.val()||{};
+          var moves=[];
+          Object.entries(all).forEach(function(e){
+            var pid=e[0],p=e[1];
+            if(!p||!p.domain)return;
+            if(isHotmailFamily(p.domain))return; // jamais toucher Hotmail
+            var correct=computeCountryFor(p.domain);
+            var current=(p.countries&&p.countries[0])||"";
+            if(correct&&correct!==current){
+              moves.push({oldPid:pid,domain:p.domain,newCountry:correct});
+            }
+          });
+          if(!moves.length){
+            toast("Tout est déjà correctement classé !");
+            btn.disabled=false;btn.textContent="🔄 Recalculer les pays de tous les produits";
+            return;
+          }
+          btn.textContent="⏳ Correction de "+moves.length+" produit(s)…";
+          var chain=Promise.resolve();
+          moves.forEach(function(mv){
+            chain=chain.then(function(){
+              return db.ref("products").once("value").then(function(snap2){
+                var all2=snap2.val()||{};
+                var target=null;
+                Object.entries(all2).forEach(function(e2){
+                  if(e2[0]===mv.oldPid)return;
+                  if(e2[1]&&e2[1].domain===mv.domain&&(e2[1].countries||[]).includes(mv.newCountry))target=e2[0];
+                });
+                return db.ref("credentials/"+mv.oldPid).once("value").then(function(credSnap){
+                  var creds=credSnap.val()||{};
+                  var upd={};
+                  if(target){
+                    Object.entries(creds).forEach(function(ce){upd["credentials/"+target+"/"+ce[0]]=ce[1];});
+                    upd["credentials/"+mv.oldPid]=null;
+                    upd["products/"+mv.oldPid]=null;
+                  }else{
+                    upd["products/"+mv.oldPid+"/countries"]=[mv.newCountry];
+                  }
+                  return db.ref("/").update(upd).then(function(){
+                    if(target){
+                      return db.ref("credentials/"+target).once("value").then(function(finalSnap){
+                        var real=Object.keys(finalSnap.val()||{}).length;
+                        return db.ref("products/"+target+"/stock").set(real);
+                      });
+                    }
+                  });
+                });
+              });
+            });
+          });
+          chain.then(function(){
+            toast("✅ "+moves.length+" produit(s) recorrigé(s) !");
+            btn.disabled=false;btn.textContent="🔄 Recalculer les pays de tous les produits";
+          }).catch(function(e){
+            toast("Erreur: "+e.message);
+            btn.disabled=false;btn.textContent="🔄 Recalculer les pays de tous les produits";
+          });
+        }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🔄 Recalculer les pays de tous les produits";});
       };
     }
     else if(t==="catalogue"){
