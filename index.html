@@ -219,7 +219,9 @@ input::placeholder,textarea::placeholder{color:var(--sub);}
 .scard-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
 .scard-main{flex:1;min-width:0;}
 .scard-dom{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:15px;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:7px;}
-.prov-ico{width:16px;height:16px;border-radius:4px;flex:0 0 auto;object-fit:contain;}
+.prov-ico-wrap{width:16px;height:16px;flex:0 0 auto;display:inline-block;position:relative;}
+.prov-ico-img{width:16px;height:16px;border-radius:4px;object-fit:contain;display:block;}
+.prov-ico{width:16px;height:16px;border-radius:5px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:9px;font-weight:800;color:#fff;line-height:1;}
 .best-badge{
   display:inline-flex;align-items:center;gap:3px;
   font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:.02em;
@@ -2479,26 +2481,29 @@ function renderDomainsTab(pane){
 /* Icône du fournisseur — favicon public du site, jamais de logo hébergé (droits de marque).
    DuckDuckGo a une bien meilleure couverture que Google et échoue proprement (pas d'icône
    générique moche) quand il n'a rien pour un domaine peu connu. */
-function providerFaviconUrl(domain){
-  /* Service Google — CDN mondial, très rapide et fiable à grande échelle. */
-  return "https://www.google.com/s2/favicons?sz=32&domain="+encodeURIComponent(domain);
+/* Vrai logo en priorité — service dédié aux logos d'entreprise (pas un simple
+   favicon de navigateur), gratuit et sans clé API. Clearbit (l'ancien standard)
+   a fermé en décembre 2025 ; ceci est un des remplaçants actuels.
+   L'avatar-lettre coloré ne sert plus qu'en tout dernier recours, si même ce
+   service n'a vraiment aucun logo pour le domaine (cas rares, fournisseurs
+   très régionaux) — jamais rien de cassé à l'écran dans tous les cas. */
+function domainAvatarColor(domain){
+  var hash=0;
+  for(var i=0;i<domain.length;i++){hash=domain.charCodeAt(i)+((hash<<5)-hash);}
+  var hue=Math.abs(hash)%360;
+  return "hsl("+hue+",55%,40%)";
 }
-function providerFaviconFallbackUrl(domain){
-  /* Repli — Google n'a pas toujours l'icône des fournisseurs régionaux moins connus
-     (bbox.fr, telefonica.net...). DuckDuckGo a souvent une meilleure couverture sur
-     ces cas précis, donc on tente ça avant d'abandonner. */
-  return "https://icons.duckduckgo.com/ip3/"+encodeURIComponent(domain)+".ico";
+function providerLogoUrl(domain){
+  return "https://logos-api.apistemic.com/domain:"+encodeURIComponent(domain);
 }
-/* Icône complète prête à insérer — pour TOUS les domaines, grand public ou pro.
-   Le "loading=lazy" natif du navigateur est mal supporté dans la WebView de Telegram
-   (chargement une fois sur deux, aléatoire) — remplacé par un vrai chargement différé
-   maison (IntersectionObserver), cohérent sur toutes les plateformes. L'image n'a pas
-   de src au départ (juste data-src) : observeFavicons() déclenche le chargement quand
-   la carte devient visible, jamais avant — ce qui évite aussi la rafale de requêtes
-   simultanées quand une longue liste s'affiche d'un coup. */
 function favIconTag(domain){
-  var d=domain.replace(/'/g,"");
-  return "<img class='prov-ico' data-src='"+providerFaviconUrl(domain)+"' data-fallback='"+providerFaviconFallbackUrl(domain)+"' width='16' height='16' decoding='async' referrerpolicy='no-referrer' onerror=\"if(!this.dataset.triedFallback){this.dataset.triedFallback='1';this.src=this.dataset.fallback;}else{this.style.visibility='hidden';}\">";
+  var d=domain||"?";
+  var letter=d.charAt(0).toUpperCase();
+  var color=domainAvatarColor(d);
+  return "<span class='prov-ico-wrap'>"
+    +"<img class='prov-ico-img' data-src='"+providerLogoUrl(d)+"' width='16' height='16' decoding='async' referrerpolicy='no-referrer' onerror=\"this.style.display='none';this.nextElementSibling.style.display='flex';\">"
+    +"<span class='prov-ico' style='background:"+color+";display:none'>"+letter+"</span>"
+    +"</span>";
 }
 
 /* Badges — SVG plutôt qu'emoji système (rendu incohérent selon l'appareil) */
@@ -2509,11 +2514,12 @@ function privBadgeTag(){
   return "<span class='priv-badge'><svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='11' width='16' height='9' rx='2'/><path d='M8 11V7a4 4 0 0 1 8 0v4'/></svg>Private</span>";
 }
 
+/* Chargement différé maison (le "loading=lazy" natif est mal supporté dans la
+   WebView Telegram) — ne charge le vrai logo que quand la carte devient visible. */
 var _favObserver=null;
 function getFavObserver(){
   if(_favObserver)return _favObserver;
   if(!window.IntersectionObserver){
-    /* Navigateur très ancien sans support — on charge tout de suite en repli */
     _favObserver={observe:function(el){var s=el.getAttribute("data-src");if(s){el.src=s;el.removeAttribute("data-src");}}};
     return _favObserver;
   }
@@ -2528,11 +2534,10 @@ function getFavObserver(){
   },{rootMargin:"150px"});
   return _favObserver;
 }
-/* À appeler juste après avoir inséré des cartes contenant des .prov-ico dans le DOM */
 function observeFavicons(container){
   if(!container)return;
   var obs=getFavObserver();
-  var imgs=container.querySelectorAll(".prov-ico[data-src]");
+  var imgs=container.querySelectorAll(".prov-ico-img[data-src]");
   for(var i=0;i<imgs.length;i++)obs.observe(imgs[i]);
 }
 
