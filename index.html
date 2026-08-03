@@ -2494,7 +2494,12 @@ function domainAvatarColor(domain){
   return "hsl("+hue+",55%,40%)";
 }
 function providerLogoUrl(domain){
-  return "https://logos-api.apistemic.com/domain:"+encodeURIComponent(domain);
+  /* Le service de logos "entreprise" renvoyait son PROPRE placeholder moche
+     (lettres blanches) quand il n'a pas le vrai logo, au lieu d'une vraie erreur —
+     donc le repli automatique ne se déclenchait jamais. Google renvoie le favicon
+     OFFICIEL réellement hébergé par chaque site, et son échec est prévisible et
+     neutre (petite icône grise générique), jamais un faux logo qui a l'air cassé. */
+  return "https://www.google.com/s2/favicons?sz=64&domain="+encodeURIComponent(domain);
 }
 function favIconTag(domain){
   var d=domain||"?";
