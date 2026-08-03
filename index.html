@@ -2480,9 +2480,14 @@ function renderDomainsTab(pane){
    DuckDuckGo a une bien meilleure couverture que Google et échoue proprement (pas d'icône
    générique moche) quand il n'a rien pour un domaine peu connu. */
 function providerFaviconUrl(domain){
-  /* Service Google — CDN mondial, très rapide et fiable à grande échelle.
-     C'est ÇA qui règle la fluidité, pas le fait de restreindre les domaines. */
+  /* Service Google — CDN mondial, très rapide et fiable à grande échelle. */
   return "https://www.google.com/s2/favicons?sz=32&domain="+encodeURIComponent(domain);
+}
+function providerFaviconFallbackUrl(domain){
+  /* Repli — Google n'a pas toujours l'icône des fournisseurs régionaux moins connus
+     (bbox.fr, telefonica.net...). DuckDuckGo a souvent une meilleure couverture sur
+     ces cas précis, donc on tente ça avant d'abandonner. */
+  return "https://icons.duckduckgo.com/ip3/"+encodeURIComponent(domain)+".ico";
 }
 /* Icône complète prête à insérer — pour TOUS les domaines, grand public ou pro.
    Le "loading=lazy" natif du navigateur est mal supporté dans la WebView de Telegram
@@ -2492,7 +2497,8 @@ function providerFaviconUrl(domain){
    la carte devient visible, jamais avant — ce qui évite aussi la rafale de requêtes
    simultanées quand une longue liste s'affiche d'un coup. */
 function favIconTag(domain){
-  return "<img class='prov-ico' data-src='"+providerFaviconUrl(domain)+"' width='16' height='16' decoding='async' referrerpolicy='no-referrer' onerror=\"this.style.visibility='hidden'\">";
+  var d=domain.replace(/'/g,"");
+  return "<img class='prov-ico' data-src='"+providerFaviconUrl(domain)+"' data-fallback='"+providerFaviconFallbackUrl(domain)+"' width='16' height='16' decoding='async' referrerpolicy='no-referrer' onerror=\"if(!this.dataset.triedFallback){this.dataset.triedFallback='1';this.src=this.dataset.fallback;}else{this.style.visibility='hidden';}\">";
 }
 
 /* Badges — SVG plutôt qu'emoji système (rendu incohérent selon l'appareil) */
