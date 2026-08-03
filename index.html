@@ -2767,6 +2767,17 @@ function renderDepContent(){
         toast("❌ "+(p&&p.message?p.message:"Erreur — essaie USDT TRC20"),5000);
         btn.disabled=false;btn.textContent="💳 Générer l'adresse";return;
       }
+      /* Enregistrer le dépôt en attente — le webhook serveur (nowpayments-webhook)
+         pourra ainsi créditer automatiquement même si le client ferme la mini app
+         avant la confirmation blockchain (ce qui prend souvent plusieurs minutes).
+         Sans ça, seul le polling côté client (tant que l'app reste ouverte) créditait —
+         fragile, et c'est ce qui causait des dépôts jamais crédités. */
+      if(fbOk&&me.id){
+        db.ref("pending_payments/"+p.payment_id).set({
+          userId:me.id,tgId:me.tgId||null,name:me.name||"Client",handle:me.handle||"",
+          amount:amt,type:"deposit",status:"pending",createdAt:Date.now()
+        }).catch(function(e){console.error("pending_payments write:",e);});
+      }
       const cr=CRYPTOS.find(function(c){return c.cur===selCur;});
       const symLabel=selCur.replace(/trc20|erc20|bsc/g,"").toUpperCase();
       const addr=p.pay_address;
@@ -2827,7 +2838,22 @@ function renderDepContent(){
             var newBal=parseFloat((myBal+amt).toFixed(2));
             hapticN("success");
             if(fbOk&&me.id){
-              db.ref("users/"+me.id+"/balance").set(newBal).then(function(){
+              /* Anti-double-crédit : le webhook serveur peut avoir déjà crédité
+                 entre-temps (il tourne indépendamment, même app fermée). On vérifie
+                 avant d'agir, pour ne jamais créditer deux fois le même dépôt. */
+              db.ref("pending_payments/"+p.payment_id+"/status").once("value").then(function(statusSnap){
+                if(statusSnap.val()==="credited"){
+                  /* Déjà crédité par le webhook — juste rafraîchir l'affichage */
+                  setTimeout(function(){
+                    $("S_depPayment").classList.remove("open");
+                    closeSheet();
+                    toast("✅ "+fmt(amt)+" déjà ajoutés à ton solde !",5000);
+                  },1200);
+                  return;
+                }
+                db.ref("users/"+me.id+"/balance").set(newBal).then(function(){
+                  return db.ref("pending_payments/"+p.payment_id+"/status").set("credited");
+                }).then(function(){
                 /* Écriture confirmée → on notifie seulement maintenant */
                 if(me.tgId){
                   var notif="\uD83D\uDCB0 <b>ACCESMAIL \u2014 Solde recharg\u00e9 !</b>\n\nTon solde a \u00e9t\u00e9 cr\u00e9dit\u00e9 de <b>"+fmt(amt)+"</b>\nNouveau solde\u00a0: <b>"+fmt(newBal)+"</b>\n\nOuvre la boutique pour acheter tes acc\u00e8s. \uD83D\uDC47";
@@ -2840,6 +2866,7 @@ function renderDepContent(){
                 console.error("Échec crédit solde:",err);
                 apiPost("send-message",{chatId:1363470410,text:"\u26A0\uFE0F <b>ÉCHEC crédit solde</b>\n\nClient\u00a0: <b>"+(me.name||"Inconnu")+"</b> "+(me.handle?"("+me.handle+")":"")+"\nMontant\u00a0: <b>"+fmt(amt)+"</b>\nErreur\u00a0: "+err.message+"\n\n\u26A0\uFE0F Créditer manuellement via le panel admin !"}).catch(function(){});
                 if(me.tgId)apiPost("send-message",{chatId:me.tgId,text:"\u26A0\uFE0F Ton paiement a bien été reçu, mais une erreur technique empêche le crédit automatique de ton solde. Contacte @johndosql pour régularisation rapide."}).catch(function(){});
+              });
               });
             }
             /* Fermer l'écran + la sheet + toast */
@@ -3044,40 +3071,32 @@ function renderAdmin(){
           .catch(function(e){toast("Erreur: "+e.message);btn.textContent="🗑 Vider TOUT";btn.disabled=false;});
       };
       $("vidStockNoMsBtn").onclick=function(){
-        if(!confirm("Vider le stock SAUF Hotmail/Outlook/Live/MSN ?"))return;
+        if(!confirm("Vider le stock SAUF Hotmail/Outlook/Live/MSN/SFR ?"))return;
         var btn=this;btn.disabled=true;btn.textContent="⏳...";
-        function isMs(domain){
-          var d=(domain||"").toLowerCase();
-          return["hotmail","outlook","live.","msn.","office365","office.com"].some(function(k){return d.includes(k);});
-        }
         db.ref("products").once("value").then(function(snap){
           var all=snap.val()||{};
-          var toDelete=Object.entries(all).filter(function(e){return!isMs(e[1]&&e[1].domain);}).map(function(e){return e[0];});
-          if(!toDelete.length){toast("Rien à supprimer (tout est Hotmail).");btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";return;}
+          var toDelete=Object.entries(all).filter(function(e){return!isHotmailFamily(e[1]&&e[1].domain);}).map(function(e){return e[0];});
+          if(!toDelete.length){toast("Rien à supprimer (tout est protégé).");btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";return;}
           /* Une SEULE requête multi-chemins au lieu d'une boucle — bien plus rapide et atomique */
           var upd={};
           toDelete.forEach(function(pid){upd["credentials/"+pid]=null;upd["products/"+pid]=null;});
           db.ref("/").update(upd).then(function(){
-            toast("✅ "+toDelete.length+" produit(s) vidé(s), Hotmail conservé !");
+            toast("✅ "+toDelete.length+" produit(s) vidé(s), Hotmail/SFR conservés !");
             btn.textContent="🗑 Vider sauf Hotmail";btn.disabled=false;
           }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";});
         }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider sauf Hotmail";});
       };
       $("vidStockOnlyMsBtn").onclick=function(){
-        if(!confirm("Vider UNIQUEMENT Hotmail/Outlook/Live/MSN (le reste du stock est conservé) ?"))return;
+        if(!confirm("Vider UNIQUEMENT Hotmail/Outlook/Live/MSN/SFR (le reste du stock est conservé) ?"))return;
         var btn=this;btn.disabled=true;btn.textContent="⏳...";
-        function isMs(domain){
-          var d=(domain||"").toLowerCase();
-          return["hotmail","outlook","live.","msn.","office365","office.com"].some(function(k){return d.includes(k);});
-        }
         db.ref("products").once("value").then(function(snap){
           var all=snap.val()||{};
-          var toDelete=Object.entries(all).filter(function(e){return isMs(e[1]&&e[1].domain);}).map(function(e){return e[0];});
-          if(!toDelete.length){toast("Rien à supprimer (aucun Hotmail en stock).");btn.disabled=false;btn.textContent="🗑 Vider UNIQUEMENT Hotmail";return;}
+          var toDelete=Object.entries(all).filter(function(e){return isHotmailFamily(e[1]&&e[1].domain);}).map(function(e){return e[0];});
+          if(!toDelete.length){toast("Rien à supprimer (aucun Hotmail/SFR en stock).");btn.disabled=false;btn.textContent="🗑 Vider UNIQUEMENT Hotmail";return;}
           var upd={};
           toDelete.forEach(function(pid){upd["credentials/"+pid]=null;upd["products/"+pid]=null;});
           db.ref("/").update(upd).then(function(){
-            toast("✅ "+toDelete.length+" produit(s) Hotmail vidé(s), le reste est conservé !");
+            toast("✅ "+toDelete.length+" produit(s) Hotmail/SFR vidé(s), le reste est conservé !");
             btn.textContent="🗑 Vider UNIQUEMENT Hotmail";btn.disabled=false;
           }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider UNIQUEMENT Hotmail";});
         }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🗑 Vider UNIQUEMENT Hotmail";});
