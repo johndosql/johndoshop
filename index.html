@@ -3003,7 +3003,20 @@ function renderAdmin(){
       renderDomainsTab(pane);
     }
     else if(t==="stock"){
-      pane.innerHTML=`<div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><label style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--sf);border:1px solid var(--line);border-radius:10px;cursor:pointer"><input type="checkbox" id="privImp" style="width:16px;height:16px;accent-color:var(--ac)"><span style="font-size:12.5px;color:var(--ink)">🔒 Marquer comme "Private" (badge visible sur la carte, reste dans la boutique)</span></label><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div><div style="display:flex;gap:8px;margin-top:8px"><button id="vidStockBtn" style="flex:1;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider TOUT</button><button id="vidStockNoMsBtn" style="flex:1;padding:11px;background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.25);border-radius:10px;color:orange;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider sauf Hotmail</button></div><button id="vidStockOnlyMsBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,120,255,.08);border:1px solid rgba(0,120,255,.25);border-radius:10px;color:#3399FF;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider UNIQUEMENT Hotmail</button><button id="vidStockGmailBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(200,0,0,.08);border:1px solid rgba(200,0,0,.25);border-radius:10px;color:#E05050;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)</button><button id="recalcCountriesBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🔄 Recalculer les pays de tous les produits</button><div id="parsePrev" style="margin-top:10px"></div></div>`;
+      pane.innerHTML=`<div class="a-section-lbl" style="margin-top:0">📥 Importer</div><div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><label style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--sf);border:1px solid var(--line);border-radius:10px;cursor:pointer"><input type="checkbox" id="privImp" style="width:16px;height:16px;accent-color:var(--ac)"><span style="font-size:12.5px;color:var(--ink)">🔒 Marquer comme "Private" (badge visible sur la carte, reste dans la boutique)</span></label><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div></div>
+
+<div class="a-section-lbl">🛠 Maintenance</div><div class="a-card"><button id="recalcCountriesBtn" style="width:100%;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🔄 Recalculer les pays de tous les produits</button><button id="dedupeStockBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🧹 Nettoyer les doublons du stock</button></div>
+
+<div class="pd-sec-toggle" id="dangerToggle" style="margin:16px 2px 0"><span>⚠️ Zone de suppression</span><span class="pd-chevron">▾</span></div>
+<div class="pd-pro-wrap collapsed" id="dangerWrap" style="margin-top:8px"><div class="a-card"><div style="display:flex;gap:8px"><button id="vidStockBtn" style="flex:1;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider TOUT</button><button id="vidStockNoMsBtn" style="flex:1;padding:11px;background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.25);border-radius:10px;color:orange;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider sauf Hotmail</button></div><button id="vidStockOnlyMsBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,120,255,.08);border:1px solid rgba(0,120,255,.25);border-radius:10px;color:#3399FF;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider UNIQUEMENT Hotmail</button><button id="vidStockGmailBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(200,0,0,.08);border:1px solid rgba(200,0,0,.25);border-radius:10px;color:#E05050;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)</button></div></div>
+<div id="parsePrev" style="margin-top:10px"></div>`;
+      $("dangerToggle").onclick=function(){
+        var wrap=$("dangerWrap");
+        var willExpand=wrap.classList.contains("collapsed");
+        wrap.classList.toggle("collapsed");
+        wrap.style.maxHeight=willExpand?(wrap.scrollHeight+"px"):"0px";
+        this.querySelector(".pd-chevron").textContent=willExpand?"▴":"▾";
+      };
       const fb=$("fileBtn"),fi=$("fileImp");fb.onclick=()=>fi.click();
       fi.onchange=async e=>{
         const f=e.target.files[0];if(!f)return;
@@ -3031,29 +3044,49 @@ function renderAdmin(){
         var btn=$("confirmImp");btn.disabled=true;btn.textContent="Vérification anti-doublons…";
         var soldSnap=await db.ref("sold_emails").once("value").catch(function(){return{val:function(){return{};}};});
         var soldSet=new Set(Object.values(soldSnap.val()||{}).map(function(x){return x&&x.email?x.email.toLowerCase():"";}).filter(Boolean));
+        /* Vérifier aussi contre le stock ACTUEL (pas encore vendu) — sinon réimporter
+           deux fois le même fichier crée de purs doublons en stock. On ne lit que les
+           produits dont le domaine correspond à l'import, pas tout le catalogue. */
+        var domainsInImport=new Set(groups.map(function(g){return g.domain;}));
+        var matchingPids=adminProds.filter(function(p){return domainsInImport.has(p.domain);}).map(function(p){return p.id;});
+        var stockSet=new Set();
+        if(matchingPids.length){
+          var credSnaps=await Promise.all(matchingPids.map(function(pid){
+            return db.ref("credentials/"+pid).once("value").catch(function(){return{val:function(){return{};}};});
+          }));
+          credSnaps.forEach(function(snap){
+            Object.values(snap.val()||{}).forEach(function(c){
+              if(c&&c.email)stockSet.add(c.email.toLowerCase());
+            });
+          });
+        }
         /* Gmail/Yahoo/iCloud jamais importables ici (non vérifiables) — Hotmail/Outlook/Live/MSN restent autorisés (géré manuellement) */
         function isNeverImportable(domain){
           var d=(domain||"").toLowerCase();
           return["gmail","googlemail","yahoo","icloud.com","me.com","mac.com"].some(function(k){return d.includes(k);});
         }
-        var skipped=0,skippedBlocked=0;
+        var skipped=0,skippedBlocked=0,skippedDupeStock=0;
         var filtered=groups.filter(function(g){
           if(isNeverImportable(g.domain)){skippedBlocked+=g.accounts.length;return false;}
           return true;
         }).map(function(g){
           return Object.assign({},g,{accounts:g.accounts.filter(function(a){
-            if(soldSet.has((a.email||"").toLowerCase())){skipped++;return false;}
+            var em=(a.email||"").toLowerCase();
+            if(soldSet.has(em)){skipped++;return false;}
+            if(stockSet.has(em)){skippedDupeStock++;return false;}
             return true;
           })});
         }).filter(function(g){return g.accounts.length>0;});
         if(skippedBlocked>0)toast("⛔ "+skippedBlocked+" compte(s) Gmail/Yahoo/iCloud ignoré(s) — jamais importables",4000);
         if(skipped>0)toast("⚠ "+skipped+" compte(s) déjà vendu(s) — ignoré(s)",4000);
+        if(skippedDupeStock>0)toast("⚠ "+skippedDupeStock+" compte(s) déjà en stock — ignoré(s) (doublon)",4000);
         btn.textContent="Import en cours…";
         var isPrivate=$("privImp")&&$("privImp").checked;
         var doImport=function(){
           return importMP(filtered,isPrivate).then(function(){
             var kept=filtered.reduce(function(s,g){return s+g.accounts.length;},0);
-            toast("✅ "+kept+" comptes importés"+(isPrivate?" (🔒 privé)":"")+(skipped||skippedBlocked?" ("+(skipped+skippedBlocked)+" ignorés)":""));
+            var totalSkipped=skipped+skippedBlocked+skippedDupeStock;
+            toast("✅ "+kept+" comptes importés"+(isPrivate?" (🔒 privé)":"")+(totalSkipped?" ("+totalSkipped+" ignorés)":""));
             $("parsePrev").innerHTML="";$("txtImp").value="";fb.textContent="📁 Choisir un fichier .txt";
             if($("privImp"))$("privImp").checked=false;
           }).catch(function(e){toast("Erreur: "+e.message);});
@@ -3183,13 +3216,82 @@ function renderAdmin(){
           });
         }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🔄 Recalculer les pays de tous les produits";});
       };
+      $("dedupeStockBtn").onclick=function(){
+        if(!confirm("Rechercher et supprimer les doublons (même email) dans tout le stock ?"))return;
+        var btn=this;btn.disabled=true;btn.textContent="⏳ Analyse…";
+        Promise.all([db.ref("credentials").once("value"),db.ref("products").once("value")]).then(function(res){
+          var allCreds=res[0].val()||{};
+          var allProds=res[1].val()||{};
+          var seen={},toDelete=[],affected=new Set();
+          Object.keys(allCreds).forEach(function(prodId){
+            var creds=allCreds[prodId]||{};
+            Object.keys(creds).forEach(function(key){
+              var c=creds[key];
+              if(!c||!c.email)return;
+              var em=c.email.toLowerCase();
+              if(seen[em]){toDelete.push({prodId:prodId,key:key});affected.add(prodId);}
+              else{seen[em]=true;}
+            });
+          });
+          if(!toDelete.length){
+            toast("✅ Aucun doublon trouvé !");
+            btn.disabled=false;btn.textContent="🧹 Nettoyer les doublons du stock";
+            return;
+          }
+          var upd={};
+          toDelete.forEach(function(d){upd["credentials/"+d.prodId+"/"+d.key]=null;});
+          db.ref("/").update(upd).then(function(){
+            /* Recalculer le stock des produits touchés, avec la même règle que partout
+               ailleurs (Hotmail/SFR comptent direct, le reste exige lastChecked validé) */
+            var chain=Promise.resolve();
+            affected.forEach(function(pid){
+              chain=chain.then(function(){
+                var prodDomain=(allProds[pid]&&allProds[pid].domain)||"";
+                var isHm=isHotmailFamily(prodDomain);
+                return db.ref("credentials/"+pid).once("value").then(function(s2){
+                  var creds2=s2.val()||{};
+                  var real=Object.values(creds2).filter(function(c){
+                    if(!c)return false;
+                    return isHm||(c.lastChecked&&!c.suspect&&!c.timeoutStrikes);
+                  }).length;
+                  return db.ref("products/"+pid+"/stock").set(real);
+                });
+              });
+            });
+            chain.then(function(){
+              toast("✅ "+toDelete.length+" doublon(s) supprimé(s) sur "+affected.size+" produit(s).");
+              btn.disabled=false;btn.textContent="🧹 Nettoyer les doublons du stock";
+            }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🧹 Nettoyer les doublons du stock";});
+          }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🧹 Nettoyer les doublons du stock";});
+        }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🧹 Nettoyer les doublons du stock";});
+      };
     }
     else if(t==="catalogue"){
-      pane.innerHTML=`<button class="btn btn-danger" id="clearBtn" style="width:100%;margin-bottom:12px">🗑 Vider le catalogue</button><div class="a-card" style="margin-bottom:12px"><div class="a-title">➕ Ajouter manuellement</div><input class="field" id="nD" placeholder="Domaine (ex: hotmail.com)"><input class="field" id="nC" placeholder="Pays (ex: FR,US,DE)"><div style="display:flex;gap:7px"><input class="field" id="nP" type="number" step="0.01" value="4" placeholder="Prix"><input class="field" id="nS" type="number" placeholder="Stock"></div><button class="btn" id="addBtn" style="width:100%">Ajouter</button></div><p class="sl-lbl">Catalogue (${adminProds.length})</p><div id="aProd"></div>`;
+      pane.innerHTML=`<button class="btn btn-danger" id="clearBtn" style="width:100%;margin-bottom:12px">🗑 Vider le catalogue</button><div class="a-card" style="margin-bottom:12px"><div class="a-title">➕ Ajouter manuellement</div><input class="field" id="nD" placeholder="Domaine (ex: hotmail.com)"><input class="field" id="nC" placeholder="Pays (ex: FR,US,DE)"><div style="display:flex;gap:7px"><input class="field" id="nP" type="number" step="0.01" value="4" placeholder="Prix"><input class="field" id="nS" type="number" placeholder="Stock"></div><button class="btn" id="addBtn" style="width:100%">Ajouter</button></div><div class="a-section-lbl" style="margin-top:0">🔍 Rechercher un produit (${adminProds.length} au total)</div><input class="field" id="catSearch" placeholder="Domaine ou pays (ex: orange, FR, sfr.fr)" style="margin-bottom:10px"><div id="aProd"></div>`;
       $("clearBtn").onclick=()=>{if(!confirm("⚠️ Supprimer TOUS les produits ?"))return;db.ref("products").remove().then(()=>{db.ref("credentials").remove();toast("Catalogue vidé.");});};
       $("addBtn").onclick=()=>{const dom=$("nD").value.trim(),ctry=$("nC").value.split(",").map(c=>c.trim().toUpperCase()).filter(Boolean);const price=parseFloat($("nP").value)||PRICE_BASE,stock=parseInt($("nS").value);if(!dom||!ctry.length||isNaN(stock)){toast("Remplis tous les champs.");return;}db.ref("products").push({domain:dom,countries:ctry,price,stock}).then(()=>{toast("Ajouté !");["nD","nC","nS"].forEach(id=>$(id).value="");$("nP").value="4";});};
-      const ap=$("aProd");if(!adminProds.length)ap.innerHTML='<p style="text-align:center;color:var(--sub);padding:20px 0">Catalogue vide.</p>';
-      adminProds.forEach(p=>{const row=document.createElement("div");row.className="a-card";row.innerHTML=`<div class="a-title">@${p.domain} ${p.private?'<span style="font-size:10px;background:rgba(0,200,160,.12);color:var(--ac);padding:2px 7px;border-radius:99px;margin-left:4px">🔒 Privé</span>':''} <span style="font-size:11px;color:var(--sub)">${(p.countries||[]).join(",")} · ${p.stock} en stock</span></div><div class="a-row"><label>Pays</label><input class="field" value="${(p.countries||[]).join(",")}" data-f="c"></div><div class="a-row"><label>Prix</label><input class="field" type="number" step="0.01" value="${p.price}" data-f="p"></div><div class="a-row"><label>Stock</label><input class="field" type="number" value="${p.stock}" data-f="s"></div><label style="display:flex;align-items:center;gap:7px;margin:8px 0;cursor:pointer"><input type="checkbox" data-f="priv" ${p.private?"checked":""} style="width:15px;height:15px;accent-color:var(--ac)"><span style="font-size:12px;color:var(--sub)">🔒 Badge "Private" (reste visible dans la boutique)</span></label><div class="a-acts"><button class="btn" data-a="save">Sauvegarder</button><button class="btn btn-danger" data-a="del">Supprimer</button></div>`;row.querySelector('[data-a="save"]').onclick=()=>{const c=row.querySelector('[data-f="c"]').value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);const pr=parseFloat(row.querySelector('[data-f="p"]').value);const st=parseInt(row.querySelector('[data-f="s"]').value);const priv=row.querySelector('[data-f="priv"]').checked;db.ref("products/"+p.id).update({countries:c,price:pr,stock:st,private:priv}).then(()=>toast("Mis à jour."));};row.querySelector('[data-a="del"]').onclick=()=>{if(confirm("Supprimer @"+p.domain+" ?"))db.ref("products/"+p.id).remove().then(()=>toast("Supprimé."));};ap.appendChild(row);});
+
+      function renderRow(p){
+        const row=document.createElement("div");row.className="a-card";
+        row.innerHTML=`<div class="a-title">@${p.domain} ${p.private?'<span style="font-size:10px;background:rgba(0,200,160,.12);color:var(--ac);padding:2px 7px;border-radius:99px;margin-left:4px">🔒 Privé</span>':''} <span style="font-size:11px;color:var(--sub)">${(p.countries||[]).join(",")} · ${p.stock} en stock</span></div><div class="a-row"><label>Pays</label><input class="field" value="${(p.countries||[]).join(",")}" data-f="c"></div><div class="a-row"><label>Prix</label><input class="field" type="number" step="0.01" value="${p.price}" data-f="p"></div><div class="a-row"><label>Stock</label><input class="field" type="number" value="${p.stock}" data-f="s"></div><label style="display:flex;align-items:center;gap:7px;margin:8px 0;cursor:pointer"><input type="checkbox" data-f="priv" ${p.private?"checked":""} style="width:15px;height:15px;accent-color:var(--ac)"><span style="font-size:12px;color:var(--sub)">🔒 Badge "Private" (reste visible dans la boutique)</span></label><div class="a-acts"><button class="btn" data-a="save">Sauvegarder</button><button class="btn btn-danger" data-a="del">Supprimer</button></div>`;
+        row.querySelector('[data-a="save"]').onclick=()=>{const c=row.querySelector('[data-f="c"]').value.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean);const pr=parseFloat(row.querySelector('[data-f="p"]').value);const st=parseInt(row.querySelector('[data-f="s"]').value);const priv=row.querySelector('[data-f="priv"]').checked;db.ref("products/"+p.id).update({countries:c,price:pr,stock:st,private:priv}).then(()=>toast("Mis à jour."));};
+        row.querySelector('[data-a="del"]').onclick=()=>{if(confirm("Supprimer @"+p.domain+" ?"))db.ref("products/"+p.id).remove().then(()=>toast("Supprimé."));};
+        return row;
+      }
+      function renderSearch(){
+        var q=($("catSearch").value||"").trim().toLowerCase();
+        var ap=$("aProd");ap.innerHTML="";
+        if(!q){ap.innerHTML='<p style="text-align:center;color:var(--sub);padding:20px 0;font-size:12.5px">Tape un nom de domaine ou un code pays pour chercher.</p>';return;}
+        var matches=adminProds.filter(function(p){
+          if((p.domain||"").toLowerCase().includes(q))return true;
+          return(p.countries||[]).some(function(c){return c.toLowerCase().includes(q);});
+        });
+        if(!matches.length){ap.innerHTML='<p style="text-align:center;color:var(--sub);padding:20px 0">Aucun résultat pour "'+q+'".</p>';return;}
+        matches.forEach(function(p){ap.appendChild(renderRow(p));});
+      }
+      renderSearch();
+      var _catT=null;
+      $("catSearch").addEventListener("input",function(){clearTimeout(_catT);_catT=setTimeout(renderSearch,150);});
     }
     else if(t==="users"){
       var ua=Object.entries(users).filter(function(e){return /^u[0-9]+$/.test(e[0])&&e[1]&&e[1].name;});
