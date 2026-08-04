@@ -2308,7 +2308,10 @@ function renderCartPage(){
         amount:tot,
         orderId:"acm_"+Date.now(),
         description:entries().map(function(e){return e.qty+"x @"+e.item.domain;}).join(", "),
-        payCurrency:selCur
+        payCurrency:selCur,
+        userId:me.id,tgId:me.tgId||null,name:me.name||"Client",handle:me.handle||"",
+        type:"purchase",
+        items:entries().map(function(e){return e.qty+"x @"+e.item.domain;}).join(", ")
       });
       if(!p||!p.pay_address){
         var errMsg=p&&p.message?p.message:"Vérifie NOWPayments ou choisis USDT TRC20";
@@ -2778,22 +2781,18 @@ function renderDepContent(){
     var selCur=depSelBtn?depSelBtn.dataset.cur:"usdttrc20";
     const btn=$("depGenBtn");btn.disabled=true;btn.textContent="⏳ Génération…";
     try{
-      const p=await apiPost("create-payment",{amount:amt,orderId:"dep_"+me.id+"_"+Date.now(),description:"Dépôt ACCESMAIL",payCurrency:selCur});
+      const p=await apiPost("create-payment",{
+        amount:amt,orderId:"dep_"+me.id+"_"+Date.now(),description:"Dépôt ACCESMAIL",payCurrency:selCur,
+        userId:me.id,tgId:me.tgId||null,name:me.name||"Client",handle:me.handle||"",
+        type:"deposit"
+      });
       if(!p||!p.pay_address){
         toast("❌ "+(p&&p.message?p.message:"Erreur — essaie USDT TRC20"),5000);
         btn.disabled=false;btn.textContent="💳 Générer l'adresse";return;
       }
-      /* Enregistrer le dépôt en attente — le webhook serveur (nowpayments-webhook)
-         pourra ainsi créditer automatiquement même si le client ferme la mini app
-         avant la confirmation blockchain (ce qui prend souvent plusieurs minutes).
-         Sans ça, seul le polling côté client (tant que l'app reste ouverte) créditait —
-         fragile, et c'est ce qui causait des dépôts jamais crédités. */
-      if(fbOk&&me.id){
-        db.ref("pending_payments/"+p.payment_id).set({
-          userId:me.id,tgId:me.tgId||null,name:me.name||"Client",handle:me.handle||"",
-          amount:amt,type:"deposit",status:"pending",createdAt:Date.now()
-        }).catch(function(e){console.error("pending_payments write:",e);});
-      }
+      /* L'enregistrement du dépôt en attente se fait maintenant CÔTÉ SERVEUR, dans
+         create-payment.js, avant même que cette réponse n'arrive ici — plus aucune
+         fenêtre de risque si le client ferme l'app juste après ce point. */
       const cr=CRYPTOS.find(function(c){return c.cur===selCur;});
       const symLabel=selCur.replace(/trc20|erc20|bsc/g,"").toUpperCase();
       const addr=p.pay_address;
