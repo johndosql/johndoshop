@@ -2391,13 +2391,40 @@ async function sendBot(chatId,creds,total){
 
 /* Hotmail/Outlook/Live/MSN : vérifié manuellement par l'admin avant import →
    livré instantanément, jamais mis en file pour le checker IMAP */
-function isHotmailFamily(domain){
+function isTrueHotmail(domain){
   var d=(domain||"").toLowerCase();
-  /* sfr.fr ajouté ici (pas juste Hotmail) — le checker IMAP n'arrive pas à le
-     vérifier correctement pour l'instant (cause encore incertaine). En attendant
-     une vraie solution, traité comme Hotmail : livraison directe, jamais passé
-     au checker, jamais compté "à vérifier" avant d'être vendable. */
-  return["hotmail","outlook","live.","msn.","office365","office.com"].some(function(k){return d.includes(k);})||d==="sfr.fr";
+  /* Microsoft bloque l'IMAP externe pour Hotmail/Outlook/Live/MSN — aucun choix
+     possible ici, jamais vérifiable par design, toujours livraison directe. */
+  return["hotmail","outlook","live.","msn.","office365","office.com"].some(function(k){return d.includes(k);});
+}
+/* Domaines réglés en "livraison directe sans vérification" via le panel admin —
+   comme Hotmail, mais choisi au cas par cas (ex: SFR, si on décide de ne pas le
+   faire vérifier). Contrairement à Hotmail, ce n'est jamais un domaine où l'IMAP
+   est structurellement impossible — juste un choix. */
+function isDirectDeliveryOverride(domain){
+  var d=(domain||"").toLowerCase();
+  var ov=customDomainOverrides[d];
+  return!!(ov&&ov.directDelivery);
+}
+function isHotmailFamily(domain){
+  return isTrueHotmail(domain)||isDirectDeliveryOverride(domain);
+}
+/* Domaines réglés en "vérification uniquement à la livraison" via le panel admin
+   (onglet Domaines) — jamais touchés par le cycle de fond, vérifiés en IMAP
+   seulement au moment précis de l'achat. */
+function isDeliveryOnlyCheck(domain){
+  var d=(domain||"").toLowerCase();
+  var ov=customDomainOverrides[d];
+  return!!(ov&&ov.deliveryOnlyCheck);
+}
+/* Domaines protégés contre toute suppression accidentelle lors d'un import/remplacement
+   d'un AUTRE domaine — Hotmail (livraison directe) + bbox.fr (qui reste lui,
+   vérifié normalement par IMAP comme le reste du mix, juste jamais supprimé par erreur
+   à cause d'un import qui ne le concerne pas) + tout domaine réglé "vérification à la
+   livraison uniquement" ou "livraison directe". */
+function isWipeProtected(domain){
+  var d=(domain||"").toLowerCase();
+  return isHotmailFamily(d)||d==="bbox.fr"||isDeliveryOnlyCheck(d);
 }
 
 /* Liste des fournisseurs mail grand public connus (même liste que checker.py) —
@@ -2428,6 +2455,14 @@ function renderDomainsTab(pane){
       <option value="false">💼 Pro / Entreprise</option>
     </select>
     <input class="field" id="dovCountry" placeholder="Code pays (ex: ES) — vide = auto" style="margin-bottom:10px;text-transform:uppercase">
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:10px 12px;background:var(--sf);border:1px solid var(--line);border-radius:10px;cursor:pointer">
+      <input type="checkbox" id="dovDirectDelivery" style="width:16px;height:16px;accent-color:var(--ac)">
+      <span style="font-size:12.5px;color:var(--ink)">🚀 Livraison directe, sans aucune vérification (comme Hotmail) — pour un domaine qu'on choisit de ne jamais faire passer par le checker</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:10px 12px;background:var(--sf);border:1px solid var(--line);border-radius:10px;cursor:pointer">
+      <input type="checkbox" id="dovDeliveryOnly" style="width:16px;height:16px;accent-color:var(--ac)">
+      <span style="font-size:12.5px;color:var(--ink)">⏱ Vérifier uniquement à la livraison (jamais par le cycle de fond — utile pour un lot déjà confirmé valide à la main, qu'on ne veut pas voir supprimé à tort par une revérification répétée)</span>
+    </label>
     <button class="btn" id="dovAddBtn" style="width:100%">Enregistrer</button>
   </div>
   <div class="a-section-lbl">Overrides actifs (<span id="dovCount">0</span>)</div>
@@ -2444,10 +2479,12 @@ function renderDomainsTab(pane){
     listEl.innerHTML=entries.map(function(e){
       var domain=e[0],ov=e[1]||{};
       var pubTxt=ov.public===true?"📮 Grand public":ov.public===false?"💼 Pro":"";
-      var ctryTxt=ov.country?(pubTxt?" · ":"")+"🌍 "+ov.country:"";
+      var ctryTxt=ov.country?((pubTxt)?" · ":"")+"🌍 "+ov.country:"";
+      var ddTxt=ov.directDelivery?((pubTxt||ctryTxt)?" · ":"")+"🚀 Livraison directe":"";
+      var doTxt=ov.deliveryOnlyCheck?((pubTxt||ctryTxt||ddTxt)?" · ":"")+"⏱ Livraison seule":"";
       return'<div style="display:flex;align-items:center;gap:10px;background:var(--sf);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px">'
         +'<div style="flex:1;min-width:0"><div style="font-family:IBM Plex Mono,monospace;font-size:12.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@'+domain+'</div>'
-        +'<div style="font-size:11px;color:var(--sub);margin-top:2px">'+(pubTxt+ctryTxt||"—")+'</div></div>'
+        +'<div style="font-size:11px;color:var(--sub);margin-top:2px">'+(pubTxt+ctryTxt+ddTxt+doTxt||"—")+'</div></div>'
         +'<button data-domain="'+domain+'" class="dov-del" style="background:rgba(255,79,64,.1);border:1px solid rgba(255,79,64,.2);color:var(--err);border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;flex:0 0 auto">✕</button>'
         +'</div>';
     }).join("");
@@ -2467,16 +2504,21 @@ function renderDomainsTab(pane){
     var domain=($("dovDomain").value||"").trim().toLowerCase();
     var pubVal=$("dovPublic").value;
     var country=($("dovCountry").value||"").trim().toUpperCase();
+    var directDelivery=$("dovDirectDelivery").checked;
+    var deliveryOnly=$("dovDeliveryOnly").checked;
     if(!domain||!domain.includes(".")){toast("Domaine invalide.");return;}
-    if(pubVal===""&&!country){toast("Choisis au moins une classification ou un pays.");return;}
+    if(directDelivery&&deliveryOnly){toast("Choisis soit livraison directe, soit vérification à la livraison — pas les deux (contradictoire).");return;}
+    if(pubVal===""&&!country&&!directDelivery&&!deliveryOnly){toast("Choisis au moins un réglage à appliquer.");return;}
     var entry={domain:domain};
     if(pubVal==="true")entry.public=true;
     else if(pubVal==="false")entry.public=false;
     if(country)entry.country=country;
+    if(directDelivery)entry.directDelivery=true;
+    if(deliveryOnly)entry.deliveryOnlyCheck=true;
     var key=domain.replace(/\./g,"_");
     db.ref("settings/domainOverrides/"+key).set(entry).then(function(){
       toast("✅ "+domain+" enregistré.");
-      $("dovDomain").value="";$("dovCountry").value="";$("dovPublic").value="";
+      $("dovDomain").value="";$("dovCountry").value="";$("dovPublic").value="";$("dovDirectDelivery").checked=false;$("dovDeliveryOnly").checked=false;
     }).catch(function(e){toast("Erreur: "+e.message);});
   };
 }
@@ -2932,18 +2974,19 @@ async function importMP(groups,isPrivate){
      l'import lent, groupe après groupe, avant cette correction. */
   const reads=await Promise.all(groups.map(function(g){
     const ex=adminProds.find(p=>p.domain===g.domain&&(p.countries||[]).includes(g.country));
-    if(!ex)return Promise.resolve({pid:null,realOld:0});
+    if(!ex)return Promise.resolve({pid:null,realOld:0,existing:null});
     return db.ref("credentials/"+ex.id).once("value").then(function(snap){
       const v=snap.val()||{};
-      /* Hotmail (et sfr.fr) : vérifié manuellement avant import → compte immédiatement.
-         Mix/IMAP : ne compter que ce qui a déjà prouvé sa validité (lastChecked) —
+      /* Hotmail/sfr.fr et domaines "vérification à la livraison" : vérifiés manuellement
+         ou jamais passés par le cycle de fond → comptent immédiatement.
+         Mix/IMAP normal : ne compter que ce qui a déjà prouvé sa validité (lastChecked) —
          sinon le stock affiché ment (ex: 40 affichés, 0 réellement vendables car
          jamais encore testés par le checker de fond). */
-      const isHm=isHotmailFamily(g.domain);
-      const realOld=isHm?Object.keys(v).length:Object.values(v).filter(function(c){
+      const bypass=isHotmailFamily(g.domain)||isDeliveryOnlyCheck(g.domain);
+      const realOld=bypass?Object.keys(v).length:Object.values(v).filter(function(c){
         return c&&c.lastChecked&&!c.suspect&&!c.timeoutStrikes;
       }).length;
-      return{pid:ex.id,realOld:realOld};
+      return{pid:ex.id,realOld:realOld,existing:ex};
     });
   }));
   /* 2) Construire une seule mise à jour multi-chemins — un seul aller-retour réseau */
@@ -2951,12 +2994,20 @@ async function importMP(groups,isPrivate){
   groups.forEach(function(g,i){
     const info=reads[i];
     const pid=info.pid||db.ref("products").push().key;
-    const isHm=isHotmailFamily(g.domain);
-    /* Le nouveau lot ne compte dans le stock affiché QUE pour Hotmail/sfr.fr (déjà
-       vérifiés à la main). Pour le mix, il reste invisible/non-vendable tant que le
-       checker de fond ne l'a pas validé au moins une fois — évite exactement ton cas. */
-    const newStock=isHm?(info.realOld+g.accounts.length):info.realOld;
-    upd["products/"+pid]={domain:g.domain,countries:[g.country],price:PRICE_BASE,stock:newStock,private:!!isPrivate};
+    const bypass=isHotmailFamily(g.domain)||isDeliveryOnlyCheck(g.domain);
+    /* Le nouveau lot ne compte dans le stock affiché QUE pour Hotmail/sfr.fr/domaines
+       "livraison seule" (déjà vérifiés à la main ou jamais passés par le cycle de fond).
+       Pour le mix normal, il reste invisible/non-vendable tant que le checker de fond
+       ne l'a pas validé au moins une fois — évite exactement ton cas. */
+    const newStock=bypass?(info.realOld+g.accounts.length):info.realOld;
+    /* Préserver les champs déjà présents (ex: "private" mis via le panel) — sinon cette
+       écriture remplaçait tout l'objet et perdait silencieusement ces réglages. */
+    const existingProduct=info.existing||{};
+    upd["products/"+pid]=Object.assign({},existingProduct,{
+      domain:g.domain,countries:[g.country],
+      price:existingProduct.price||PRICE_BASE,stock:newStock,
+      private:info.existing?(isPrivate||existingProduct.private||false):!!isPrivate
+    });
     g.accounts.forEach(a=>{const r=db.ref("credentials/"+pid).push();upd["credentials/"+pid+"/"+r.key]={email:a.email,pass:a.pass,sold:false};});
   });
   return db.ref("/").update(upd);
@@ -3106,7 +3157,18 @@ function renderAdmin(){
             if($("privImp"))$("privImp").checked=false;
           }).catch(function(e){toast("Erreur: "+e.message);});
         };
-        if(rm){db.ref("products").remove().then(function(){return db.ref("credentials").remove();}).then(doImport);}
+        if(rm){
+          /* Ne supprimer QUE les produits non protégés — jamais Hotmail/SFR/bbox.fr,
+             peu importe ce qui est importé dans ce lot précis. C'est ça qui effaçait
+             bbox.fr/sfr.fr par erreur à chaque "Remplacer" d'un tout autre import. */
+          db.ref("products").once("value").then(function(snap){
+            var all=snap.val()||{};
+            var toDelete=Object.entries(all).filter(function(e){return!isWipeProtected(e[1]&&e[1].domain);}).map(function(e){return e[0];});
+            var upd={};
+            toDelete.forEach(function(pid){upd["credentials/"+pid]=null;upd["products/"+pid]=null;});
+            db.ref("/").update(upd).then(doImport);
+          });
+        }
         else{doImport();}
       };}
       $("parseBtn").onclick=()=>doAnalyse(false);$("replaceBtn").onclick=()=>{if(confirm("⚠️ Vider tout et remplacer ?"))doAnalyse(true);};
