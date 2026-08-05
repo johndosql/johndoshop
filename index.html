@@ -2398,11 +2398,15 @@ function isTrueHotmail(domain){
   return["hotmail","outlook","live.","msn.","office365","office.com"].some(function(k){return d.includes(k);});
 }
 /* Domaines réglés en "livraison directe sans vérification" via le panel admin —
-   comme Hotmail, mais choisi au cas par cas (ex: SFR, si on décide de ne pas le
-   faire vérifier). Contrairement à Hotmail, ce n'est jamais un domaine où l'IMAP
-   est structurellement impossible — juste un choix. */
+   comme Hotmail, mais choisi au cas par cas. Contrairement à Hotmail, ce n'est
+   jamais un domaine où l'IMAP est structurellement impossible — juste un choix.
+   sfr.fr reste protégé PAR DÉFAUT (urgence : le checker le supprimait à tort dès
+   qu'il repassait en flux mix normal) — un override explicite peut changer ça
+   plus tard si besoin, mais la protection ne dépend plus d'une case à cocher
+   qu'on pourrait oublier de configurer. */
 function isDirectDeliveryOverride(domain){
   var d=(domain||"").toLowerCase();
+  if(d==="sfr.fr")return true;
   var ov=customDomainOverrides[d];
   return!!(ov&&ov.directDelivery);
 }
