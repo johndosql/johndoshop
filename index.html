@@ -3091,7 +3091,7 @@ function renderAdmin(){
     else if(t==="stock"){
       pane.innerHTML=`<div class="a-section-lbl" style="margin-top:0">📥 Importer</div><div class="a-card"><div class="a-title">Importer des accès</div><p style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">Un compte par ligne · <code style="background:var(--bg2);padding:1px 5px;border-radius:4px">email@domain.com:pass</code><br>Extensions nationales auto · .com/.net → 🌍 MIX</p><input type="file" accept=".txt" id="fileImp" style="display:none"><button class="btn btn-outline" id="fileBtn" style="width:100%;margin-bottom:8px;padding:11px">📁 Choisir un fichier .txt</button><textarea class="field" id="txtImp" rows="5" placeholder="user@hotmail.com:pass1" style="resize:vertical;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.6"></textarea><label style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--sf);border:1px solid var(--line);border-radius:10px;cursor:pointer"><input type="checkbox" id="privImp" style="width:16px;height:16px;accent-color:var(--ac)"><span style="font-size:12.5px;color:var(--ink)">🔒 Marquer comme "Private" (badge visible sur la carte, reste dans la boutique)</span></label><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-outline" id="parseBtn" style="flex:1">🔍 Analyser</button><button class="btn btn-danger" id="replaceBtn" style="flex:1">🔄 Remplacer</button></div></div>
 
-<div class="a-section-lbl">🛠 Maintenance</div><div class="a-card"><button id="recalcCountriesBtn" style="width:100%;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🔄 Recalculer les pays de tous les produits</button><button id="dedupeStockBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🧹 Nettoyer les doublons du stock</button><button id="recalcBypassStockBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🔄 Recalculer stock Hotmail/SFR/livraison directe</button></div>
+<div class="a-section-lbl">🛠 Maintenance</div><div class="a-card"><button id="recalcCountriesBtn" style="width:100%;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🔄 Recalculer les pays de tous les produits</button><button id="dedupeStockBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🧹 Nettoyer les doublons du stock</button><button id="recalcBypassStockBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,200,160,.08);border:1px solid rgba(0,200,160,.25);border-radius:10px;color:var(--ac);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🔄 Recalculer stock (Hotmail, SFR, exceptions)</button></div>
 
 <div class="pd-sec-toggle" id="dangerToggle" style="margin:16px 2px 0"><span>⚠️ Zone de suppression</span><span class="pd-chevron">▾</span></div>
 <div class="pd-pro-wrap collapsed" id="dangerWrap" style="margin-top:8px"><div class="a-card"><div style="display:flex;gap:8px"><button id="vidStockBtn" style="flex:1;padding:11px;background:rgba(255,79,64,.08);border:1px solid rgba(255,79,64,.25);border-radius:10px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider TOUT</button><button id="vidStockNoMsBtn" style="flex:1;padding:11px;background:rgba(255,165,0,.08);border:1px solid rgba(255,165,0,.25);border-radius:10px;color:orange;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider sauf Hotmail</button></div><button id="vidStockOnlyMsBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(0,120,255,.08);border:1px solid rgba(0,120,255,.25);border-radius:10px;color:#3399FF;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Vider UNIQUEMENT Hotmail</button><button id="vidStockGmailBtn" style="width:100%;margin-top:8px;padding:11px;background:rgba(200,0,0,.08);border:1px solid rgba(200,0,0,.25);border-radius:10px;color:#E05050;font-weight:700;font-size:12px;cursor:pointer;touch-action:manipulation">🗑 Purger Gmail/Yahoo/iCloud (non vérifiables)</button></div></div>
@@ -3366,10 +3366,10 @@ function renderAdmin(){
         var btn=this;btn.disabled=true;btn.textContent="⏳ Analyse…";
         db.ref("products").once("value").then(function(snap){
           var all=snap.val()||{};
-          var targets=Object.entries(all).filter(function(e){return e[1]&&isHotmailFamily(e[1].domain);});
+          var targets=Object.entries(all).filter(function(e){return e[1]&&(isHotmailFamily(e[1].domain)||isDeliveryOnlyCheck(e[1].domain));});
           if(!targets.length){
-            toast("Aucun produit Hotmail/SFR/livraison directe en stock.");
-            btn.disabled=false;btn.textContent="🔄 Recalculer stock Hotmail/SFR/livraison directe";
+            toast("Aucun produit Hotmail/SFR/livraison directe/vérification-à-la-livraison en stock.");
+            btn.disabled=false;btn.textContent="🔄 Recalculer stock (Hotmail, SFR, exceptions)";
             return;
           }
           var chain=Promise.resolve();
@@ -3386,9 +3386,9 @@ function renderAdmin(){
           });
           chain.then(function(){
             toast("✅ "+targets.length+" produit(s) vérifié(s), "+fixed+" chiffre(s) corrigé(s).");
-            btn.disabled=false;btn.textContent="🔄 Recalculer stock Hotmail/SFR/livraison directe";
-          }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🔄 Recalculer stock Hotmail/SFR/livraison directe";});
-        }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🔄 Recalculer stock Hotmail/SFR/livraison directe";});
+            btn.disabled=false;btn.textContent="🔄 Recalculer stock (Hotmail, SFR, exceptions)";
+          }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🔄 Recalculer stock (Hotmail, SFR, exceptions)";});
+        }).catch(function(e){toast("Erreur: "+e.message);btn.disabled=false;btn.textContent="🔄 Recalculer stock (Hotmail, SFR, exceptions)";});
       };
     }
     else if(t==="catalogue"){
